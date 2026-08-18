@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Buy Auction{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+    <main class="page-shell">
+        {% if messages %}
+            <section class="messages-stack" aria-label="پیام‌ها">
+                {% for message in messages %}
+                    <div class="message message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

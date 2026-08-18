@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد اپراتور{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="dashboard-header">
+        <div>
+            <h1>داشبورد اپراتور</h1>
+            <p class="muted-text">خوش آمدید، {{ request.user.username }}</p>
+        </div>
+        <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت</a>
+    </div>
+
+    <div class="dashboard-grid">
+        <article class="info-panel">
+            <h2>وضعیت آثار</h2>
+            <p>تعداد آثار ثبت شده: در فاز بعدی فعال می‌شود</p>
+        </article>
+        <article class="info-panel">
+            <h2>وضعیت دسترسی</h2>
+            <p>این صفحه فقط برای اپراتور و مدیر سیستم در دسترس است.</p>
+        </article>
+    </div>
+</section>
+{% endblock %}

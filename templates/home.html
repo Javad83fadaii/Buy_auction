@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}اسکلت پروژه{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>پروژه Django آماده است</h1>
+    <p>فاز صفر با موفقیت راه‌اندازی شد.</p>
+    <div class="actions-row">
+        <a class="button button-primary" href="{% url 'accounts:login' %}">ورود به سیستم</a>
+    </div>
+</section>
+{% endblock %}

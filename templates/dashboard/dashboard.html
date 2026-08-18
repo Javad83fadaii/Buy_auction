@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="dashboard-header">
+        <div>
+            <h1>داشبورد</h1>
+            <p class="muted-text">خوش آمدید، {{ request.user.username }}</p>
+            <p class="muted-text">نقش فعلی: {{ request.user.role_display }}</p>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-secondary">خروج</button>
+        </form>
+    </div>
+
+    <div class="dashboard-grid">
+        <article class="info-panel">
+            <h2>وضعیت حساب کاربری</h2>
+            <p>نام کاربری: {{ request.user.username }}</p>
+            <p>ایمیل: {{ request.user.email|default:"-" }}</p>
+            <p>آخرین ورود: {{ request.user.last_login|default:"-" }}</p>
+        </article>
+
+        <article class="info-panel">
+            <h2>دسترسی‌ها</h2>
+            <p>داشبورد اصلی برای کاربران احراز هویت‌شده در دسترس است.</p>
+            {% if can_view_operator_dashboard %}
+                <a class="button button-primary" href="{% url 'operator_dashboard' %}">ورود به داشبورد اپراتور</a>
+            {% endif %}
+            <a class="button button-secondary" href="{% url 'accounts:change_password' %}">تغییر رمز عبور</a>
+        </article>
+    </div>
+</section>
+{% endblock %}

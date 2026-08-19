@@ -8,7 +8,7 @@ from .services import ensure_default_roles
 
 @receiver(post_migrate)
 def sync_default_roles(sender, **kwargs):
-    if sender.name == 'accounts':
+    if sender.name in {'accounts', 'products'}:
         ensure_default_roles()
 
 

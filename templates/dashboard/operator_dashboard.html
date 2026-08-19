@@ -16,6 +16,9 @@
         <article class="info-panel">
             <h2>وضعیت آثار</h2>
             <p>تعداد آثار ثبت شده: در فاز بعدی فعال می‌شود</p>
+            {% if perms.products.add_product %}
+                <a class="button button-primary" href="{% url 'products:create' %}">ثبت اثر جدید</a>
+            {% endif %}
         </article>
         <article class="info-panel">
             <h2>وضعیت دسترسی</h2>

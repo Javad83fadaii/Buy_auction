@@ -70,6 +70,26 @@ a {
     border-color: #4f46e5;
 }
 
+.form-field textarea,
+.form-field select,
+.form-field .text-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    background: #fff;
+    font-family: inherit;
+}
+
+.form-field textarea:focus,
+.form-field select:focus,
+.form-field .text-input:focus {
+    outline: 2px solid #c7d2fe;
+    border-color: #4f46e5;
+}
+
 .button {
     display: inline-flex;
     align-items: center;
@@ -160,6 +180,90 @@ a {
     background: #fafafa;
 }
 
+.product-create-card {
+    display: grid;
+    gap: 24px;
+}
+
+.form-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 20px;
+    background: #fafafa;
+    margin-bottom: 18px;
+}
+
+.form-section h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 18px;
+}
+
+.form-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.form-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.checkbox-input {
+    width: 18px;
+    height: 18px;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.preview-card {
+    margin: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.preview-image {
+    display: block;
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: #e5e7eb;
+}
+
+.preview-caption {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #4b5563;
+    word-break: break-word;
+}
+
 @media (max-width: 640px) {
     .page-shell {
         padding: 24px 16px;
@@ -170,6 +274,12 @@ a {
     }
 
     .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid-2,
+    .form-grid-3,
+    .checkbox-group {
         grid-template-columns: 1fr;
     }
 }

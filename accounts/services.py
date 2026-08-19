@@ -16,12 +16,17 @@ class PermissionBlueprint:
 ROLE_PERMISSION_BLUEPRINTS = {
     ADMIN_ROLE: (
         PermissionBlueprint(app_label='accounts'),
+        PermissionBlueprint(app_label='products'),
         PermissionBlueprint(app_label='auth', model='group'),
     ),
     OPERATOR_ROLE: (
         PermissionBlueprint(
             app_label='accounts',
             codenames=('view_dashboard', 'view_operator_dashboard'),
+        ),
+        PermissionBlueprint(
+            app_label='products',
+            codenames=('add_product',),
         ),
     ),
     VIEWER_ROLE: (

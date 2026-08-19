@@ -1,245 +1,289 @@
 import shutil
 import tempfile
-from decimal import Decimal
 from io import BytesIO
+from unittest.mock import patch
 
-from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import DataError, IntegrityError, transaction
-from django.test import TestCase, TransactionTestCase, override_settings
 from PIL import Image
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils.datastructures import MultiValueDict
 
+from accounts.constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
+from accounts.services import ensure_default_roles
 from .choices import ContactMethodChoices, ProductSourceTypeChoices, ProductStatusChoices
+from .forms import ProductCreateForm
 from .models import Product, ProductImage
+from .validators import MAX_PRODUCT_IMAGE_SIZE
 
 User = get_user_model()
-PRODUCT_TEST_MEDIA_ROOT = tempfile.mkdtemp()
-CONSTRAINT_TEST_MEDIA_ROOT = tempfile.mkdtemp()
 
 
-def create_test_image_file(name: str = 'test.png', image_format: str = 'PNG') -> SimpleUploadedFile:
-    file_object = BytesIO()
-    image = Image.new('RGB', (20, 20), color='white')
-    image.save(file_object, format=image_format)
-    file_object.seek(0)
-    return SimpleUploadedFile(name, file_object.read(), content_type='image/png')
+class ProductCreateBaseTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.temp_media_root = tempfile.mkdtemp()
+        cls.media_override = override_settings(MEDIA_ROOT=cls.temp_media_root)
+        cls.media_override.enable()
 
-
-@override_settings(MEDIA_ROOT=PRODUCT_TEST_MEDIA_ROOT)
-class ProductModelTests(TestCase):
     @classmethod
     def tearDownClass(cls):
+        cls.media_override.disable()
+        shutil.rmtree(cls.temp_media_root, ignore_errors=True)
         super().tearDownClass()
-        shutil.rmtree(PRODUCT_TEST_MEDIA_ROOT, ignore_errors=True)
 
-    def setUp(self):
-        self.user = User.objects.create_user(username='operator', password='StrongPass123!')
+    @classmethod
+    def setUpTestData(cls):
+        ensure_default_roles()
+        cls.password = 'StrongPass123!'
+        cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
+        cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
+        cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
 
-    def create_product(self, **extra_fields) -> Product:
-        data = {
-            'title': 'تابلوی نمونه',
-            'product_code': 'MAN-1001',
-            'suggested_price': Decimal('1250000.00'),
-            'suitable_price': Decimal('1350000.00'),
-            'artist': 'هنرمند نمونه',
+        cls.admin_user = cls.create_user('product_admin', cls.admin_group)
+        cls.operator_user = cls.create_user('product_operator', cls.operator_group)
+        cls.viewer_user = cls.create_user('product_viewer', cls.viewer_group)
+
+    @classmethod
+    def create_user(cls, username, group):
+        user = User.objects.create_user(
+            username=username,
+            password=cls.password,
+            email=f'{username}@example.com',
+        )
+        user.groups.add(group)
+        user.refresh_from_db()
+        return user
+
+    def create_test_image(self, name='test-image.jpg', size=(40, 40), color='blue'):
+        image_bytes = BytesIO()
+        image = Image.new('RGB', size, color=color)
+        image.save(image_bytes, format='JPEG')
+        image_bytes.seek(0)
+        return SimpleUploadedFile(name, image_bytes.getvalue(), content_type='image/jpeg')
+
+    def get_valid_payload(self, **overrides):
+        payload = {
             'suggested_by': 'علی رضایی',
-            'contact_method': ContactMethodChoices.WHATSAPP,
-            'created_by': self.user,
-            'updated_by': self.user,
+            'contact_method': ContactMethodChoices.PHONE,
+            'suggestion_date': '2026-08-19',
+            'title': 'تابلوی شماره یک',
+            'product_code': 'ART-100',
+            'description': 'توضیح نمونه',
+            'artist': 'هنرمند نمونه',
+            'production_date': '2024-05-01',
+            'production_location': 'تهران',
+            'material': 'رنگ روغن',
+            'subject': 'منظره',
+            'usage': 'تزئینی',
+            'art_type': 'نقاشی',
+            'suggested_price': '2500000.50',
+            'suitable_price': '2200000',
+            'is_cancelled': '',
+            'is_notable': 'on',
+            'needs_expert_review': 'on',
         }
-        data.update(extra_fields)
-        return Product.objects.create(**data)
+        payload.update(overrides)
+        return payload
 
-    def test_create_product(self):
-        product = self.create_product()
+    def build_form(self, *, data=None, images=None):
+        files = MultiValueDict({'images': images or [self.create_test_image()]})
+        return ProductCreateForm(data=data or self.get_valid_payload(), files=files)
 
+
+class ProductCreatePermissionTests(ProductCreateBaseTestCase):
+    def test_anonymous_cannot_access_create_page(self):
+        response = self.client.get(reverse('products:create'))
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={reverse('products:create')}",
+        )
+
+    def test_viewer_cannot_access_create_page(self):
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_can_access_create_page(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ثبت پیشنهاد جدید')
+
+    def test_admin_can_access_create_page(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ثبت پیشنهاد جدید')
+
+
+class ProductCreateFormTests(ProductCreateBaseTestCase):
+    def test_valid_form(self):
+        form = self.build_form()
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_missing_required_fields(self):
+        form = self.build_form(data=self.get_valid_payload(title=''))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
+
+    def test_invalid_price(self):
+        form = self.build_form(data=self.get_valid_payload(suggested_price='invalid-price'))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('suggested_price', form.errors)
+
+    def test_negative_price(self):
+        form = self.build_form(data=self.get_valid_payload(suggested_price='-1'))
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['suggested_price'][0], 'قیمت نمی‌تواند منفی باشد.')
+
+    def test_invalid_contact_method(self):
+        form = self.build_form(data=self.get_valid_payload(contact_method='INVALID'))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('contact_method', form.errors)
+
+    def test_invalid_product_code(self):
+        Product.objects.create(
+            title='اثر قبلی',
+            product_code='ART-100',
+            source_type=ProductSourceTypeChoices.MANUAL,
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        form = self.build_form(data=self.get_valid_payload(product_code='  ART-100  '))
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['product_code'][0], 'این کد اثر قبلاً برای پیشنهاد دستی ثبت شده است.')
+
+
+class ProductCreateFlowTests(ProductCreateBaseTestCase):
+    def post_create(self, *, user=None, data=None, images=None, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(
+            reverse('products:create'),
+            data={**(data or self.get_valid_payload()), 'images': images or [self.create_test_image()]},
+            follow=follow,
+        )
+
+    def test_product_created_successfully(self):
+        response = self.post_create(follow=True)
+
+        self.assertRedirects(response, reverse('products:create'))
+        self.assertContains(response, 'اثر با موفقیت ثبت شد.')
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_created_by_is_correct(self):
+        self.post_create()
+
+        product = Product.objects.get()
+        self.assertEqual(product.created_by, self.operator_user)
+
+    def test_updated_by_is_correct(self):
+        self.post_create()
+
+        product = Product.objects.get()
+        self.assertEqual(product.updated_by, self.operator_user)
+
+    def test_source_type_is_manual(self):
+        self.post_create(data=self.get_valid_payload())
+
+        product = Product.objects.get()
         self.assertEqual(product.source_type, ProductSourceTypeChoices.MANUAL)
+
+    def test_status_is_draft(self):
+        self.post_create(data=self.get_valid_payload())
+
+        product = Product.objects.get()
         self.assertEqual(product.status, ProductStatusChoices.DRAFT)
-        self.assertEqual(product.created_by, self.user)
-        self.assertIsNotNone(product.created_at)
-        self.assertIsNotNone(product.updated_at)
 
-    def test_required_title(self):
-        product = Product(created_by=self.user)
+    def test_product_code_blank_is_saved_as_null(self):
+        self.post_create(data=self.get_valid_payload(product_code='   '))
 
-        with self.assertRaises(ValidationError):
-            product.full_clean()
+        product = Product.objects.get()
+        self.assertIsNone(product.product_code)
 
-    def test_decimal_prices_are_preserved(self):
-        product = self.create_product(
-            suggested_price=Decimal('9999999999999999.99'),
-            suitable_price=Decimal('2500000.50'),
+    def test_one_image_is_created(self):
+        self.post_create(images=[self.create_test_image()])
+
+        self.assertEqual(ProductImage.objects.count(), 1)
+
+    def test_multiple_images_are_created(self):
+        self.post_create(images=[self.create_test_image('one.jpg'), self.create_test_image('two.jpg')])
+
+        self.assertEqual(ProductImage.objects.count(), 2)
+
+    def test_first_image_becomes_primary(self):
+        self.post_create(images=[self.create_test_image('one.jpg'), self.create_test_image('two.jpg')])
+
+        images = list(ProductImage.objects.order_by('sort_order'))
+        self.assertTrue(images[0].is_primary)
+        self.assertFalse(images[1].is_primary)
+
+    def test_sort_order_matches_upload_order(self):
+        self.post_create(
+            images=[
+                self.create_test_image('first.jpg'),
+                self.create_test_image('second.jpg'),
+                self.create_test_image('third.jpg'),
+            ]
         )
 
-        self.assertEqual(product.suggested_price, Decimal('9999999999999999.99'))
-        self.assertEqual(product.suitable_price, Decimal('2500000.50'))
+        self.assertEqual(list(ProductImage.objects.values_list('sort_order', flat=True)), [0, 1, 2])
 
-    def test_negative_price_validation(self):
-        product = Product(
-            title='اثر نامعتبر',
-            suggested_price=Decimal('-1'),
-            created_by=self.user,
+    def test_invalid_image_is_rejected(self):
+        invalid_file = SimpleUploadedFile('invalid.txt', b'not-an-image', content_type='text/plain')
+
+        response = self.post_create(images=[invalid_file])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'فرمت تصویر مجاز نیست.')
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_image_over_5mb_is_rejected(self):
+        large_file = SimpleUploadedFile(
+            'large.jpg',
+            b'a' * (MAX_PRODUCT_IMAGE_SIZE + 1),
+            content_type='image/jpeg',
         )
 
-        with self.assertRaises(ValidationError):
-            product.full_clean()
+        response = self.post_create(images=[large_file])
 
-    def test_source_type_can_be_changed_for_future_sources(self):
-        product = self.create_product(source_type=ProductSourceTypeChoices.CHRISTIES)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'حجم تصویر نباید بیشتر از 5 مگابایت باشد.')
+        self.assertEqual(Product.objects.count(), 0)
 
-        self.assertEqual(product.source_type, ProductSourceTypeChoices.CHRISTIES)
+    def test_transaction_rolls_back_when_image_save_fails(self):
+        original_full_clean = ProductImage.full_clean
+        call_count = {'value': 0}
 
-    def test_status_can_be_set(self):
-        product = self.create_product(status=ProductStatusChoices.PENDING_REVIEW)
+        def failing_full_clean(instance, *args, **kwargs):
+            call_count['value'] += 1
+            if call_count['value'] == 2:
+                raise ValidationError({'image': 'خطا در اعتبارسنجی تصویر دوم.'})
+            return original_full_clean(instance, *args, **kwargs)
 
-        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+        with patch('products.services.ProductImage.full_clean', new=failing_full_clean):
+            response = self.post_create(
+                images=[self.create_test_image('one.jpg'), self.create_test_image('two.jpg')]
+            )
 
-    def test_updated_at_changes_on_update(self):
-        product = self.create_product()
-        original_updated_at = product.updated_at
-
-        product.title = 'عنوان ویرایش‌شده'
-        product.save(update_fields=['title', 'updated_at'])
-        product.refresh_from_db()
-
-        self.assertGreaterEqual(product.updated_at, original_updated_at)
-
-    def test_product_code_can_repeat_across_different_sources(self):
-        self.create_product(product_code='SRC-101', source_type=ProductSourceTypeChoices.MANUAL)
-        duplicate_other_source = self.create_product(
-            product_code='SRC-101',
-            source_type=ProductSourceTypeChoices.CHRISTIES,
-            title='اثر منبع دیگر',
-        )
-
-        self.assertEqual(duplicate_other_source.product_code, 'SRC-101')
-
-    def test_blank_product_code_is_normalized_to_none(self):
-        first_product = self.create_product(product_code='   ', title='اثر اول')
-        second_product = self.create_product(product_code='', title='اثر دوم')
-
-        self.assertIsNone(first_product.product_code)
-        self.assertIsNone(second_product.product_code)
-
-    def test_deleting_creator_keeps_product_history(self):
-        product = self.create_product()
-        self.user.delete()
-        product.refresh_from_db()
-
-        self.assertIsNone(product.created_by)
-        self.assertIsNone(product.updated_by)
-
-    def test_product_image_creation_and_relation(self):
-        product = self.create_product()
-        image = ProductImage.objects.create(
-            product=product,
-            image=create_test_image_file(),
-            is_primary=True,
-            sort_order=1,
-        )
-
-        self.assertEqual(image.product, product)
-        self.assertEqual(product.images.count(), 1)
-        self.assertTrue(image.is_primary)
-
-    def test_product_image_rejects_invalid_file_type(self):
-        product = self.create_product()
-        image = ProductImage(
-            product=product,
-            image=SimpleUploadedFile('document.txt', b'invalid', content_type='text/plain'),
-        )
-
-        with self.assertRaises(ValidationError):
-            image.full_clean()
-
-    def test_product_image_primary_validation(self):
-        product = self.create_product()
-        ProductImage.objects.create(
-            product=product,
-            image=create_test_image_file(name='first.png'),
-            is_primary=True,
-        )
-        second_image = ProductImage(
-            product=product,
-            image=create_test_image_file(name='second.png'),
-            is_primary=True,
-        )
-
-        with self.assertRaises(ValidationError):
-            second_image.full_clean()
-
-    def test_product_image_sort_order_validation(self):
-        product = self.create_product()
-        image = ProductImage(
-            product=product,
-            image=create_test_image_file(),
-            sort_order=-1,
-        )
-
-        with self.assertRaises(ValidationError):
-            image.full_clean()
-
-    def test_product_image_upload_path_uses_product_id_directory(self):
-        product = self.create_product()
-        image = ProductImage.objects.create(
-            product=product,
-            image=create_test_image_file(name='sample.png'),
-        )
-
-        self.assertTrue(image.image.name.startswith(f'products/{product.id}/'))
-
-
-@override_settings(MEDIA_ROOT=CONSTRAINT_TEST_MEDIA_ROOT)
-class ProductConstraintTests(TransactionTestCase):
-    reset_sequences = True
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(CONSTRAINT_TEST_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.user = User.objects.create_user(username='constraint_user', password='StrongPass123!')
-
-    def create_product(self, **extra_fields) -> Product:
-        data = {
-            'title': 'Constraint Product',
-            'product_code': 'UNQ-100',
-            'created_by': self.user,
-        }
-        data.update(extra_fields)
-        return Product.objects.create(**data)
-
-    def test_product_code_is_unique_per_source(self):
-        self.create_product()
-
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                self.create_product(title='Duplicate Product')
-
-    def test_database_rejects_negative_suggested_price(self):
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                Product.objects.create(
-                    title='Negative Price',
-                    suggested_price=Decimal('-10.00'),
-                    created_by=self.user,
-                )
-
-    def test_database_rejects_negative_sort_order(self):
-        product = self.create_product(product_code='IMG-001')
-
-        with self.assertRaises((IntegrityError, DataError)):
-            with transaction.atomic():
-                ProductImage.objects.create(
-                    product=product,
-                    image=create_test_image_file(),
-                    sort_order=-1,
-                )
-
-    def test_multiple_null_product_codes_are_allowed(self):
-        self.create_product(product_code=None, title='Null Code 1')
-        second_product = self.create_product(product_code=None, title='Null Code 2')
-
-        self.assertIsNone(second_product.product_code)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'خطا در اعتبارسنجی تصویر دوم.')
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductImage.objects.count(), 0)

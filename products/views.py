@@ -2,7 +2,7 @@ import logging
 
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.urls import reverse_lazy
 from django.views.generic import FormView, ListView
 
@@ -72,7 +72,7 @@ class ProductListView(RolePermissionMixin, ListView):
             'image',
             'is_primary',
         )
-        return (
+        queryset = (
             Product.objects.all()
             .prefetch_related(
                 Prefetch(
@@ -82,8 +82,21 @@ class ProductListView(RolePermissionMixin, ListView):
                 )
             )
         )
+        search_query = self.get_search_query()
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query)
+                | Q(product_code__icontains=search_query)
+                | Q(artist__icontains=search_query)
+                | Q(suggested_by__icontains=search_query)
+            )
+        return queryset
+
+    def get_search_query(self):
+        return self.request.GET.get('q', '').strip()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'لیست محصولات'
+        context['search_query'] = self.get_search_query()
         return context

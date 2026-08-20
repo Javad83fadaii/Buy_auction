@@ -12,6 +12,18 @@
         <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
     </div>
 
+    <form method="get" class="inline-form" role="search">
+        <label class="sr-only" for="id_q">جستجوی محصولات</label>
+        <input
+            id="id_q"
+            type="search"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده"
+        >
+        <button type="submit" class="button button-primary">جستجو</button>
+    </form>
+
     {% if products %}
         <div class="table-shell">
             <table class="data-table">
@@ -63,7 +75,7 @@
         {% if is_paginated %}
             <nav class="pagination" aria-label="صفحه‌بندی محصولات">
                 {% if page_obj.has_previous %}
-                    <a class="button button-secondary" href="?page={{ page_obj.previous_page_number }}">صفحه قبل</a>
+                    <a class="button button-secondary" href="?{% if search_query %}q={{ search_query|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">صفحه قبل</a>
                 {% endif %}
 
                 <span class="pagination-status">
@@ -71,15 +83,21 @@
                 </span>
 
                 {% if page_obj.has_next %}
-                    <a class="button button-secondary" href="?page={{ page_obj.next_page_number }}">صفحه بعد</a>
+                    <a class="button button-secondary" href="?{% if search_query %}q={{ search_query|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">صفحه بعد</a>
                 {% endif %}
             </nav>
         {% endif %}
     {% else %}
-        <section class="empty-state" aria-live="polite">
-            <h2>هنوز محصولی ثبت نشده است.</h2>
-            <p class="muted-text">پس از ثبت اولین اثر، لیست محصولات در این بخش نمایش داده می‌شود.</p>
-        </section>
+        {% if search_query %}
+            <section class="empty-state" aria-live="polite">
+                <h2>محصولی مطابق جستجوی شما پیدا نشد.</h2>
+            </section>
+        {% else %}
+            <section class="empty-state" aria-live="polite">
+                <h2>هنوز محصولی ثبت نشده است.</h2>
+                <p class="muted-text">پس از ثبت اولین اثر، لیست محصولات در این بخش نمایش داده می‌شود.</p>
+            </section>
+        {% endif %}
     {% endif %}
 </section>
 {% endblock %}

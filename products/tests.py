@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 from io import BytesIO
+from urllib.parse import quote, urlencode
 from unittest.mock import patch
 
 from PIL import Image
@@ -311,13 +312,18 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         cls.authorized_user = cls.create_user('product_list_user', cls.viewer_group)
         cls.authorized_user.user_permissions.add(cls.view_product_permission)
 
-    def get_list(self, *, user=None, page=None):
+    def get_list(self, *, user=None, page=None, q=None):
         if user is not None:
             self.client.force_login(user)
 
         url = reverse('products:list')
+        query_params = {}
+        if q is not None:
+            query_params['q'] = q
         if page:
-            url = f'{url}?page={page}'
+            query_params['page'] = page
+        if query_params:
+            url = f'{url}?{urlencode(query_params)}'
 
         return self.client.get(url)
 
@@ -382,3 +388,108 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         response = self.get_list(user=self.authorized_user)
 
         self.assertContains(response, 'هنوز محصولی ثبت نشده است.')
+
+    def test_search_by_title(self):
+        matching_product = self.create_product(title='تابلوی آبی', product_code='ART-TITLE-1')
+        self.create_product(title='مجسمه سنگی', product_code='ART-TITLE-2')
+
+        response = self.get_list(user=self.authorized_user, q='تابلوی')
+
+        products = list(response.context['products'])
+        self.assertEqual(products, [matching_product])
+        self.assertContains(response, matching_product.title)
+        self.assertNotContains(response, 'مجسمه سنگی')
+
+    def test_search_by_product_code(self):
+        matching_product = self.create_product(title='اثر اول', product_code='ART-CODE-77')
+        self.create_product(title='اثر دوم', product_code='ART-CODE-88')
+
+        response = self.get_list(user=self.authorized_user, q='code-77')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, matching_product.product_code)
+        self.assertNotContains(response, 'ART-CODE-88')
+
+    def test_search_by_artist(self):
+        matching_product = self.create_product(title='اثر هنری', artist='ونگوگ', product_code='ART-ARTIST-1')
+        self.create_product(title='اثر دیگر', artist='پیکاسو', product_code='ART-ARTIST-2')
+
+        response = self.get_list(user=self.authorized_user, q='ونگو')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, matching_product.artist)
+        self.assertNotContains(response, 'پیکاسو')
+
+    def test_search_by_suggested_by(self):
+        matching_product = self.create_product(
+            title='اثر پیشنهادی',
+            product_code='ART-SUGGEST-1',
+            suggested_by='سارا احمدی',
+        )
+        self.create_product(
+            title='اثر غیرمرتبط',
+            product_code='ART-SUGGEST-2',
+            suggested_by='مهدی کریمی',
+        )
+
+        response = self.get_list(user=self.authorized_user, q='سارا')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, matching_product.title)
+        self.assertNotContains(response, 'اثر غیرمرتبط')
+
+    def test_search_is_case_insensitive(self):
+        matching_product = self.create_product(title='Sunset', product_code='ART-CASE-1')
+        self.create_product(title='Moonlight', product_code='ART-CASE-2')
+
+        response = self.get_list(user=self.authorized_user, q='sunSET')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, matching_product.title)
+        self.assertNotContains(response, 'Moonlight')
+
+    def test_empty_search_returns_all_products(self):
+        first_product = self.create_product(title='اثر اول', product_code='ART-EMPTY-1')
+        second_product = self.create_product(title='اثر دوم', product_code='ART-EMPTY-2')
+
+        response = self.get_list(user=self.authorized_user, q='   ')
+
+        self.assertContains(response, first_product.title)
+        self.assertContains(response, second_product.title)
+        self.assertEqual(response.context['search_query'], '')
+
+    def test_no_result_search_displays_message(self):
+        self.create_product(title='اثر موجود', product_code='ART-NO-RESULT')
+
+        response = self.get_list(user=self.authorized_user, q='ناموجود')
+
+        self.assertContains(response, 'محصولی مطابق جستجوی شما پیدا نشد.')
+        self.assertEqual(len(response.context['products']), 0)
+        self.assertContains(response, 'value="ناموجود"', html=False)
+
+    def test_search_works_with_pagination(self):
+        for index in range(21):
+            self.create_product(
+                title=f'محصول مشترک {index}',
+                product_code=f'SHARED-{index}',
+            )
+        self.create_product(title='محصول نامرتبط', product_code='OTHER-1')
+
+        first_page_response = self.get_list(user=self.authorized_user, q='مشترک')
+        second_page_response = self.get_list(user=self.authorized_user, q='مشترک', page=2)
+
+        self.assertEqual(len(first_page_response.context['products']), 20)
+        self.assertTrue(first_page_response.context['is_paginated'])
+        self.assertContains(first_page_response, '?q=%D9%85%D8%B4%D8%AA%D8%B1%DA%A9&amp;page=2', html=False)
+        self.assertEqual(len(second_page_response.context['products']), 1)
+        self.assertContains(second_page_response, 'value="مشترک"', html=False)
+        self.assertNotContains(first_page_response, 'محصول نامرتبط')
+
+    def test_anonymous_access_remains_restricted_when_searching(self):
+        response = self.get_list(q='اثر')
+        expected_next = quote(f"{reverse('products:list')}?{urlencode({'q': 'اثر'})}")
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={expected_next}",
+        )

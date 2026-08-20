@@ -185,6 +185,11 @@ a {
     gap: 24px;
 }
 
+.product-list-card {
+    display: grid;
+    gap: 24px;
+}
+
 .form-section {
     border: 1px solid #e5e7eb;
     border-radius: 14px;
@@ -264,6 +269,73 @@ a {
     word-break: break-word;
 }
 
+.table-shell {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1080px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: right;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.data-table thead th {
+    background: #f8fafc;
+    font-size: 14px;
+}
+
+.product-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-thumb-placeholder {
+    color: #6b7280;
+    font-size: 12px;
+    text-align: center;
+    padding: 0 8px;
+}
+
+.button-disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pagination-status {
+    color: #4b5563;
+}
+
+.empty-state {
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    background: #f8fafc;
+}
+
 @media (max-width: 640px) {
     .page-shell {
         padding: 24px 16px;
@@ -281,5 +353,9 @@ a {
     .form-grid-3,
     .checkbox-group {
         grid-template-columns: 1fr;
+    }
+
+    .pagination {
+        justify-content: center;
     }
 }

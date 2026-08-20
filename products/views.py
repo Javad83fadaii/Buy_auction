@@ -2,12 +2,14 @@ import logging
 
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.db.models import Prefetch
 from django.urls import reverse_lazy
-from django.views.generic import FormView
+from django.views.generic import FormView, ListView
 
 from accounts.permissions import RolePermissionMixin
 
 from .forms import ProductCreateForm
+from .models import Product, ProductImage
 from .services import create_manual_product
 
 logger = logging.getLogger(__name__)
@@ -54,3 +56,34 @@ class ProductCreateView(RolePermissionMixin, FormView):
 
         for error in exc.messages:
             form.add_error(None, error)
+
+
+class ProductListView(RolePermissionMixin, ListView):
+    template_name = 'products/product_list.html'
+    permission_required = 'products.view_product'
+    model = Product
+    context_object_name = 'products'
+    paginate_by = 20
+
+    def get_queryset(self):
+        primary_image_queryset = ProductImage.objects.filter(is_primary=True).only(
+            'id',
+            'product_id',
+            'image',
+            'is_primary',
+        )
+        return (
+            Product.objects.all()
+            .prefetch_related(
+                Prefetch(
+                    'images',
+                    queryset=primary_image_queryset,
+                    to_attr='primary_images',
+                )
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'لیست محصولات'
+        return context

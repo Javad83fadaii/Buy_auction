@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}لیست محصولات{% endblock %}
+
+{% block content %}
+<section class="card product-list-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="muted-text">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p>
+        </div>
+        <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+    </div>
+
+    {% if products %}
+        <div class="table-shell">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>تصویر اصلی</th>
+                        <th>عنوان</th>
+                        <th>کد اثر</th>
+                        <th>خالق</th>
+                        <th>نوع هنر</th>
+                        <th>قیمت مناسب</th>
+                        <th>وضعیت</th>
+                        <th>منبع</th>
+                        <th>تاریخ ثبت</th>
+                        <th>مشاهده</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr>
+                            <td>
+                                {% if product.primary_images %}
+                                    <img
+                                        class="product-thumb"
+                                        src="{{ product.primary_images.0.image.url }}"
+                                        alt="تصویر اصلی {{ product.title }}"
+                                    >
+                                {% else %}
+                                    <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ product.title }}</td>
+                            <td>{{ product.product_code|default:"-" }}</td>
+                            <td>{{ product.artist|default:"-" }}</td>
+                            <td>{{ product.art_type|default:"-" }}</td>
+                            <td>{{ product.suitable_price|default:"-" }}</td>
+                            <td>{{ product.get_status_display }}</td>
+                            <td>{{ product.get_source_type_display }}</td>
+                            <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
+                            <td>
+                                <span class="button button-secondary button-disabled" aria-disabled="true">مشاهده</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav class="pagination" aria-label="صفحه‌بندی محصولات">
+                {% if page_obj.has_previous %}
+                    <a class="button button-secondary" href="?page={{ page_obj.previous_page_number }}">صفحه قبل</a>
+                {% endif %}
+
+                <span class="pagination-status">
+                    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a class="button button-secondary" href="?page={{ page_obj.next_page_number }}">صفحه بعد</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <section class="empty-state" aria-live="polite">
+            <h2>هنوز محصولی ثبت نشده است.</h2>
+            <p class="muted-text">پس از ثبت اولین اثر، لیست محصولات در این بخش نمایش داده می‌شود.</p>
+        </section>
+    {% endif %}
+</section>
+{% endblock %}

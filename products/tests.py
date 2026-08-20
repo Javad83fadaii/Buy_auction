@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from PIL import Image
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
@@ -93,6 +93,20 @@ class ProductCreateBaseTestCase(TestCase):
     def build_form(self, *, data=None, images=None):
         files = MultiValueDict({'images': images or [self.create_test_image()]})
         return ProductCreateForm(data=data or self.get_valid_payload(), files=files)
+
+    def create_product(self, **overrides):
+        payload = {
+            'title': 'اثر تستی',
+            'product_code': 'ART-DEFAULT',
+            'artist': 'هنرمند تستی',
+            'art_type': 'نقاشی',
+            'suitable_price': '1500000',
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'status': ProductStatusChoices.DRAFT,
+        }
+        payload.update(overrides)
+        product = Product.objects.create(**payload)
+        return product
 
 
 class ProductCreatePermissionTests(ProductCreateBaseTestCase):
@@ -287,3 +301,84 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
         self.assertContains(response, 'خطا در اعتبارسنجی تصویر دوم.')
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductImage.objects.count(), 0)
+
+
+class ProductListViewTests(ProductCreateBaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.view_product_permission = Permission.objects.get(codename='view_product')
+        cls.authorized_user = cls.create_user('product_list_user', cls.viewer_group)
+        cls.authorized_user.user_permissions.add(cls.view_product_permission)
+
+    def get_list(self, *, user=None, page=None):
+        if user is not None:
+            self.client.force_login(user)
+
+        url = reverse('products:list')
+        if page:
+            url = f'{url}?page={page}'
+
+        return self.client.get(url)
+
+    def test_anonymous_cannot_access_product_list(self):
+        response = self.get_list()
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={reverse('products:list')}",
+        )
+
+    def test_authorized_user_can_view_product_list(self):
+        response = self.get_list(user=self.authorized_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'لیست محصولات')
+
+    def test_products_are_displayed(self):
+        product = self.create_product(title='اثر نمایشی', product_code='ART-DISPLAY')
+
+        response = self.get_list(user=self.authorized_user)
+
+        self.assertContains(response, product.title)
+        self.assertContains(response, product.product_code)
+
+    def test_pagination_shows_twenty_products_per_page(self):
+        for index in range(21):
+            self.create_product(
+                title=f'اثر {index}',
+                product_code=f'ART-{index}',
+            )
+
+        first_page_response = self.get_list(user=self.authorized_user)
+        second_page_response = self.get_list(user=self.authorized_user, page=2)
+
+        self.assertEqual(len(first_page_response.context['products']), 20)
+        self.assertTrue(first_page_response.context['is_paginated'])
+        self.assertContains(first_page_response, 'صفحه 1 از 2')
+        self.assertEqual(len(second_page_response.context['products']), 1)
+
+    def test_primary_image_is_displayed(self):
+        product = self.create_product()
+        primary_image = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('primary.jpg'),
+            is_primary=True,
+            sort_order=0,
+        )
+        ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('secondary.jpg'),
+            is_primary=False,
+            sort_order=1,
+        )
+
+        response = self.get_list(user=self.authorized_user)
+
+        self.assertContains(response, primary_image.image.url)
+        self.assertEqual(response.context['products'][0].primary_images[0].pk, primary_image.pk)
+
+    def test_empty_state_is_displayed_when_no_product_exists(self):
+        response = self.get_list(user=self.authorized_user)
+
+        self.assertContains(response, 'هنوز محصولی ثبت نشده است.')

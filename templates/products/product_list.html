@@ -12,8 +12,73 @@
         <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
     </div>
 
+    <form method="get" class="filter-panel">
+        {% if search_query %}
+            <input type="hidden" name="q" value="{{ search_query }}">
+        {% endif %}
+
+        <div class="form-grid form-grid-3">
+            <div class="form-field filter-field">
+                <label for="id_status">وضعیت</label>
+                <select id="id_status" name="status">
+                    <option value="">همه</option>
+                    {% for option in status_options %}
+                        <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field filter-field">
+                <label for="id_source">منبع</label>
+                <select id="id_source" name="source">
+                    <option value="">همه</option>
+                    {% for option in source_options %}
+                        <option value="{{ option.value }}" {% if selected_source == option.value %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field filter-field">
+                <label for="id_art_type">نوع هنر</label>
+                <select
+                    id="id_art_type"
+                    name="art_type"
+                    {% if not has_art_type_options %}disabled{% endif %}
+                >
+                    <option value="">همه</option>
+                    {% for art_type in art_type_options %}
+                        <option value="{{ art_type }}" {% if selected_art_type == art_type %}selected{% endif %}>
+                            {{ art_type }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if not has_art_type_options %}
+                    <small class="muted-text">در حال حاضر نوع هنر قابل فیلتر وجود ندارد.</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <button type="submit" class="button button-primary">اعمال فیلتر</button>
+            <a class="button button-secondary" href="{{ clear_filters_url }}">حذف فیلترها</a>
+        </div>
+    </form>
+
     <form method="get" class="inline-form" role="search">
         <label class="sr-only" for="id_q">جستجوی محصولات</label>
+        {% if selected_status %}
+            <input type="hidden" name="status" value="{{ selected_status }}">
+        {% endif %}
+        {% if selected_source %}
+            <input type="hidden" name="source" value="{{ selected_source }}">
+        {% endif %}
+        {% if selected_art_type %}
+            <input type="hidden" name="art_type" value="{{ selected_art_type }}">
+        {% endif %}
         <input
             id="id_q"
             type="search"
@@ -75,7 +140,7 @@
         {% if is_paginated %}
             <nav class="pagination" aria-label="صفحه‌بندی محصولات">
                 {% if page_obj.has_previous %}
-                    <a class="button button-secondary" href="?{% if search_query %}q={{ search_query|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">صفحه قبل</a>
+                    <a class="button button-secondary" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">صفحه قبل</a>
                 {% endif %}
 
                 <span class="pagination-status">
@@ -83,14 +148,18 @@
                 </span>
 
                 {% if page_obj.has_next %}
-                    <a class="button button-secondary" href="?{% if search_query %}q={{ search_query|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">صفحه بعد</a>
+                    <a class="button button-secondary" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}">صفحه بعد</a>
                 {% endif %}
             </nav>
         {% endif %}
     {% else %}
-        {% if search_query %}
+        {% if search_query and not has_active_filters %}
             <section class="empty-state" aria-live="polite">
                 <h2>محصولی مطابق جستجوی شما پیدا نشد.</h2>
+            </section>
+        {% elif search_query or has_active_filters %}
+            <section class="empty-state" aria-live="polite">
+                <h2>محصولی مطابق فیلترها یا جستجوی شما پیدا نشد.</h2>
             </section>
         {% else %}
             <section class="empty-state" aria-live="polite">

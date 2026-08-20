@@ -312,7 +312,7 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         cls.authorized_user = cls.create_user('product_list_user', cls.viewer_group)
         cls.authorized_user.user_permissions.add(cls.view_product_permission)
 
-    def get_list(self, *, user=None, page=None, q=None):
+    def get_list(self, *, user=None, page=None, q=None, status=None, source=None, art_type=None):
         if user is not None:
             self.client.force_login(user)
 
@@ -320,6 +320,12 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         query_params = {}
         if q is not None:
             query_params['q'] = q
+        if status is not None:
+            query_params['status'] = status
+        if source is not None:
+            query_params['source'] = source
+        if art_type is not None:
+            query_params['art_type'] = art_type
         if page:
             query_params['page'] = page
         if query_params:
@@ -493,3 +499,325 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             response,
             f"{reverse('accounts:login')}?next={expected_next}",
         )
+
+    def test_filter_by_draft_status(self):
+        matching_product = self.create_product(
+            title='اثر پیش‌نویس',
+            product_code='ART-STATUS-DRAFT',
+            status=ProductStatusChoices.DRAFT,
+        )
+        self.create_product(
+            title='اثر منتشرشده',
+            product_code='ART-STATUS-PUBLISHED',
+            status=ProductStatusChoices.PUBLISHED,
+        )
+
+        response = self.get_list(user=self.authorized_user, status=ProductStatusChoices.DRAFT)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_pending_review_status(self):
+        matching_product = self.create_product(
+            title='اثر در انتظار بررسی',
+            product_code='ART-STATUS-PENDING',
+            status=ProductStatusChoices.PENDING_REVIEW,
+        )
+        self.create_product(
+            title='اثر ردشده',
+            product_code='ART-STATUS-REJECTED',
+            status=ProductStatusChoices.REJECTED,
+        )
+
+        response = self.get_list(user=self.authorized_user, status=ProductStatusChoices.PENDING_REVIEW)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_approved_status(self):
+        matching_product = self.create_product(
+            title='اثر تاییدشده',
+            product_code='ART-STATUS-APPROVED',
+            status=ProductStatusChoices.APPROVED,
+        )
+        self.create_product(
+            title='اثر پیش‌نویس دوم',
+            product_code='ART-STATUS-DRAFT-2',
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        response = self.get_list(user=self.authorized_user, status=ProductStatusChoices.APPROVED)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_published_status(self):
+        matching_product = self.create_product(
+            title='اثر منتشرشده',
+            product_code='ART-STATUS-PUBLISHED-2',
+            status=ProductStatusChoices.PUBLISHED,
+        )
+        self.create_product(
+            title='اثر تاییدشده دوم',
+            product_code='ART-STATUS-APPROVED-2',
+            status=ProductStatusChoices.APPROVED,
+        )
+
+        response = self.get_list(user=self.authorized_user, status=ProductStatusChoices.PUBLISHED)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_rejected_status(self):
+        matching_product = self.create_product(
+            title='اثر ردشده',
+            product_code='ART-STATUS-REJECTED-2',
+            status=ProductStatusChoices.REJECTED,
+        )
+        self.create_product(
+            title='اثر منتشرنشده',
+            product_code='ART-STATUS-DRAFT-3',
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        response = self.get_list(user=self.authorized_user, status=ProductStatusChoices.REJECTED)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_manual_source(self):
+        matching_product = self.create_product(
+            title='اثر دستی',
+            product_code='ART-SOURCE-MANUAL',
+            source_type=ProductSourceTypeChoices.MANUAL,
+        )
+        self.create_product(
+            title='اثر کریستیز',
+            product_code='ART-SOURCE-CHRISTIES',
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+        )
+
+        response = self.get_list(user=self.authorized_user, source=ProductSourceTypeChoices.MANUAL)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_christies_source(self):
+        matching_product = self.create_product(
+            title='اثر کریستیز',
+            product_code='ART-SOURCE-CHRISTIES-2',
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+        )
+        self.create_product(
+            title='اثر ساتبیز',
+            product_code='ART-SOURCE-SOTHEBYS',
+            source_type=ProductSourceTypeChoices.SOTHEBYS,
+        )
+
+        response = self.get_list(user=self.authorized_user, source=ProductSourceTypeChoices.CHRISTIES)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_sothebys_source(self):
+        matching_product = self.create_product(
+            title='اثر ساتبیز',
+            product_code='ART-SOURCE-SOTHEBYS-2',
+            source_type=ProductSourceTypeChoices.SOTHEBYS,
+        )
+        self.create_product(
+            title='اثر سایر حراجی‌ها',
+            product_code='ART-SOURCE-OTHER',
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+        )
+
+        response = self.get_list(user=self.authorized_user, source=ProductSourceTypeChoices.SOTHEBYS)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_other_auction_source(self):
+        matching_product = self.create_product(
+            title='اثر سایر حراجی‌ها',
+            product_code='ART-SOURCE-OTHER-2',
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+        )
+        self.create_product(
+            title='اثر دستی دوم',
+            product_code='ART-SOURCE-MANUAL-2',
+            source_type=ProductSourceTypeChoices.MANUAL,
+        )
+
+        response = self.get_list(user=self.authorized_user, source=ProductSourceTypeChoices.OTHER_AUCTION)
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_filter_by_art_type(self):
+        matching_product = self.create_product(
+            title='اثر نقاشی',
+            product_code='ART-TYPE-PAINTING',
+            art_type='painting',
+        )
+        self.create_product(
+            title='اثر مجسمه',
+            product_code='ART-TYPE-SCULPTURE',
+            art_type='sculpture',
+        )
+
+        response = self.get_list(user=self.authorized_user, art_type='painting')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, '<option value="painting" selected>', html=False)
+
+    def test_invalid_art_type_returns_no_results(self):
+        self.create_product(
+            title='اثر موجود',
+            product_code='ART-TYPE-EXISTING',
+            art_type='painting',
+        )
+
+        response = self.get_list(user=self.authorized_user, art_type='invalid-art-type')
+
+        self.assertEqual(len(response.context['products']), 0)
+        self.assertContains(response, 'محصولی مطابق فیلترها یا جستجوی شما پیدا نشد.')
+
+    def test_search_and_status_filter_work_together(self):
+        matching_product = self.create_product(
+            title='محمد و طبیعت',
+            product_code='ART-COMBO-SEARCH-STATUS-1',
+            status=ProductStatusChoices.DRAFT,
+        )
+        self.create_product(
+            title='محمد و معماری',
+            product_code='ART-COMBO-SEARCH-STATUS-2',
+            status=ProductStatusChoices.PUBLISHED,
+        )
+        self.create_product(
+            title='اثر دیگر',
+            product_code='ART-COMBO-SEARCH-STATUS-3',
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_search_and_source_filter_work_together(self):
+        matching_product = self.create_product(
+            title='محمد و دریا',
+            product_code='ART-COMBO-SEARCH-SOURCE-1',
+            source_type=ProductSourceTypeChoices.MANUAL,
+        )
+        self.create_product(
+            title='محمد و کوه',
+            product_code='ART-COMBO-SEARCH-SOURCE-2',
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            source=ProductSourceTypeChoices.MANUAL,
+        )
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_status_and_source_filters_work_together(self):
+        matching_product = self.create_product(
+            title='اثر ترکیبی',
+            product_code='ART-COMBO-STATUS-SOURCE-1',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+        )
+        self.create_product(
+            title='اثر با منبع متفاوت',
+            product_code='ART-COMBO-STATUS-SOURCE-2',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+        )
+        self.create_product(
+            title='اثر با وضعیت متفاوت',
+            product_code='ART-COMBO-STATUS-SOURCE-3',
+            status=ProductStatusChoices.PUBLISHED,
+            source_type=ProductSourceTypeChoices.MANUAL,
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            status=ProductStatusChoices.DRAFT,
+            source=ProductSourceTypeChoices.MANUAL,
+        )
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_search_status_source_and_art_type_work_together(self):
+        matching_product = self.create_product(
+            title='محمد در باغ',
+            product_code='ART-COMBO-ALL-1',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+        self.create_product(
+            title='محمد در باغ',
+            product_code='ART-COMBO-ALL-2',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='sculpture',
+        )
+        self.create_product(
+            title='محمد در باغ',
+            product_code='ART-COMBO-ALL-3',
+            status=ProductStatusChoices.PUBLISHED,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            status=ProductStatusChoices.DRAFT,
+            source=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+
+    def test_pagination_preserves_all_active_query_parameters(self):
+        for index in range(21):
+            self.create_product(
+                title=f'محمد مشترک {index}',
+                product_code=f'ART-PAGINATION-FILTER-{index}',
+                status=ProductStatusChoices.DRAFT,
+                source_type=ProductSourceTypeChoices.MANUAL,
+                art_type='painting',
+            )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            status=ProductStatusChoices.DRAFT,
+            source=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+
+        self.assertContains(
+            response,
+            '?q=%D9%85%D8%AD%D9%85%D8%AF&amp;status=DRAFT&amp;source=MANUAL&amp;art_type=painting&amp;page=2',
+            html=False,
+        )
+
+    def test_clear_filters_preserves_search_query(self):
+        self.create_product(
+            title='محمد و هنر',
+            product_code='ART-CLEAR-FILTER-1',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            status=ProductStatusChoices.DRAFT,
+            source=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+        )
+
+        self.assertContains(response, 'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF">حذف فیلترها</a>', html=False)

@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from datetime import date, timedelta
 from io import BytesIO
 from urllib.parse import quote, urlencode
 from unittest.mock import patch
@@ -12,6 +13,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
+from django.utils import timezone
 
 from accounts.constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
 from accounts.services import ensure_default_roles
@@ -312,7 +314,19 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         cls.authorized_user = cls.create_user('product_list_user', cls.viewer_group)
         cls.authorized_user.user_permissions.add(cls.view_product_permission)
 
-    def get_list(self, *, user=None, page=None, q=None, status=None, source=None, art_type=None):
+    def get_list(
+        self,
+        *,
+        user=None,
+        page=None,
+        q=None,
+        status=None,
+        source=None,
+        art_type=None,
+        date_from=None,
+        date_to=None,
+        sort=None,
+    ):
         if user is not None:
             self.client.force_login(user)
 
@@ -326,12 +340,23 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             query_params['source'] = source
         if art_type is not None:
             query_params['art_type'] = art_type
+        if date_from is not None:
+            query_params['date_from'] = date_from
+        if date_to is not None:
+            query_params['date_to'] = date_to
+        if sort is not None:
+            query_params['sort'] = sort
         if page:
             query_params['page'] = page
         if query_params:
             url = f'{url}?{urlencode(query_params)}'
 
         return self.client.get(url)
+
+    def set_created_at(self, product, created_at):
+        Product.objects.filter(pk=product.pk).update(created_at=created_at)
+        product.refresh_from_db()
+        return product
 
     def test_anonymous_cannot_access_product_list(self):
         response = self.get_list()
@@ -673,6 +698,202 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         self.assertEqual(len(response.context['products']), 0)
         self.assertContains(response, 'محصولی مطابق فیلترها یا جستجوی شما پیدا نشد.')
 
+    def test_filter_by_date_from(self):
+        self.create_product(
+            title='اثر قدیمی',
+            product_code='ART-DATE-FROM-OLD',
+            suggestion_date=date(2026, 1, 1),
+        )
+        matching_product = self.create_product(
+            title='اثر جدید',
+            product_code='ART-DATE-FROM-NEW',
+            suggestion_date=date(2026, 3, 1),
+        )
+
+        response = self.get_list(user=self.authorized_user, date_from='2026-02-01')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, 'value="2026-02-01"', html=False)
+
+    def test_filter_by_date_to(self):
+        matching_product = self.create_product(
+            title='اثر قدیمی',
+            product_code='ART-DATE-TO-OLD',
+            suggestion_date=date(2026, 2, 1),
+        )
+        self.create_product(
+            title='اثر جدید',
+            product_code='ART-DATE-TO-NEW',
+            suggestion_date=date(2026, 5, 1),
+        )
+
+        response = self.get_list(user=self.authorized_user, date_to='2026-03-01')
+
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertContains(response, 'value="2026-03-01"', html=False)
+
+    def test_filter_by_date_range(self):
+        self.create_product(
+            title='اثر خارج از بازه اول',
+            product_code='ART-DATE-RANGE-1',
+            suggestion_date=date(2026, 1, 1),
+        )
+        first_matching_product = self.create_product(
+            title='اثر داخل بازه اول',
+            product_code='ART-DATE-RANGE-2',
+            suggestion_date=date(2026, 3, 15),
+        )
+        second_matching_product = self.create_product(
+            title='اثر داخل بازه دوم',
+            product_code='ART-DATE-RANGE-3',
+            suggestion_date=date(2026, 4, 10),
+        )
+        self.create_product(
+            title='اثر خارج از بازه دوم',
+            product_code='ART-DATE-RANGE-4',
+            suggestion_date=date(2026, 6, 1),
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            date_from='2026-03-01',
+            date_to='2026-04-30',
+        )
+
+        self.assertEqual(
+            list(response.context['products']),
+            [second_matching_product, first_matching_product],
+        )
+
+    def test_invalid_date_does_not_crash_and_shows_validation_error(self):
+        matching_product = self.create_product(
+            title='اثر موجود',
+            product_code='ART-DATE-INVALID',
+            suggestion_date=date(2026, 4, 1),
+        )
+
+        response = self.get_list(user=self.authorized_user, date_from='invalid-date')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['products']), [matching_product])
+        self.assertEqual(response.context['filter_form'].errors['date_from'][0], 'تاریخ شروع معتبر نیست.')
+        self.assertContains(response, 'تاریخ شروع معتبر نیست.')
+
+    def test_empty_dates_do_not_apply_filter(self):
+        first_product = self.create_product(title='اثر اول', product_code='ART-DATE-EMPTY-1')
+        second_product = self.create_product(title='اثر دوم', product_code='ART-DATE-EMPTY-2')
+
+        response = self.get_list(
+            user=self.authorized_user,
+            date_from='',
+            date_to='',
+        )
+
+        self.assertContains(response, first_product.title)
+        self.assertContains(response, second_product.title)
+        self.assertEqual(response.context['filter_form'].cleaned_data['date_from'], None)
+        self.assertEqual(response.context['filter_form'].cleaned_data['date_to'], None)
+
+    def test_default_sort_is_newest_first(self):
+        older_product = self.create_product(title='اثر قدیمی', product_code='ART-SORT-DEFAULT-1')
+        newer_product = self.create_product(title='اثر جدید', product_code='ART-SORT-DEFAULT-2')
+        now = timezone.now()
+        self.set_created_at(older_product, now - timedelta(days=2))
+        self.set_created_at(newer_product, now - timedelta(days=1))
+
+        response = self.get_list(user=self.authorized_user)
+
+        self.assertEqual(list(response.context['products']), [newer_product, older_product])
+
+    def test_sort_by_oldest(self):
+        older_product = self.create_product(title='اثر قدیمی', product_code='ART-SORT-OLDEST-1')
+        newer_product = self.create_product(title='اثر جدید', product_code='ART-SORT-OLDEST-2')
+        now = timezone.now()
+        self.set_created_at(older_product, now - timedelta(days=2))
+        self.set_created_at(newer_product, now - timedelta(days=1))
+
+        response = self.get_list(user=self.authorized_user, sort='created_at')
+
+        self.assertEqual(list(response.context['products']), [older_product, newer_product])
+
+    def test_sort_by_title_ascending(self):
+        first_product = self.create_product(title='Alpha', product_code='ART-SORT-TITLE-1')
+        second_product = self.create_product(title='Beta', product_code='ART-SORT-TITLE-2')
+        third_product = self.create_product(title='Gamma', product_code='ART-SORT-TITLE-3')
+
+        response = self.get_list(user=self.authorized_user, sort='title')
+
+        self.assertEqual(list(response.context['products']), [first_product, second_product, third_product])
+
+    def test_sort_by_title_descending(self):
+        first_product = self.create_product(title='Alpha', product_code='ART-SORT-TITLE-DESC-1')
+        second_product = self.create_product(title='Beta', product_code='ART-SORT-TITLE-DESC-2')
+        third_product = self.create_product(title='Gamma', product_code='ART-SORT-TITLE-DESC-3')
+
+        response = self.get_list(user=self.authorized_user, sort='-title')
+
+        self.assertEqual(list(response.context['products']), [third_product, second_product, first_product])
+
+    def test_sort_by_suitable_price_ascending_puts_nulls_last(self):
+        low_price_product = self.create_product(
+            title='اثر ارزان',
+            product_code='ART-SORT-PRICE-ASC-1',
+            suitable_price='100',
+        )
+        high_price_product = self.create_product(
+            title='اثر گران',
+            product_code='ART-SORT-PRICE-ASC-2',
+            suitable_price='300',
+        )
+        null_price_product = self.create_product(
+            title='اثر بدون قیمت',
+            product_code='ART-SORT-PRICE-ASC-3',
+            suitable_price=None,
+        )
+
+        response = self.get_list(user=self.authorized_user, sort='suitable_price')
+
+        self.assertEqual(
+            list(response.context['products']),
+            [low_price_product, high_price_product, null_price_product],
+        )
+
+    def test_sort_by_suitable_price_descending_puts_nulls_last(self):
+        low_price_product = self.create_product(
+            title='اثر ارزان',
+            product_code='ART-SORT-PRICE-DESC-1',
+            suitable_price='100',
+        )
+        high_price_product = self.create_product(
+            title='اثر گران',
+            product_code='ART-SORT-PRICE-DESC-2',
+            suitable_price='300',
+        )
+        null_price_product = self.create_product(
+            title='اثر بدون قیمت',
+            product_code='ART-SORT-PRICE-DESC-3',
+            suitable_price=None,
+        )
+
+        response = self.get_list(user=self.authorized_user, sort='-suitable_price')
+
+        self.assertEqual(
+            list(response.context['products']),
+            [high_price_product, low_price_product, null_price_product],
+        )
+
+    def test_invalid_sort_uses_default_sort(self):
+        older_product = self.create_product(title='اثر قدیمی', product_code='ART-SORT-INVALID-1')
+        newer_product = self.create_product(title='اثر جدید', product_code='ART-SORT-INVALID-2')
+        now = timezone.now()
+        self.set_created_at(older_product, now - timedelta(days=2))
+        self.set_created_at(newer_product, now - timedelta(days=1))
+
+        response = self.get_list(user=self.authorized_user, sort='invalid-sort')
+
+        self.assertEqual(list(response.context['products']), [newer_product, older_product])
+        self.assertContains(response, '<option value="-created_at" selected>', html=False)
+
     def test_search_and_status_filter_work_together(self):
         matching_product = self.create_product(
             title='محمد و طبیعت',
@@ -779,6 +1000,56 @@ class ProductListViewTests(ProductCreateBaseTestCase):
 
         self.assertEqual(list(response.context['products']), [matching_product])
 
+    def test_search_filter_date_and_sort_work_together(self):
+        first_matching_product = self.create_product(
+            title='محمد Alpha',
+            product_code='ART-COMBO-DATE-SORT-1',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+            suggestion_date=date(2026, 3, 10),
+        )
+        second_matching_product = self.create_product(
+            title='محمد Beta',
+            product_code='ART-COMBO-DATE-SORT-2',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+            suggestion_date=date(2026, 3, 20),
+        )
+        self.create_product(
+            title='محمد خارج از بازه',
+            product_code='ART-COMBO-DATE-SORT-3',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+            suggestion_date=date(2026, 5, 1),
+        )
+        self.create_product(
+            title='محمد با نوع هنر دیگر',
+            product_code='ART-COMBO-DATE-SORT-4',
+            status=ProductStatusChoices.DRAFT,
+            source_type=ProductSourceTypeChoices.MANUAL,
+            art_type='sculpture',
+            suggestion_date=date(2026, 3, 15),
+        )
+
+        response = self.get_list(
+            user=self.authorized_user,
+            q='محمد',
+            status=ProductStatusChoices.DRAFT,
+            source=ProductSourceTypeChoices.MANUAL,
+            art_type='painting',
+            date_from='2026-03-01',
+            date_to='2026-03-31',
+            sort='title',
+        )
+
+        self.assertEqual(
+            list(response.context['products']),
+            [first_matching_product, second_matching_product],
+        )
+
     def test_pagination_preserves_all_active_query_parameters(self):
         for index in range(21):
             self.create_product(
@@ -787,6 +1058,7 @@ class ProductListViewTests(ProductCreateBaseTestCase):
                 status=ProductStatusChoices.DRAFT,
                 source_type=ProductSourceTypeChoices.MANUAL,
                 art_type='painting',
+                suggestion_date=date(2026, 4, 1),
             )
 
         response = self.get_list(
@@ -795,11 +1067,14 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             status=ProductStatusChoices.DRAFT,
             source=ProductSourceTypeChoices.MANUAL,
             art_type='painting',
+            date_from='2026-01-01',
+            date_to='2026-08-22',
+            sort='-created_at',
         )
 
         self.assertContains(
             response,
-            '?q=%D9%85%D8%AD%D9%85%D8%AF&amp;status=DRAFT&amp;source=MANUAL&amp;art_type=painting&amp;page=2',
+            '?q=%D9%85%D8%AD%D9%85%D8%AF&amp;status=DRAFT&amp;source=MANUAL&amp;art_type=painting&amp;date_from=2026-01-01&amp;date_to=2026-08-22&amp;sort=-created_at&amp;page=2',
             html=False,
         )
 
@@ -818,6 +1093,9 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             status=ProductStatusChoices.DRAFT,
             source=ProductSourceTypeChoices.MANUAL,
             art_type='painting',
+            date_from='2026-01-01',
+            date_to='2026-08-22',
+            sort='title',
         )
 
         self.assertContains(response, 'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF">حذف فیلترها</a>', html=False)

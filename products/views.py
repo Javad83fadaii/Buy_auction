@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Prefetch, Q
+from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Trim
 from django.urls import reverse_lazy
 from django.views.generic import FormView, ListView
@@ -11,7 +11,12 @@ from django.views.generic import FormView, ListView
 from accounts.permissions import RolePermissionMixin
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
-from .forms import ProductCreateForm
+from .forms import (
+    PRODUCT_LIST_DEFAULT_SORT,
+    PRODUCT_LIST_SORT_CHOICES,
+    ProductCreateForm,
+    ProductListFilterForm,
+)
 from .models import Product, ProductImage
 from .services import create_manual_product
 
@@ -80,6 +85,15 @@ class ProductListView(RolePermissionMixin, ListView):
         ProductSourceTypeChoices.SOTHEBYS: 'ساتبیز',
         ProductSourceTypeChoices.OTHER_AUCTION: 'سایر حراجی‌ها',
     }
+    default_sort = PRODUCT_LIST_DEFAULT_SORT
+    allowed_sorts = {
+        '-created_at': ('-created_at', '-pk'),
+        'created_at': ('created_at', 'pk'),
+        'title': ('title', 'pk'),
+        '-title': ('-title', '-pk'),
+        'suitable_price': (F('suitable_price').asc(nulls_last=True), 'pk'),
+        '-suitable_price': (F('suitable_price').desc(nulls_last=True), '-pk'),
+    }
 
     def get_queryset(self):
         primary_image_queryset = ProductImage.objects.filter(is_primary=True).only(
@@ -117,7 +131,20 @@ class ProductListView(RolePermissionMixin, ListView):
             queryset = queryset.annotate(normalized_art_type=Trim('art_type')).filter(
                 normalized_art_type=art_type_filter
             )
+        date_from_filter = self.get_date_from_filter()
+        if date_from_filter:
+            queryset = queryset.filter(suggestion_date__gte=date_from_filter)
+        date_to_filter = self.get_date_to_filter()
+        if date_to_filter:
+            queryset = queryset.filter(suggestion_date__lte=date_to_filter)
+        queryset = queryset.order_by(*self.allowed_sorts[self.get_selected_sort()])
         return queryset
+
+    def get_filter_form(self):
+        if not hasattr(self, '_filter_form'):
+            self._filter_form = ProductListFilterForm(self.request.GET)
+            self._filter_form.is_valid()
+        return self._filter_form
 
     def get_search_query(self):
         return self.request.GET.get('q', '').strip()
@@ -136,6 +163,15 @@ class ProductListView(RolePermissionMixin, ListView):
 
     def get_art_type_filter(self):
         return self.request.GET.get('art_type', '').strip()
+
+    def get_date_from_filter(self):
+        return self.get_filter_form().cleaned_data.get('date_from')
+
+    def get_date_to_filter(self):
+        return self.get_filter_form().cleaned_data.get('date_to')
+
+    def get_selected_sort(self):
+        return self.get_filter_form().cleaned_data.get('sort', self.default_sort)
 
     def get_status_options(self):
         return [
@@ -159,6 +195,12 @@ class ProductListView(RolePermissionMixin, ListView):
         )
         return list(art_type_queryset)
 
+    def get_sort_options(self):
+        return [
+            {'value': value, 'label': label}
+            for value, label in PRODUCT_LIST_SORT_CHOICES
+        ]
+
     def get_pagination_query(self):
         query_data = self.request.GET.copy()
         query_data.pop('page', None)
@@ -176,16 +218,29 @@ class ProductListView(RolePermissionMixin, ListView):
         selected_status = self.get_status_filter()
         selected_source = self.get_source_filter()
         selected_art_type = self.get_art_type_filter()
+        filter_form = self.get_filter_form()
+        selected_sort = self.get_selected_sort()
         context['page_title'] = 'لیست محصولات'
         context['search_query'] = search_query
         context['selected_status'] = selected_status
         context['selected_source'] = selected_source
         context['selected_art_type'] = selected_art_type
+        context['filter_form'] = filter_form
+        context['selected_sort'] = selected_sort
+        context['default_sort'] = self.default_sort
         context['status_options'] = self.get_status_options()
         context['source_options'] = self.get_source_options()
         context['art_type_options'] = self.get_art_type_options()
+        context['sort_options'] = self.get_sort_options()
         context['has_art_type_options'] = bool(context['art_type_options'])
         context['pagination_query'] = self.get_pagination_query()
         context['clear_filters_url'] = self.get_clear_filters_url()
-        context['has_active_filters'] = bool(selected_status or selected_source or selected_art_type)
+        context['has_active_filters'] = bool(
+            selected_status
+            or selected_source
+            or selected_art_type
+            or filter_form['date_from'].value()
+            or filter_form['date_to'].value()
+            or selected_sort != self.default_sort
+        )
         return context

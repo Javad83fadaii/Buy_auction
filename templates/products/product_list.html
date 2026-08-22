@@ -60,6 +60,45 @@
                     <small class="muted-text">در حال حاضر نوع هنر قابل فیلتر وجود ندارد.</small>
                 {% endif %}
             </div>
+
+            <div class="form-field filter-field">
+                <label for="id_date_from">از تاریخ</label>
+                <input
+                    id="id_date_from"
+                    type="date"
+                    name="date_from"
+                    class="text-input"
+                    value="{{ filter_form.date_from.value|default_if_none:'' }}"
+                >
+                {% if filter_form.date_from.errors %}
+                    <small class="field-error">{{ filter_form.date_from.errors|join:", " }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-field filter-field">
+                <label for="id_date_to">تا تاریخ</label>
+                <input
+                    id="id_date_to"
+                    type="date"
+                    name="date_to"
+                    class="text-input"
+                    value="{{ filter_form.date_to.value|default_if_none:'' }}"
+                >
+                {% if filter_form.date_to.errors %}
+                    <small class="field-error">{{ filter_form.date_to.errors|join:", " }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-field filter-field">
+                <label for="id_sort">مرتب‌سازی</label>
+                <select id="id_sort" name="sort">
+                    {% for option in sort_options %}
+                        <option value="{{ option.value }}" {% if selected_sort == option.value %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
 
         <div class="actions-row">
@@ -78,6 +117,15 @@
         {% endif %}
         {% if selected_art_type %}
             <input type="hidden" name="art_type" value="{{ selected_art_type }}">
+        {% endif %}
+        {% if filter_form.date_from.value %}
+            <input type="hidden" name="date_from" value="{{ filter_form.date_from.value }}">
+        {% endif %}
+        {% if filter_form.date_to.value %}
+            <input type="hidden" name="date_to" value="{{ filter_form.date_to.value }}">
+        {% endif %}
+        {% if selected_sort != default_sort %}
+            <input type="hidden" name="sort" value="{{ selected_sort }}">
         {% endif %}
         <input
             id="id_q"

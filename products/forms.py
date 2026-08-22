@@ -6,6 +6,16 @@ from .choices import ProductSourceTypeChoices, ProductStatusChoices
 from .models import Product
 from .validators import validate_product_image
 
+PRODUCT_LIST_DEFAULT_SORT = '-created_at'
+PRODUCT_LIST_SORT_CHOICES = (
+    ('-created_at', 'جدیدترین'),
+    ('created_at', 'قدیمی‌ترین'),
+    ('title', 'عنوان A-Z'),
+    ('-title', 'عنوان Z-A'),
+    ('suitable_price', 'قیمت مناسب کم به زیاد'),
+    ('-suitable_price', 'قیمت مناسب زیاد به کم'),
+)
+
 
 class MultipleImageInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -149,3 +159,30 @@ class ProductCreateForm(forms.ModelForm):
             self.instance.validate_constraints()
         except forms.ValidationError as exc:
             self._update_errors(exc)
+
+
+class ProductListFilterForm(forms.Form):
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        error_messages={'invalid': 'تاریخ شروع معتبر نیست.'},
+    )
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        error_messages={'invalid': 'تاریخ پایان معتبر نیست.'},
+    )
+    sort = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            existing_class = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{existing_class} text-input'.strip()
+
+    def clean_sort(self):
+        sort = (self.cleaned_data.get('sort') or '').strip()
+        allowed_sorts = {value for value, _ in PRODUCT_LIST_SORT_CHOICES}
+        if not sort or sort not in allowed_sorts:
+            return PRODUCT_LIST_DEFAULT_SORT
+        return sort

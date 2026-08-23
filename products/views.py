@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Trim
-from django.urls import reverse_lazy
-from django.views.generic import FormView, ListView
+from django.urls import reverse, reverse_lazy
+from django.views.generic import DetailView, FormView, ListView
 
 from accounts.permissions import RolePermissionMixin
 
@@ -21,6 +21,28 @@ from .models import Product, ProductImage
 from .services import create_manual_product
 
 logger = logging.getLogger(__name__)
+
+
+class ProductDisplayLabelsMixin:
+    status_filter_labels = {
+        ProductStatusChoices.DRAFT: 'پیش‌نویس',
+        ProductStatusChoices.PENDING_REVIEW: 'در انتظار بررسی',
+        ProductStatusChoices.APPROVED: 'تأیید شده',
+        ProductStatusChoices.PUBLISHED: 'منتشر شده',
+        ProductStatusChoices.REJECTED: 'رد شده',
+    }
+    source_filter_labels = {
+        ProductSourceTypeChoices.MANUAL: 'ثبت دستی',
+        ProductSourceTypeChoices.CHRISTIES: "Christie's",
+        ProductSourceTypeChoices.SOTHEBYS: "Sotheby's",
+        ProductSourceTypeChoices.OTHER_AUCTION: 'سایر مزایده‌ها',
+    }
+
+    def get_status_label(self, product: Product) -> str:
+        return self.status_filter_labels.get(product.status, product.get_status_display())
+
+    def get_source_label(self, product: Product) -> str:
+        return self.source_filter_labels.get(product.source_type, product.get_source_type_display())
 
 
 class ProductCreateView(RolePermissionMixin, FormView):
@@ -66,25 +88,12 @@ class ProductCreateView(RolePermissionMixin, FormView):
             form.add_error(None, error)
 
 
-class ProductListView(RolePermissionMixin, ListView):
+class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
     template_name = 'products/product_list.html'
     permission_required = 'products.view_product'
     model = Product
     context_object_name = 'products'
     paginate_by = 20
-    status_filter_labels = {
-        ProductStatusChoices.DRAFT: 'پیش‌نویس',
-        ProductStatusChoices.PENDING_REVIEW: 'در انتظار بررسی',
-        ProductStatusChoices.APPROVED: 'تأیید شده',
-        ProductStatusChoices.PUBLISHED: 'منتشر شده',
-        ProductStatusChoices.REJECTED: 'رد شده',
-    }
-    source_filter_labels = {
-        ProductSourceTypeChoices.MANUAL: 'پیشنهاد دستی',
-        ProductSourceTypeChoices.CHRISTIES: 'کریستیز',
-        ProductSourceTypeChoices.SOTHEBYS: 'ساتبیز',
-        ProductSourceTypeChoices.OTHER_AUCTION: 'سایر حراجی‌ها',
-    }
     default_sort = PRODUCT_LIST_DEFAULT_SORT
     allowed_sorts = {
         '-created_at': ('-created_at', '-pk'),
@@ -243,4 +252,46 @@ class ProductListView(RolePermissionMixin, ListView):
             or filter_form['date_to'].value()
             or selected_sort != self.default_sort
         )
+        return context
+
+
+class ProductDetailView(ProductDisplayLabelsMixin, RolePermissionMixin, DetailView):
+    template_name = 'products/product_detail.html'
+    permission_required = 'products.view_product'
+    model = Product
+    context_object_name = 'product'
+    pk_url_kwarg = 'id'
+
+    def get_queryset(self):
+        image_queryset = ProductImage.objects.only(
+            'id',
+            'product_id',
+            'image',
+            'is_primary',
+            'sort_order',
+        ).order_by('-is_primary', 'sort_order', 'id')
+        return Product.objects.select_related('created_by', 'updated_by').prefetch_related(
+            Prefetch('images', queryset=image_queryset)
+        )
+
+    def get_back_url(self) -> str:
+        next_url = self.request.GET.get('next', '').strip()
+        if next_url.startswith('/products/'):
+            return next_url
+        return reverse('products:list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = context['product']
+        gallery_images = list(product.images.all())
+        primary_image = next((image for image in gallery_images if image.is_primary), None)
+        if primary_image is None and gallery_images:
+            primary_image = gallery_images[0]
+
+        context['page_title'] = product.title
+        context['primary_image'] = primary_image
+        context['gallery_images'] = gallery_images
+        context['status_label'] = self.get_status_label(product)
+        context['source_label'] = self.get_source_label(product)
+        context['back_url'] = self.get_back_url()
         return context

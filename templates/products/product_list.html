@@ -177,7 +177,12 @@
                             <td>{{ product.get_source_type_display }}</td>
                             <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
                             <td>
-                                <span class="button button-secondary button-disabled" aria-disabled="true">مشاهده</span>
+                                <a
+                                    class="button button-secondary"
+                                    href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
+                                >
+                                    مشاهده
+                                </a>
                             </td>
                         </tr>
                     {% endfor %}

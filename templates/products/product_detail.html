@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}جزئیات محصول{% endblock %}
+
+{% block content %}
+<section class="card product-detail-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>{{ product.title }}</h1>
+            <p class="muted-text">جزئیات کامل اثر ثبت‌شده در سیستم.</p>
+        </div>
+        <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
+    </div>
+
+    <div class="product-detail-hero">
+        <section class="product-gallery" aria-label="گالری تصاویر محصول">
+            <div class="product-gallery-main">
+                {% if primary_image %}
+                    <img
+                        id="product-main-image"
+                        class="product-detail-main-image"
+                        src="{{ primary_image.image.url }}"
+                        alt="تصویر {{ product.title }}"
+                    >
+                {% else %}
+                    <div class="product-detail-placeholder">
+                        <span>بدون تصویر</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if gallery_images %}
+                <div class="product-gallery-thumbnails">
+                    {% for image in gallery_images %}
+                        <button
+                            type="button"
+                            class="product-gallery-thumb{% if primary_image and image.pk == primary_image.pk %} is-active{% endif %}"
+                            data-gallery-trigger
+                            data-image-url="{{ image.image.url }}"
+                            data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
+                            aria-label="نمایش تصویر {{ forloop.counter }}"
+                        >
+                            <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
+                        </button>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="product-summary-panel" aria-label="خلاصه وضعیت محصول">
+            <div class="detail-info-list">
+                <div class="detail-info-item">
+                    <span class="detail-info-label">وضعیت</span>
+                    <span class="status-badge status-badge-{{ product.status|lower }}">{{ status_label }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">منبع</span>
+                    <span class="detail-info-value">{{ source_label }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">کد اثر</span>
+                    <span class="detail-info-value">{{ product.product_code|default:"—" }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت مناسب</span>
+                    <span class="detail-info-value">{{ product.suitable_price|default:"—" }}</span>
+                </div>
+            </div>
+
+            <div class="flag-list" aria-label="پرچم‌های محصول">
+                {% if product.is_cancelled %}
+                    <span class="flag-badge flag-badge-warning">انصراف داده شده</span>
+                {% endif %}
+                {% if product.is_notable %}
+                    <span class="flag-badge flag-badge-success">قابل توجه</span>
+                {% endif %}
+                {% if product.needs_expert_review %}
+                    <span class="flag-badge flag-badge-info">نیازمند کارشناسی</span>
+                {% endif %}
+                {% if not product.is_cancelled and not product.is_notable and not product.needs_expert_review %}
+                    <span class="detail-info-value">—</span>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="detail-sections">
+        <section class="detail-section">
+            <h2>اطلاعات اثر</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">عنوان</span><span class="detail-info-value">{{ product.title|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">کد اثر</span><span class="detail-info-value">{{ product.product_code|default:"—" }}</span></div>
+                <div class="detail-info-item detail-info-item-wide"><span class="detail-info-label">توضیحات</span><span class="detail-info-value detail-description">{{ product.description|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">تاریخ تولید</span><span class="detail-info-value">{{ product.production_date|date:"Y/m/d"|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">مکان تولید</span><span class="detail-info-value">{{ product.production_location|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">موضوع</span><span class="detail-info-value">{{ product.subject|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">کاربرد</span><span class="detail-info-value">{{ product.usage|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">نوع هنر</span><span class="detail-info-value">{{ product.art_type|default:"—" }}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h2>اطلاعات پیشنهاد</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">نام پیشنهاددهنده</span><span class="detail-info-value">{{ product.suggested_by|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">روش پیشنهاد</span><span class="detail-info-value">{{ product.get_contact_method_display|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">تاریخ پیشنهاد</span><span class="detail-info-value">{{ product.suggestion_date|date:"Y/m/d"|default:"—" }}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h2>قیمت</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">قیمت پیشنهادی</span><span class="detail-info-value">{{ product.suggested_price|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">قیمت مناسب</span><span class="detail-info-value">{{ product.suitable_price|default:"—" }}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h2>وضعیت</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">وضعیت Product</span><span class="detail-info-value"><span class="status-badge status-badge-{{ product.status|lower }}">{{ status_label }}</span></span></div>
+                <div class="detail-info-item"><span class="detail-info-label">انصراف</span><span class="detail-info-value">{% if product.is_cancelled %}انصراف داده شده{% else %}—{% endif %}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">قابل توجه</span><span class="detail-info-value">{% if product.is_notable %}قابل توجه{% else %}—{% endif %}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">نیازمند کارشناسی</span><span class="detail-info-value">{% if product.needs_expert_review %}نیازمند کارشناسی{% else %}—{% endif %}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h2>منبع</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">نوع منبع</span><span class="detail-info-value">{{ source_label }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">نام منبع</span><span class="detail-info-value">{{ product.source_name|default:"—" }}</span></div>
+                {% if product.source_url %}
+                    <div class="detail-info-item detail-info-item-wide">
+                        <span class="detail-info-label">آدرس منبع</span>
+                        <span class="detail-info-value">
+                            <a class="detail-link" href="{{ product.source_url }}" target="_blank" rel="noopener noreferrer">{{ product.source_url }}</a>
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h2>اطلاعات ثبت</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">ایجادکننده</span><span class="detail-info-value">{{ product.created_by|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">تاریخ ایجاد</span><span class="detail-info-value">{{ product.created_at|date:"Y/m/d H:i" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">آخرین ویرایش‌کننده</span><span class="detail-info-value">{{ product.updated_by|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">تاریخ آخرین ویرایش</span><span class="detail-info-value">{{ product.updated_at|date:"Y/m/d H:i" }}</span></div>
+            </div>
+        </section>
+    </div>
+
+    <div class="actions-row">
+        <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
+    </div>
+</section>
+
+{% if gallery_images %}
+    <script>
+        (function () {
+            const mainImage = document.getElementById('product-main-image');
+            const triggers = document.querySelectorAll('[data-gallery-trigger]');
+
+            if (!mainImage || !triggers.length) {
+                return;
+            }
+
+            triggers.forEach(function (trigger) {
+                trigger.addEventListener('click', function () {
+                    mainImage.src = trigger.dataset.imageUrl;
+                    mainImage.alt = trigger.dataset.imageAlt;
+
+                    triggers.forEach(function (item) {
+                        item.classList.remove('is-active');
+                    });
+                    trigger.classList.add('is-active');
+                });
+            });
+        }());
+    </script>
+{% endif %}
+{% endblock %}

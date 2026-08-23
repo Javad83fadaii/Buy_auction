@@ -1099,3 +1099,242 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         )
 
         self.assertContains(response, 'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF">حذف فیلترها</a>', html=False)
+
+
+class ProductDetailViewTests(ProductCreateBaseTestCase):
+    def get_detail(self, product, *, user=None, next_url=None):
+        if user is not None:
+            self.client.force_login(user)
+
+        url = reverse('products:detail', args=[product.pk])
+        if next_url:
+            url = f'{url}?{urlencode({"next": next_url})}'
+        return self.client.get(url)
+
+    def create_detail_product(self, **overrides):
+        payload = {
+            'title': 'تابلوی قاجاری',
+            'product_code': 'ART-DETAIL-1',
+            'description': 'توضیح کامل اثر برای نمایش در صفحه جزئیات',
+            'artist': 'هنرمند نامدار',
+            'production_date': date(2024, 5, 20),
+            'production_location': 'تهران',
+            'material': 'رنگ روغن روی بوم',
+            'subject': 'منظره',
+            'usage': 'تزئینی',
+            'art_type': 'نقاشی',
+            'suggested_by': 'سارا احمدی',
+            'contact_method': ContactMethodChoices.WHATSAPP,
+            'suggestion_date': date(2026, 8, 20),
+            'suggested_price': '3500000',
+            'suitable_price': '3200000',
+            'status': ProductStatusChoices.PENDING_REVIEW,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'source_name': 'ثبت داخلی',
+            'source_url': 'https://example.com/products/detail-1',
+            'is_cancelled': True,
+            'is_notable': True,
+            'needs_expert_review': True,
+            'created_by': self.operator_user,
+            'updated_by': self.admin_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def test_anonymous_cannot_access(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={reverse('products:detail', args=[product.pk])}",
+        )
+
+    def test_viewer_can_access(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, product.title)
+
+    def test_operator_can_access(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, product.title)
+
+    def test_admin_can_access(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.admin_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, product.title)
+
+    def test_product_detail_works(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['product'].pk, product.pk)
+
+    def test_invalid_product_id_returns_404(self):
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.get(reverse('products:detail', args=[999999]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_product_information_displayed(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertContains(response, 'تابلوی قاجاری')
+        self.assertContains(response, 'ART-DETAIL-1')
+        self.assertContains(response, 'توضیح کامل اثر برای نمایش در صفحه جزئیات')
+        self.assertContains(response, 'هنرمند نامدار')
+        self.assertContains(response, 'تهران')
+        self.assertContains(response, 'رنگ روغن روی بوم')
+        self.assertContains(response, 'منظره')
+        self.assertContains(response, 'تزئینی')
+        self.assertContains(response, 'نقاشی')
+        self.assertContains(response, 'سارا احمدی')
+        self.assertContains(response, 'واتساپ')
+        self.assertContains(response, '3500000')
+        self.assertContains(response, '3200000')
+        self.assertContains(response, str(self.operator_user))
+        self.assertContains(response, str(self.admin_user))
+
+    def test_primary_image_displayed(self):
+        product = self.create_detail_product()
+        primary_image = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('primary-detail.jpg'),
+            is_primary=True,
+            sort_order=5,
+        )
+        ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('secondary-detail.jpg'),
+            is_primary=False,
+            sort_order=1,
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertEqual(response.context['primary_image'].pk, primary_image.pk)
+        self.assertContains(response, 'id="product-main-image"', html=False)
+        self.assertContains(response, primary_image.image.url)
+
+    def test_multiple_images_displayed(self):
+        product = self.create_detail_product()
+        first_image = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('detail-one.jpg'),
+            is_primary=True,
+            sort_order=0,
+        )
+        second_image = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('detail-two.jpg'),
+            is_primary=False,
+            sort_order=1,
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertContains(response, first_image.image.url)
+        self.assertContains(response, second_image.image.url)
+        self.assertEqual(len(response.context['gallery_images']), 2)
+
+    def test_images_ordered_by_sort_order(self):
+        product = self.create_detail_product()
+        primary_image = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('detail-primary.jpg'),
+            is_primary=True,
+            sort_order=10,
+        )
+        first_secondary = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('detail-secondary-1.jpg'),
+            is_primary=False,
+            sort_order=1,
+        )
+        second_secondary = ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('detail-secondary-2.jpg'),
+            is_primary=False,
+            sort_order=2,
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertEqual(
+            [image.pk for image in response.context['gallery_images']],
+            [primary_image.pk, first_secondary.pk, second_secondary.pk],
+        )
+
+    def test_product_without_image_works(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertIsNone(response.context['primary_image'])
+        self.assertContains(response, 'بدون تصویر')
+
+    def test_status_displayed(self):
+        product = self.create_detail_product(status=ProductStatusChoices.REJECTED)
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertContains(response, 'رد شده')
+        self.assertContains(response, 'status-badge-rejected')
+
+    def test_flags_displayed(self):
+        product = self.create_detail_product(
+            is_cancelled=True,
+            is_notable=True,
+            needs_expert_review=True,
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertContains(response, 'انصراف داده شده')
+        self.assertContains(response, 'قابل توجه')
+        self.assertContains(response, 'نیازمند کارشناسی')
+
+    def test_source_displayed(self):
+        product = self.create_detail_product(
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+            source_name='حراج تهران',
+            source_url='https://example.com/auction/product-1',
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertContains(response, 'سایر مزایده‌ها')
+        self.assertContains(response, 'حراج تهران')
+        self.assertContains(response, 'https://example.com/auction/product-1')
+
+    def test_back_button_preserves_products_query_when_next_is_provided(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(
+            product,
+            user=self.viewer_user,
+            next_url='/products/?q=%D9%85%D8%AD%D9%85%D8%AF&status=DRAFT',
+        )
+
+        self.assertContains(
+            response,
+            'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF&amp;status=DRAFT"',
+            count=2,
+            html=False,
+        )

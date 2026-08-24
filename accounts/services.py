@@ -26,7 +26,7 @@ ROLE_PERMISSION_BLUEPRINTS = {
         ),
         PermissionBlueprint(
             app_label='products',
-            codenames=('add_product', 'view_product'),
+            codenames=('add_product', 'change_product', 'view_product'),
         ),
     ),
     VIEWER_ROLE: (

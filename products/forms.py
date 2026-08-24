@@ -39,40 +39,32 @@ class MultipleImageField(forms.FileField):
         return cleaned_files
 
 
-class ProductCreateForm(forms.ModelForm):
-    images = MultipleImageField(
-        label='تصاویر اثر',
-        required=True,
-        widget=MultipleImageInput(
-            attrs={
-                'accept': '.jpg,.jpeg,.png,.webp',
-            }
-        ),
-        help_text='می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.',
-    )
+PRODUCT_EDIT_FIELDS = (
+    'suggested_by',
+    'contact_method',
+    'suggestion_date',
+    'title',
+    'product_code',
+    'description',
+    'artist',
+    'production_date',
+    'production_location',
+    'material',
+    'subject',
+    'usage',
+    'art_type',
+    'suggested_price',
+    'suitable_price',
+    'is_cancelled',
+    'is_notable',
+    'needs_expert_review',
+)
 
+
+class ProductBaseForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = (
-            'suggested_by',
-            'contact_method',
-            'suggestion_date',
-            'title',
-            'product_code',
-            'description',
-            'artist',
-            'production_date',
-            'production_location',
-            'material',
-            'subject',
-            'usage',
-            'art_type',
-            'suggested_price',
-            'suitable_price',
-            'is_cancelled',
-            'is_notable',
-            'needs_expert_review',
-        )
+        fields = ()
         widgets = {
             'suggested_by': forms.TextInput(attrs={'placeholder': 'نام پیشنهاددهنده'}),
             'contact_method': forms.Select(),
@@ -91,12 +83,17 @@ class ProductCreateForm(forms.ModelForm):
             'suitable_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
         }
 
+    ordered_fields: tuple[str, ...] = ()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.order_fields(self.Meta.fields + ('images',))
+        if self.ordered_fields:
+            self.order_fields(self.ordered_fields)
 
         if not self.is_bound:
-            self.fields['suggestion_date'].initial = timezone.localdate()
+            for field_name, initial_value in self.get_initial_values().items():
+                if field_name in self.fields:
+                    self.fields[field_name].initial = initial_value
 
         for name, field in self.fields.items():
             widget = field.widget
@@ -112,6 +109,9 @@ class ProductCreateForm(forms.ModelForm):
         self.fields['suggested_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
         self.fields['suitable_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
 
+    def get_initial_values(self):
+        return {}
+
     def clean_suggested_price(self):
         return self._clean_non_negative_price('suggested_price')
 
@@ -125,11 +125,14 @@ class ProductCreateForm(forms.ModelForm):
         return value
 
     def _post_clean(self):
-        self.instance.source_type = ProductSourceTypeChoices.MANUAL
-        self.instance.status = ProductStatusChoices.DRAFT
         super()._post_clean()
         self._validate_manual_constraints()
         self._move_product_code_duplicate_error()
+
+    def get_product_code_duplicate_error(self) -> str:
+        if self.instance.source_type == ProductSourceTypeChoices.MANUAL:
+            return 'این کد اثر قبلاً برای پیشنهاد دستی ثبت شده است.'
+        return 'این کد اثر قبلاً برای این منبع ثبت شده است.'
 
     def _move_product_code_duplicate_error(self):
         product_code = self.cleaned_data.get('product_code')
@@ -149,7 +152,7 @@ class ProductCreateForm(forms.ModelForm):
         else:
             del self._errors[NON_FIELD_ERRORS]
 
-        self.add_error('product_code', 'این کد اثر قبلاً برای پیشنهاد دستی ثبت شده است.')
+        self.add_error('product_code', self.get_product_code_duplicate_error())
 
     def _validate_manual_constraints(self):
         if self.errors:
@@ -159,6 +162,39 @@ class ProductCreateForm(forms.ModelForm):
             self.instance.validate_constraints()
         except forms.ValidationError as exc:
             self._update_errors(exc)
+
+
+class ProductCreateForm(ProductBaseForm):
+    images = MultipleImageField(
+        label='تصاویر اثر',
+        required=True,
+        widget=MultipleImageInput(
+            attrs={
+                'accept': '.jpg,.jpeg,.png,.webp',
+            }
+        ),
+        help_text='می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.',
+    )
+
+    class Meta(ProductBaseForm.Meta):
+        fields = PRODUCT_EDIT_FIELDS
+
+    ordered_fields = Meta.fields + ('images',)
+
+    def get_initial_values(self):
+        return {'suggestion_date': timezone.localdate()}
+
+    def _post_clean(self):
+        self.instance.source_type = ProductSourceTypeChoices.MANUAL
+        self.instance.status = ProductStatusChoices.DRAFT
+        super()._post_clean()
+
+
+class ProductEditForm(ProductBaseForm):
+    class Meta(ProductBaseForm.Meta):
+        fields = PRODUCT_EDIT_FIELDS
+
+    ordered_fields = Meta.fields
 
 
 class ProductListFilterForm(forms.Form):

@@ -1338,3 +1338,226 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             count=2,
             html=False,
         )
+
+
+class ProductEditViewTests(ProductCreateBaseTestCase):
+    def get_edit(self, product_id, *, user=None):
+        if user is not None:
+            self.client.force_login(user)
+
+        return self.client.get(reverse('products:edit', args=[product_id]))
+
+    def post_edit(self, product_id, *, user=None, data=None, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(
+            reverse('products:edit', args=[product_id]),
+            data=data or self.get_edit_payload(),
+            follow=follow,
+        )
+
+    def create_edit_product(self, **overrides):
+        payload = {
+            'title': 'اثر قابل ویرایش',
+            'product_code': 'ART-EDIT-1',
+            'description': 'توضیحات اولیه محصول',
+            'artist': 'هنرمند اولیه',
+            'production_date': date(2024, 2, 10),
+            'production_location': 'اصفهان',
+            'material': 'اکرلیک',
+            'subject': 'پرتره',
+            'usage': 'نمایشی',
+            'art_type': 'نقاشی',
+            'suggested_by': 'مهدی وکیلی',
+            'contact_method': ContactMethodChoices.TELEGRAM,
+            'suggestion_date': date(2026, 8, 20),
+            'suggested_price': '1200000',
+            'suitable_price': '1000000',
+            'status': ProductStatusChoices.PENDING_REVIEW,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'source_name': 'منبع داخلی',
+            'source_url': 'https://example.com/source/edit-product',
+            'is_cancelled': False,
+            'is_notable': True,
+            'needs_expert_review': False,
+            'created_by': self.admin_user,
+            'updated_by': self.admin_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def get_edit_payload(self, **overrides):
+        payload = {
+            'suggested_by': 'سمیه فرهادی',
+            'contact_method': ContactMethodChoices.WHATSAPP,
+            'suggestion_date': '2026-08-21',
+            'title': 'اثر ویرایش‌شده',
+            'product_code': 'ART-EDIT-UPDATED-1',
+            'description': 'توضیحات به‌روزشده',
+            'artist': 'هنرمند جدید',
+            'production_date': '2024-06-01',
+            'production_location': 'شیراز',
+            'material': 'رنگ روغن',
+            'subject': 'طبیعت',
+            'usage': 'دکوراتیو',
+            'art_type': 'تابلو',
+            'suggested_price': '2500000',
+            'suitable_price': '2300000',
+            'is_cancelled': 'on',
+            'is_notable': '',
+            'needs_expert_review': 'on',
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_anonymous_cannot_edit(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={reverse('products:edit', args=[product.pk])}",
+        )
+
+    def test_viewer_cannot_edit(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.viewer_user)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_can_edit(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ویرایش محصول')
+
+    def test_admin_can_edit(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.admin_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ویرایش محصول')
+
+    def test_edit_page_loads(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/product_edit.html')
+        self.assertContains(response, 'ذخیره تغییرات')
+        self.assertContains(response, 'انصراف')
+
+    def test_existing_values_displayed(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.operator_user)
+
+        self.assertContains(response, 'value="اثر قابل ویرایش"', html=False)
+        self.assertContains(response, 'value="ART-EDIT-1"', html=False)
+        self.assertContains(response, 'توضیحات اولیه محصول')
+        self.assertContains(response, 'value="مهدی وکیلی"', html=False)
+
+    def test_valid_update_works(self):
+        product = self.create_edit_product()
+
+        response = self.post_edit(product.pk, data=self.get_edit_payload(), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, reverse('products:detail', args=[product.pk]))
+        self.assertEqual(product.title, 'اثر ویرایش‌شده')
+        self.assertEqual(product.product_code, 'ART-EDIT-UPDATED-1')
+        self.assertEqual(product.description, 'توضیحات به‌روزشده')
+        self.assertEqual(product.artist, 'هنرمند جدید')
+        self.assertTrue(product.is_cancelled)
+        self.assertFalse(product.is_notable)
+        self.assertTrue(product.needs_expert_review)
+
+    def test_updated_by_updated_correctly(self):
+        product = self.create_edit_product(updated_by=self.admin_user)
+
+        self.post_edit(product.pk, user=self.operator_user, data=self.get_edit_payload())
+
+        product.refresh_from_db()
+        self.assertEqual(product.updated_by, self.operator_user)
+
+    def test_created_by_remains_unchanged(self):
+        product = self.create_edit_product(created_by=self.admin_user)
+
+        self.post_edit(product.pk, user=self.operator_user, data=self.get_edit_payload())
+
+        product.refresh_from_db()
+        self.assertEqual(product.created_by, self.admin_user)
+
+    def test_status_cannot_be_changed_through_form(self):
+        product = self.create_edit_product(status=ProductStatusChoices.PENDING_REVIEW)
+
+        self.post_edit(
+            product.pk,
+            data=self.get_edit_payload(status=ProductStatusChoices.PUBLISHED),
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_source_type_cannot_be_changed_through_form(self):
+        product = self.create_edit_product(source_type=ProductSourceTypeChoices.MANUAL)
+
+        self.post_edit(
+            product.pk,
+            data=self.get_edit_payload(source_type=ProductSourceTypeChoices.CHRISTIES),
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(product.source_type, ProductSourceTypeChoices.MANUAL)
+
+    def test_invalid_price_rejected(self):
+        product = self.create_edit_product()
+
+        response = self.post_edit(
+            product.pk,
+            data=self.get_edit_payload(suggested_price='-10'),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'قیمت نمی‌تواند منفی باشد.')
+        product.refresh_from_db()
+        self.assertEqual(str(product.suggested_price), '1200000.00')
+
+    def test_invalid_product_code_rejected(self):
+        self.create_edit_product(product_code='ART-DUPLICATE')
+        product = self.create_edit_product(product_code='ART-EDIT-UNIQUE')
+
+        response = self.post_edit(
+            product.pk,
+            data=self.get_edit_payload(product_code='  ART-DUPLICATE  '),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'این کد اثر قبلاً برای پیشنهاد دستی ثبت شده است.')
+        product.refresh_from_db()
+        self.assertEqual(product.product_code, 'ART-EDIT-UNIQUE')
+
+    def test_invalid_product_id_returns_404(self):
+        response = self.get_edit(999999, user=self.operator_user)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_successful_edit_redirects_to_detail(self):
+        product = self.create_edit_product()
+
+        response = self.post_edit(product.pk, data=self.get_edit_payload())
+
+        self.assertRedirects(response, reverse('products:detail', args=[product.pk]), fetch_redirect_response=False)
+
+    def test_success_message_displayed(self):
+        product = self.create_edit_product()
+
+        response = self.post_edit(product.pk, data=self.get_edit_payload(), follow=True)
+
+        self.assertRedirects(response, reverse('products:detail', args=[product.pk]))
+        self.assertContains(response, 'محصول با موفقیت ویرایش شد.')

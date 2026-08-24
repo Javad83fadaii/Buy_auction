@@ -6,7 +6,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Trim
 from django.urls import reverse, reverse_lazy
-from django.views.generic import DetailView, FormView, ListView
+from django.views.generic import DetailView, FormView, ListView, UpdateView
 
 from accounts.permissions import RolePermissionMixin
 
@@ -15,6 +15,7 @@ from .forms import (
     PRODUCT_LIST_DEFAULT_SORT,
     PRODUCT_LIST_SORT_CHOICES,
     ProductCreateForm,
+    ProductEditForm,
     ProductListFilterForm,
 )
 from .models import Product, ProductImage
@@ -294,4 +295,30 @@ class ProductDetailView(ProductDisplayLabelsMixin, RolePermissionMixin, DetailVi
         context['status_label'] = self.get_status_label(product)
         context['source_label'] = self.get_source_label(product)
         context['back_url'] = self.get_back_url()
+        return context
+
+
+class ProductEditView(RolePermissionMixin, UpdateView):
+    template_name = 'products/product_edit.html'
+    form_class = ProductEditForm
+    permission_required = 'products.change_product'
+    model = Product
+    context_object_name = 'product'
+    pk_url_kwarg = 'id'
+
+    def get_queryset(self):
+        return Product.objects.select_related('created_by', 'updated_by')
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        messages.success(self.request, 'محصول با موفقیت ویرایش شد.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.object.pk])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'ویرایش محصول'
+        context['cancel_url'] = reverse('products:detail', args=[self.object.pk])
         return context

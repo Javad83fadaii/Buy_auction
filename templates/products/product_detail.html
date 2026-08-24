@@ -156,6 +156,9 @@
     </div>
 
     <div class="actions-row">
+        {% if perms.products.change_product %}
+            <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
+        {% endif %}
         <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
     </div>
 </section>

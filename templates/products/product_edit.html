@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}ویرایش محصول{% endblock %}
+
+{% block content %}
+<section class="card product-create-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="muted-text">اطلاعات فعلی محصول را ویرایش کنید. تصاویر، منبع و وضعیت در این فرم قابل تغییر نیستند.</p>
+        </div>
+        <a class="button button-secondary" href="{{ cancel_url }}">بازگشت به جزئیات</a>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="form-section">
+            <h2>اطلاعات پیشنهاد</h2>
+            <div class="form-grid form-grid-3">
+                <div class="form-field">
+                    <label for="{{ form.suggested_by.id_for_label }}">{{ form.suggested_by.label }}</label>
+                    {{ form.suggested_by }}
+                    {% if form.suggested_by.errors %}
+                        <small class="field-error">{{ form.suggested_by.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.contact_method.id_for_label }}">{{ form.contact_method.label }}</label>
+                    {{ form.contact_method }}
+                    {% if form.contact_method.errors %}
+                        <small class="field-error">{{ form.contact_method.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.suggestion_date.id_for_label }}">{{ form.suggestion_date.label }}</label>
+                    {{ form.suggestion_date }}
+                    {% if form.suggestion_date.errors %}
+                        <small class="field-error">{{ form.suggestion_date.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>اطلاعات اثر</h2>
+            <div class="form-grid form-grid-2">
+                <div class="form-field">
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <small class="field-error">{{ form.title.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.product_code.id_for_label }}">{{ form.product_code.label }}</label>
+                    {{ form.product_code }}
+                    {% if form.product_code.help_text %}
+                        <small class="muted-text">{{ form.product_code.help_text }}</small>
+                    {% endif %}
+                    {% if form.product_code.errors %}
+                        <small class="field-error">{{ form.product_code.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <small class="field-error">{{ form.description.errors|join:", " }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-grid form-grid-3">
+                <div class="form-field">
+                    <label for="{{ form.artist.id_for_label }}">{{ form.artist.label }}</label>
+                    {{ form.artist }}
+                    {% if form.artist.errors %}
+                        <small class="field-error">{{ form.artist.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.production_date.id_for_label }}">{{ form.production_date.label }}</label>
+                    {{ form.production_date }}
+                    {% if form.production_date.errors %}
+                        <small class="field-error">{{ form.production_date.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.production_location.id_for_label }}">{{ form.production_location.label }}</label>
+                    {{ form.production_location }}
+                    {% if form.production_location.errors %}
+                        <small class="field-error">{{ form.production_location.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>مشخصات اثر</h2>
+            <div class="form-grid form-grid-2">
+                <div class="form-field">
+                    <label for="{{ form.material.id_for_label }}">{{ form.material.label }}</label>
+                    {{ form.material }}
+                    {% if form.material.errors %}
+                        <small class="field-error">{{ form.material.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                        <small class="field-error">{{ form.subject.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.usage.id_for_label }}">{{ form.usage.label }}</label>
+                    {{ form.usage }}
+                    {% if form.usage.errors %}
+                        <small class="field-error">{{ form.usage.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.art_type.id_for_label }}">{{ form.art_type.label }}</label>
+                    {{ form.art_type }}
+                    {% if form.art_type.errors %}
+                        <small class="field-error">{{ form.art_type.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>قیمت</h2>
+            <div class="form-grid form-grid-2">
+                <div class="form-field">
+                    <label for="{{ form.suggested_price.id_for_label }}">{{ form.suggested_price.label }}</label>
+                    {{ form.suggested_price }}
+                    {% if form.suggested_price.errors %}
+                        <small class="field-error">{{ form.suggested_price.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.suitable_price.id_for_label }}">{{ form.suitable_price.label }}</label>
+                    {{ form.suitable_price }}
+                    {% if form.suitable_price.errors %}
+                        <small class="field-error">{{ form.suitable_price.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>وضعیت</h2>
+            <div class="checkbox-group">
+                <label class="checkbox-card" for="{{ form.is_cancelled.id_for_label }}">
+                    {{ form.is_cancelled }}
+                    <span>{{ form.is_cancelled.label }}</span>
+                </label>
+                <label class="checkbox-card" for="{{ form.is_notable.id_for_label }}">
+                    {{ form.is_notable }}
+                    <span>{{ form.is_notable.label }}</span>
+                </label>
+                <label class="checkbox-card" for="{{ form.needs_expert_review.id_for_label }}">
+                    {{ form.needs_expert_review }}
+                    <span>{{ form.needs_expert_review.label }}</span>
+                </label>
+            </div>
+        </section>
+
+        <div class="actions-row">
+            <button type="submit" class="button button-primary">ذخیره تغییرات</button>
+            <a class="button button-secondary" href="{{ cancel_url }}">انصراف</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

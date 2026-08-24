@@ -173,6 +173,14 @@ a {
     gap: 16px;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .info-panel {
     border: 1px solid #e5e7eb;
     border-radius: 14px;

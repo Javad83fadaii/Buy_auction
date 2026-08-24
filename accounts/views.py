@@ -38,6 +38,7 @@ class DashboardView(RolePermissionMixin, TemplateView):
         context['can_view_viewer_dashboard'] = self.request.user.has_perm(
             'accounts.view_viewer_dashboard'
         )
+        context['can_manage_products'] = self.request.user.has_perm('products.add_product')
         return context
 
 

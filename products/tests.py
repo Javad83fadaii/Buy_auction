@@ -372,6 +372,39 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'لیست محصولات')
 
+    def test_admin_sees_add_product_button(self):
+        response = self.get_list(user=self.admin_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'افزودن محصول')
+        self.assertContains(
+            response,
+            f'href="{reverse("products:create")}"',
+            html=False,
+        )
+
+    def test_operator_sees_add_product_button(self):
+        response = self.get_list(user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'افزودن محصول')
+        self.assertContains(
+            response,
+            f'href="{reverse("products:create")}"',
+            html=False,
+        )
+
+    def test_viewer_does_not_see_add_product_button(self):
+        response = self.get_list(user=self.viewer_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'افزودن محصول')
+        self.assertNotContains(
+            response,
+            f'href="{reverse("products:create")}"',
+            html=False,
+        )
+
     def test_products_are_displayed(self):
         product = self.create_product(title='اثر نمایشی', product_code='ART-DISPLAY')
 

@@ -118,3 +118,42 @@ class AccountsTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.viewer_user.username)
+
+    def test_admin_dashboard_shows_product_management_button(self):
+        self.client.force_login(self.staff_admin_user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مدیریت محصولات')
+        self.assertContains(
+            response,
+            f'href="{reverse("products:list")}"',
+            html=False,
+        )
+
+    def test_operator_dashboard_shows_product_management_button(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مدیریت محصولات')
+        self.assertContains(
+            response,
+            f'href="{reverse("products:list")}"',
+            html=False,
+        )
+
+    def test_viewer_dashboard_hides_product_management_button(self):
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'مدیریت محصولات')
+        self.assertNotContains(
+            response,
+            f'href="{reverse("products:list")}"',
+            html=False,
+        )

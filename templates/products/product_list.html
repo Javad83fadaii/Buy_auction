@@ -9,7 +9,12 @@
             <h1>{{ page_title }}</h1>
             <p class="muted-text">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p>
         </div>
-        <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+        <div class="header-actions">
+            {% if perms.products.add_product %}
+                <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
+            {% endif %}
+            <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+        </div>
     </div>
 
     <form method="get" class="filter-panel">

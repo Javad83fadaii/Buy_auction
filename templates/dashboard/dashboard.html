@@ -32,6 +32,14 @@
             {% endif %}
             <a class="button button-secondary" href="{% url 'accounts:change_password' %}">تغییر رمز عبور</a>
         </article>
+
+        {% if can_manage_products %}
+            <article class="info-panel">
+                <h2>مدیریت محصولات</h2>
+                <p>مشاهده، ثبت و مدیریت محصولات</p>
+                <a class="button button-primary" href="{% url 'products:list' %}">ورود به محصولات</a>
+            </article>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

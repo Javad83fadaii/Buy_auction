@@ -144,6 +144,102 @@
             </div>
         </section>
 
+        {% if can_manage_images %}
+            <section class="detail-section" aria-label="مدیریت تصاویر">
+                <h2>مدیریت تصاویر</h2>
+
+                <form
+                    method="post"
+                    action="{% url 'products:image_upload' product.pk %}"
+                    enctype="multipart/form-data"
+                    class="image-upload-form"
+                >
+                    {% csrf_token %}
+                    <div class="form-field">
+                        <label for="{{ image_upload_form.image.id_for_label }}">Upload Image</label>
+                        {{ image_upload_form.image }}
+                        {% if image_upload_form.image.help_text %}
+                            <small class="muted-text">{{ image_upload_form.image.help_text }}</small>
+                        {% endif %}
+                        {% for error in image_upload_form.image.errors %}
+                            <span class="field-error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% for error in image_upload_form.non_field_errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                    <button type="submit" class="button button-primary">Upload Image</button>
+                </form>
+
+                <div class="image-management-list">
+                    {% for managed_image in managed_images %}
+                        <article class="image-management-card">
+                            <div class="image-management-header">
+                                <h3>تصویر {{ forloop.counter }}</h3>
+                                {% if managed_image.image.is_primary %}
+                                    <span class="flag-badge flag-badge-info">تصویر اصلی فعلی</span>
+                                {% endif %}
+                            </div>
+
+                            <img
+                                class="image-management-preview"
+                                src="{{ managed_image.image.image.url }}"
+                                alt="پیش‌نمایش تصویر {{ forloop.counter }} {{ product.title }}"
+                            >
+
+                            <div class="image-management-actions">
+                                <form
+                                    method="post"
+                                    action="{% url 'products:image_set_primary' product.pk managed_image.image.pk %}"
+                                >
+                                    {% csrf_token %}
+                                    <button
+                                        type="submit"
+                                        class="button {% if managed_image.image.is_primary %}button-primary{% else %}button-secondary{% endif %}"
+                                    >
+                                        تصویر اصلی
+                                    </button>
+                                </form>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'products:image_sort_update' product.pk managed_image.image.pk %}"
+                                    class="image-sort-form"
+                                >
+                                    {% csrf_token %}
+                                    <label class="image-sort-label" for="{{ managed_image.sort_form.sort_order.id_for_label }}">
+                                        ترتیب:
+                                    </label>
+                                    {{ managed_image.sort_form.sort_order }}
+                                    <button type="submit" class="button button-secondary">ذخیره</button>
+                                </form>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'products:image_delete' product.pk managed_image.image.pk %}"
+                                    data-image-delete-form
+                                >
+                                    {% csrf_token %}
+                                    <button type="submit" class="button button-secondary">حذف</button>
+                                </form>
+                            </div>
+
+                            {% for error in managed_image.sort_form.sort_order.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                            {% for error in managed_image.sort_form.non_field_errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </article>
+                    {% empty %}
+                        <div class="empty-state">
+                            <p>هنوز تصویری برای این محصول ثبت نشده است.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
         <section class="detail-section">
             <h2>اطلاعات ثبت</h2>
             <div class="detail-info-list detail-info-list-2">
@@ -182,6 +278,23 @@
                         item.classList.remove('is-active');
                     });
                     trigger.classList.add('is-active');
+                });
+            });
+        }());
+    </script>
+{% endif %}
+
+{% if can_manage_images %}
+    <script>
+        (function () {
+            const deleteForms = document.querySelectorAll('[data-image-delete-form]');
+
+            deleteForms.forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    const confirmed = window.confirm('از حذف این تصویر مطمئن هستید؟');
+                    if (!confirmed) {
+                        event.preventDefault();
+                    }
                 });
             });
         }());

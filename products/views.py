@@ -5,8 +5,9 @@ from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Trim
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
-from django.views.generic import DetailView, FormView, ListView, UpdateView
+from django.views.generic import DetailView, FormView, ListView, UpdateView, View
 
 from accounts.permissions import RolePermissionMixin
 
@@ -16,10 +17,18 @@ from .forms import (
     PRODUCT_LIST_SORT_CHOICES,
     ProductCreateForm,
     ProductEditForm,
+    ProductImageSortOrderForm,
+    ProductImageUploadForm,
     ProductListFilterForm,
 )
 from .models import Product, ProductImage
-from .services import create_manual_product
+from .services import (
+    add_product_image,
+    create_manual_product,
+    delete_product_image,
+    set_product_image_primary,
+    update_product_image_sort_order,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +53,97 @@ class ProductDisplayLabelsMixin:
 
     def get_source_label(self, product: Product) -> str:
         return self.source_filter_labels.get(product.source_type, product.get_source_type_display())
+
+
+class ProductDetailContextMixin(ProductDisplayLabelsMixin):
+    template_name = 'products/product_detail.html'
+    pk_url_kwarg = 'id'
+
+    def get_product_queryset(self):
+        image_queryset = ProductImage.objects.only(
+            'id',
+            'product_id',
+            'image',
+            'is_primary',
+            'sort_order',
+        ).order_by('sort_order', 'id')
+        return Product.objects.select_related('created_by', 'updated_by').prefetch_related(
+            Prefetch('images', queryset=image_queryset)
+        )
+
+    def get_product(self):
+        if not hasattr(self, '_product'):
+            self._product = get_object_or_404(
+                self.get_product_queryset(),
+                pk=self.kwargs[self.pk_url_kwarg],
+            )
+        return self._product
+
+    def get_back_url(self) -> str:
+        next_url = self.request.GET.get('next', '').strip()
+        if next_url.startswith('/products/'):
+            return next_url
+        return reverse('products:list')
+
+    def get_primary_image(self, gallery_images: list[ProductImage]) -> ProductImage | None:
+        primary_image = next((image for image in gallery_images if image.is_primary), None)
+        if primary_image is None and gallery_images:
+            primary_image = gallery_images[0]
+        return primary_image
+
+    def get_image_upload_form(self):
+        return ProductImageUploadForm()
+
+    def build_managed_images(self, gallery_images, image_sort_forms=None):
+        bound_forms = image_sort_forms or {}
+        return [
+            {
+                'image': image,
+                'sort_form': bound_forms.get(image.pk)
+                or ProductImageSortOrderForm(prefix=f'image-{image.pk}', instance=image),
+            }
+            for image in gallery_images
+        ]
+
+    def get_detail_context(self, *, product=None, image_upload_form=None, image_sort_forms=None):
+        product = product or self.get_product()
+        gallery_images = list(product.images.all())
+        primary_image = self.get_primary_image(gallery_images)
+
+        return {
+            'page_title': product.title,
+            'product': product,
+            'primary_image': primary_image,
+            'gallery_images': gallery_images,
+            'managed_images': self.build_managed_images(gallery_images, image_sort_forms=image_sort_forms),
+            'image_upload_form': image_upload_form or self.get_image_upload_form(),
+            'can_manage_images': self.request.user.has_perm('products.change_product'),
+            'status_label': self.get_status_label(product),
+            'source_label': self.get_source_label(product),
+            'back_url': self.get_back_url(),
+        }
+
+    def render_detail_response(self, *, status=200, image_upload_form=None, image_sort_forms=None):
+        return self.render_to_response(
+            self.get_detail_context(
+                image_upload_form=image_upload_form,
+                image_sort_forms=image_sort_forms,
+            ),
+            status=status,
+        )
+
+    def apply_validation_errors(self, form, exc: ValidationError) -> None:
+        if hasattr(exc, 'message_dict'):
+            for field_name, errors in exc.message_dict.items():
+                target_field = None if field_name == NON_FIELD_ERRORS else field_name
+                if target_field and target_field not in form.fields:
+                    target_field = None
+                for error in errors:
+                    form.add_error(target_field, error)
+            return
+
+        for error in exc.messages:
+            form.add_error(None, error)
 
 
 class ProductCreateView(RolePermissionMixin, FormView):
@@ -256,45 +356,18 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         return context
 
 
-class ProductDetailView(ProductDisplayLabelsMixin, RolePermissionMixin, DetailView):
-    template_name = 'products/product_detail.html'
+class ProductDetailView(ProductDetailContextMixin, RolePermissionMixin, DetailView):
     permission_required = 'products.view_product'
     model = Product
     context_object_name = 'product'
     pk_url_kwarg = 'id'
 
     def get_queryset(self):
-        image_queryset = ProductImage.objects.only(
-            'id',
-            'product_id',
-            'image',
-            'is_primary',
-            'sort_order',
-        ).order_by('-is_primary', 'sort_order', 'id')
-        return Product.objects.select_related('created_by', 'updated_by').prefetch_related(
-            Prefetch('images', queryset=image_queryset)
-        )
-
-    def get_back_url(self) -> str:
-        next_url = self.request.GET.get('next', '').strip()
-        if next_url.startswith('/products/'):
-            return next_url
-        return reverse('products:list')
+        return self.get_product_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        product = context['product']
-        gallery_images = list(product.images.all())
-        primary_image = next((image for image in gallery_images if image.is_primary), None)
-        if primary_image is None and gallery_images:
-            primary_image = gallery_images[0]
-
-        context['page_title'] = product.title
-        context['primary_image'] = primary_image
-        context['gallery_images'] = gallery_images
-        context['status_label'] = self.get_status_label(product)
-        context['source_label'] = self.get_source_label(product)
-        context['back_url'] = self.get_back_url()
+        context.update(self.get_detail_context(product=context['product']))
         return context
 
 
@@ -322,3 +395,95 @@ class ProductEditView(RolePermissionMixin, UpdateView):
         context['page_title'] = 'ویرایش محصول'
         context['cancel_url'] = reverse('products:detail', args=[self.object.pk])
         return context
+
+
+class ProductImageManagementMixin(ProductDetailContextMixin, RolePermissionMixin):
+    permission_required = 'products.change_product'
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.get_product().pk])
+
+    def get_image(self):
+        if not hasattr(self, '_image'):
+            self._image = get_object_or_404(
+                ProductImage.objects.select_related('product'),
+                pk=self.kwargs['image_id'],
+                product=self.get_product(),
+            )
+        return self._image
+
+
+class ProductImageUploadView(ProductImageManagementMixin, FormView):
+    form_class = ProductImageUploadForm
+    http_method_names = ['post']
+
+    def form_valid(self, form):
+        try:
+            add_product_image(
+                product=self.get_product(),
+                image=form.cleaned_data['image'],
+            )
+        except ValidationError as exc:
+            self.apply_validation_errors(form, exc)
+            return self.form_invalid(form)
+
+        messages.success(self.request, 'تصویر با موفقیت بارگذاری شد.')
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        return self.render_detail_response(status=200, image_upload_form=form)
+
+
+class ProductImageSortOrderUpdateView(ProductImageManagementMixin, FormView):
+    form_class = ProductImageSortOrderForm
+    http_method_names = ['post']
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = self.get_image()
+        kwargs['prefix'] = f'image-{self.get_image().pk}'
+        return kwargs
+
+    def form_valid(self, form):
+        try:
+            update_product_image_sort_order(
+                product=self.get_product(),
+                image=self.get_image(),
+                sort_order=form.cleaned_data['sort_order'],
+            )
+        except ValidationError as exc:
+            self.apply_validation_errors(form, exc)
+            return self.form_invalid(form)
+
+        messages.success(self.request, 'ترتیب تصویر با موفقیت ذخیره شد.')
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        return self.render_detail_response(
+            status=200,
+            image_sort_forms={self.get_image().pk: form},
+        )
+
+
+class ProductImageSetPrimaryView(ProductImageManagementMixin, View):
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        set_product_image_primary(
+            product=self.get_product(),
+            image=self.get_image(),
+        )
+        messages.success(request, 'تصویر اصلی با موفقیت تغییر کرد.')
+        return redirect(self.get_success_url())
+
+
+class ProductImageDeleteView(ProductImageManagementMixin, View):
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        delete_product_image(
+            product=self.get_product(),
+            image=self.get_image(),
+        )
+        messages.success(request, 'تصویر با موفقیت حذف شد.')
+        return redirect(self.get_success_url())

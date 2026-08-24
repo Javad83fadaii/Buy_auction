@@ -3,7 +3,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
-from .models import Product
+from .models import Product, ProductImage
 from .validators import validate_product_image
 
 PRODUCT_LIST_DEFAULT_SORT = '-created_at'
@@ -15,6 +15,7 @@ PRODUCT_LIST_SORT_CHOICES = (
     ('suitable_price', 'قیمت مناسب کم به زیاد'),
     ('-suitable_price', 'قیمت مناسب زیاد به کم'),
 )
+PRODUCT_IMAGE_ACCEPT_ATTR = '.jpg,.jpeg,.png,.webp'
 
 
 class MultipleImageInput(forms.ClearableFileInput):
@@ -170,7 +171,7 @@ class ProductCreateForm(ProductBaseForm):
         required=True,
         widget=MultipleImageInput(
             attrs={
-                'accept': '.jpg,.jpeg,.png,.webp',
+                'accept': PRODUCT_IMAGE_ACCEPT_ATTR,
             }
         ),
         help_text='می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.',
@@ -195,6 +196,53 @@ class ProductEditForm(ProductBaseForm):
         fields = PRODUCT_EDIT_FIELDS
 
     ordered_fields = Meta.fields
+
+
+class ProductImageUploadForm(forms.Form):
+    image = forms.FileField(
+        label='تصویر',
+        widget=forms.ClearableFileInput(
+            attrs={
+                'accept': PRODUCT_IMAGE_ACCEPT_ATTR,
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        existing_class = self.fields['image'].widget.attrs.get('class', '')
+        self.fields['image'].widget.attrs['class'] = f'{existing_class} text-input'.strip()
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        validate_product_image(image)
+        return image
+
+
+class ProductImageSortOrderForm(forms.ModelForm):
+    class Meta:
+        model = ProductImage
+        fields = ('sort_order',)
+        widgets = {
+            'sort_order': forms.NumberInput(
+                attrs={
+                    'min': '0',
+                    'inputmode': 'numeric',
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        existing_class = self.fields['sort_order'].widget.attrs.get('class', '')
+        self.fields['sort_order'].widget.attrs['class'] = f'{existing_class} text-input'.strip()
+        self.fields['sort_order'].error_messages['min_value'] = 'ترتیب نمایش نمی‌تواند منفی باشد.'
+
+    def clean_sort_order(self):
+        sort_order = self.cleaned_data.get('sort_order')
+        if sort_order is not None and sort_order < 0:
+            raise forms.ValidationError('ترتیب نمایش نمی‌تواند منفی باشد.')
+        return sort_order
 
 
 class ProductListFilterForm(forms.Form):

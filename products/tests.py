@@ -1311,7 +1311,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
 
         self.assertEqual(
             [image.pk for image in response.context['gallery_images']],
-            [primary_image.pk, first_secondary.pk, second_secondary.pk],
+            [first_secondary.pk, second_secondary.pk, primary_image.pk],
         )
 
     def test_product_without_image_works(self):
@@ -1371,6 +1371,38 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             count=2,
             html=False,
         )
+
+    def test_viewer_does_not_see_image_management_controls(self):
+        product = self.create_detail_product()
+        ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('viewer-gallery.jpg'),
+            is_primary=True,
+            sort_order=0,
+        )
+
+        response = self.get_detail(product, user=self.viewer_user)
+
+        self.assertNotContains(response, 'مدیریت تصاویر')
+        self.assertNotContains(response, 'Upload Image')
+        self.assertNotContains(response, 'تصویر اصلی فعلی')
+        self.assertContains(response, 'product-gallery')
+
+    def test_operator_sees_image_management_controls(self):
+        product = self.create_detail_product()
+        ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image('operator-gallery.jpg'),
+            is_primary=True,
+            sort_order=0,
+        )
+
+        response = self.get_detail(product, user=self.operator_user)
+
+        self.assertContains(response, 'مدیریت تصاویر')
+        self.assertContains(response, 'Upload Image')
+        self.assertContains(response, 'تصویر اصلی')
+        self.assertContains(response, 'حذف')
 
 
 class ProductEditViewTests(ProductCreateBaseTestCase):
@@ -1594,3 +1626,262 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
 
         self.assertRedirects(response, reverse('products:detail', args=[product.pk]))
         self.assertContains(response, 'محصول با موفقیت ویرایش شد.')
+
+
+class ProductImageManagementTests(ProductCreateBaseTestCase):
+    def create_management_product(self, **overrides):
+        payload = {
+            'title': 'محصول مدیریت تصویر',
+            'product_code': 'ART-IMAGE-MANAGE-1',
+            'artist': 'هنرمند مدیریت',
+            'art_type': 'نقاشی',
+            'status': ProductStatusChoices.DRAFT,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'created_by': self.admin_user,
+            'updated_by': self.admin_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def create_product_image(self, product, *, name='managed-image.jpg', is_primary=False, sort_order=0):
+        return ProductImage.objects.create(
+            product=product,
+            image=self.create_test_image(name),
+            is_primary=is_primary,
+            sort_order=sort_order,
+        )
+
+    def upload_url(self, product):
+        return reverse('products:image_upload', args=[product.pk])
+
+    def primary_url(self, product, image):
+        return reverse('products:image_set_primary', args=[product.pk, image.pk])
+
+    def sort_url(self, product, image):
+        return reverse('products:image_sort_update', args=[product.pk, image.pk])
+
+    def delete_url(self, product, image):
+        return reverse('products:image_delete', args=[product.pk, image.pk])
+
+    def detail_url(self, product):
+        return reverse('products:detail', args=[product.pk])
+
+    def post_upload(self, product, *, user=None, image=None, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(
+            self.upload_url(product),
+            data={'image': image or self.create_test_image('upload.jpg')},
+            follow=follow,
+        )
+
+    def post_set_primary(self, product, image, *, user=None, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(self.primary_url(product, image), follow=follow)
+
+    def post_sort(self, product, image, *, user=None, sort_order=0, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(
+            self.sort_url(product, image),
+            data={f'image-{image.pk}-sort_order': sort_order},
+            follow=follow,
+        )
+
+    def post_delete(self, product, image, *, user=None, follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(self.delete_url(product, image), follow=follow)
+
+    def test_admin_can_upload(self):
+        product = self.create_management_product()
+
+        response = self.post_upload(product, user=self.admin_user)
+
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 1)
+
+    def test_operator_can_upload(self):
+        product = self.create_management_product()
+
+        response = self.post_upload(product, user=self.operator_user)
+
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 1)
+
+    def test_viewer_cannot_upload(self):
+        product = self.create_management_product()
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.post(
+            self.upload_url(product),
+            data={'image': self.create_test_image('viewer-upload.jpg')},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 0)
+
+    def test_invalid_image_rejected(self):
+        product = self.create_management_product()
+        invalid_file = SimpleUploadedFile('invalid.txt', b'not-an-image', content_type='text/plain')
+
+        response = self.post_upload(product, image=invalid_file)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'فرمت تصویر مجاز نیست.')
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 0)
+
+    def test_oversized_image_rejected(self):
+        product = self.create_management_product()
+        large_file = SimpleUploadedFile(
+            'large.jpg',
+            b'a' * (MAX_PRODUCT_IMAGE_SIZE + 1),
+            content_type='image/jpeg',
+        )
+
+        response = self.post_upload(product, image=large_file)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'حجم تصویر نباید بیشتر از 5 مگابایت باشد.')
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 0)
+
+    def test_first_image_becomes_primary(self):
+        product = self.create_management_product()
+
+        self.post_upload(product, image=self.create_test_image('first-primary.jpg'))
+
+        image = ProductImage.objects.get(product=product)
+        self.assertTrue(image.is_primary)
+
+    def test_changing_primary_works(self):
+        product = self.create_management_product()
+        first_image = self.create_product_image(product, name='primary-old.jpg', is_primary=True, sort_order=0)
+        second_image = self.create_product_image(product, name='primary-new.jpg', is_primary=False, sort_order=1)
+
+        response = self.post_set_primary(product, second_image, follow=True)
+
+        first_image.refresh_from_db()
+        second_image.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertFalse(first_image.is_primary)
+        self.assertTrue(second_image.is_primary)
+
+    def test_only_one_primary_exists(self):
+        product = self.create_management_product()
+        self.create_product_image(product, name='primary-a.jpg', is_primary=True, sort_order=0)
+        second_image = self.create_product_image(product, name='primary-b.jpg', is_primary=False, sort_order=1)
+        third_image = self.create_product_image(product, name='primary-c.jpg', is_primary=False, sort_order=2)
+
+        self.post_set_primary(product, third_image)
+
+        self.assertEqual(ProductImage.objects.filter(product=product, is_primary=True).count(), 1)
+        self.assertEqual(ProductImage.objects.get(product=product, is_primary=True).pk, third_image.pk)
+        self.assertFalse(ProductImage.objects.get(pk=second_image.pk).is_primary)
+
+    def test_admin_can_delete(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='delete-admin.jpg', is_primary=True, sort_order=0)
+
+        response = self.post_delete(product, image, user=self.admin_user)
+
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertFalse(ProductImage.objects.filter(pk=image.pk).exists())
+
+    def test_operator_can_delete(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='delete-operator.jpg', is_primary=True, sort_order=0)
+
+        response = self.post_delete(product, image, user=self.operator_user)
+
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertFalse(ProductImage.objects.filter(pk=image.pk).exists())
+
+    def test_viewer_cannot_delete(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='delete-viewer.jpg', is_primary=True, sort_order=0)
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.post(self.delete_url(product, image))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(ProductImage.objects.filter(pk=image.pk).exists())
+
+    def test_delete_primary_with_other_images(self):
+        product = self.create_management_product()
+        primary_image = self.create_product_image(product, name='delete-primary.jpg', is_primary=True, sort_order=0)
+        replacement_image = self.create_product_image(
+            product,
+            name='delete-replacement.jpg',
+            is_primary=False,
+            sort_order=1,
+        )
+
+        self.post_delete(product, primary_image)
+
+        replacement_image.refresh_from_db()
+        self.assertFalse(ProductImage.objects.filter(pk=primary_image.pk).exists())
+        self.assertTrue(replacement_image.is_primary)
+
+    def test_delete_only_image(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='delete-only.jpg', is_primary=True, sort_order=0)
+
+        self.post_delete(product, image)
+
+        self.assertEqual(ProductImage.objects.filter(product=product).count(), 0)
+
+    def test_sort_order_saved(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='sort-save.jpg', is_primary=True, sort_order=0)
+
+        response = self.post_sort(product, image, sort_order=7)
+
+        image.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertEqual(image.sort_order, 7)
+
+    def test_images_displayed_according_to_sort_order(self):
+        product = self.create_management_product()
+        third_image = self.create_product_image(product, name='sort-third.jpg', is_primary=False, sort_order=3)
+        first_image = self.create_product_image(product, name='sort-first.jpg', is_primary=True, sort_order=1)
+        second_image = self.create_product_image(product, name='sort-second.jpg', is_primary=False, sort_order=2)
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.get(self.detail_url(product))
+
+        self.assertEqual(
+            [image.pk for image in response.context['gallery_images']],
+            [first_image.pk, second_image.pk, third_image.pk],
+        )
+
+    def test_negative_sort_order_rejected(self):
+        product = self.create_management_product()
+        image = self.create_product_image(product, name='sort-negative.jpg', is_primary=True, sort_order=2)
+
+        response = self.post_sort(product, image, sort_order=-1)
+
+        image.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ترتیب نمایش نمی‌تواند منفی باشد.')
+        self.assertEqual(image.sort_order, 2)
+
+    def test_cannot_manage_image_belonging_to_another_product(self):
+        first_product = self.create_management_product(product_code='ART-IMAGE-MANAGE-2')
+        second_product = self.create_management_product(product_code='ART-IMAGE-MANAGE-3')
+        foreign_image = self.create_product_image(second_product, name='foreign-image.jpg', is_primary=True)
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(self.delete_url(first_product, foreign_image))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(ProductImage.objects.filter(pk=foreign_image.pk).exists())
+
+    def test_anonymous_cannot_manage_images(self):
+        product = self.create_management_product()
+
+        response = self.client.post(
+            self.upload_url(product),
+            data={'image': self.create_test_image('anonymous-upload.jpg')},
+        )
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.upload_url(product)}",
+        )

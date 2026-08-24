@@ -1,5 +1,6 @@
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Max
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
 from .models import Product, ProductImage
@@ -65,6 +66,68 @@ def _build_product_images(*, product: Product, images: list) -> list[ProductImag
         image_instances.append(image_instance)
 
     return image_instances
+
+
+def add_product_image(*, product: Product, image) -> ProductImage:
+    with transaction.atomic():
+        product_images = ProductImage.objects.select_for_update().filter(product=product)
+        max_sort_order = product_images.aggregate(max_sort_order=Max('sort_order'))['max_sort_order']
+        image_instance = ProductImage(
+            product=product,
+            image=image,
+            is_primary=not product_images.filter(is_primary=True).exists(),
+            sort_order=0 if max_sort_order is None else max_sort_order + 1,
+        )
+        image_instance.full_clean()
+        image_instance.save()
+    return image_instance
+
+
+def set_product_image_primary(*, product: Product, image: ProductImage) -> ProductImage:
+    with transaction.atomic():
+        product_images = ProductImage.objects.select_for_update().filter(product=product)
+        target_image = product_images.get(pk=image.pk)
+        product_images.exclude(pk=target_image.pk).filter(is_primary=True).update(is_primary=False)
+
+        if not target_image.is_primary:
+            target_image.is_primary = True
+            target_image.full_clean()
+            target_image.save(update_fields=['is_primary'])
+
+    return target_image
+
+
+def update_product_image_sort_order(
+    *,
+    product: Product,
+    image: ProductImage,
+    sort_order: int,
+) -> ProductImage:
+    with transaction.atomic():
+        managed_image = ProductImage.objects.select_for_update().get(pk=image.pk, product=product)
+        managed_image.sort_order = sort_order
+        managed_image.full_clean()
+        managed_image.save(update_fields=['sort_order'])
+    return managed_image
+
+
+def delete_product_image(*, product: Product, image: ProductImage) -> None:
+    with transaction.atomic():
+        product_images = ProductImage.objects.select_for_update().filter(product=product).order_by(
+            'sort_order',
+            'id',
+        )
+        target_image = product_images.get(pk=image.pk)
+        replacement_image = product_images.exclude(pk=target_image.pk).first()
+        target_was_primary = target_image.is_primary
+
+        target_image.delete()
+
+        if target_was_primary and replacement_image is not None:
+            ProductImage.objects.filter(product=product).update(is_primary=False)
+            replacement_image.is_primary = True
+            replacement_image.full_clean()
+            replacement_image.save(update_fields=['is_primary'])
 
 
 def _normalize_validation_error(exc: ValidationError, *, product: Product) -> ValidationError:

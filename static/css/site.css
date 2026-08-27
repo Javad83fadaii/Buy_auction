@@ -7,7 +7,7 @@ body {
 }
 
 .page-shell {
-    max-width: 960px;
+    max-width: 1120px;
     margin: 0 auto;
     padding: 48px 20px;
 }
@@ -456,9 +456,17 @@ a {
     margin-bottom: 18px;
 }
 
+.form-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
 .form-section h2 {
     margin-top: 0;
-    margin-bottom: 18px;
+    margin-bottom: 6px;
     font-size: 18px;
 }
 
@@ -492,9 +500,42 @@ a {
     cursor: pointer;
 }
 
+.form-field-checkbox {
+    margin-bottom: 0;
+}
+
 .checkbox-input {
     width: 18px;
     height: 18px;
+}
+
+.field-help {
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.required-marker {
+    color: #dc2626;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.form-required-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.price-preview:empty {
+    display: none;
 }
 
 .preview-grid {

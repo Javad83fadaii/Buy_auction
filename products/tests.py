@@ -134,7 +134,7 @@ class ProductCreatePermissionTests(ProductCreateBaseTestCase):
         response = self.client.get(reverse('products:create'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'ثبت پیشنهاد جدید')
+        self.assertContains(response, 'ثبت محصول')
 
     def test_admin_can_access_create_page(self):
         self.client.force_login(self.admin_user)
@@ -142,7 +142,60 @@ class ProductCreatePermissionTests(ProductCreateBaseTestCase):
         response = self.client.get(reverse('products:create'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'ثبت پیشنهاد جدید')
+        self.assertContains(response, 'ثبت محصول')
+
+    def test_form_renders_correctly(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertContains(response, 'اطلاعات اصلی اثر')
+        self.assertContains(response, 'مشخصات اثر')
+        self.assertContains(response, 'اطلاعات پیشنهاد')
+        self.assertContains(response, 'قیمت')
+        self.assertContains(response, 'وضعیت')
+        self.assertContains(response, 'تصاویر اثر')
+        self.assertContains(response, 'ثبت محصول')
+        self.assertContains(response, 'href="/products/"', html=False)
+
+    def test_persian_labels_exist(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        for label in (
+            'عنوان اثر',
+            'کد اثر',
+            'توضیحات',
+            'قیمت پیشنهادی',
+            'قیمت مناسب',
+            'تاریخ پیشنهاد',
+            'تاریخ تولید',
+            'مکان تولید',
+            'خالق اثر',
+            'متریال',
+            'موضوع',
+            'کاربرد',
+            'نوع هنر',
+            'نام پیشنهاد دهنده',
+            'طریقه پیشنهاد',
+        ):
+            self.assertContains(response, label)
+
+    def test_required_fields_are_represented_clearly(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertContains(response, 'فیلدهای ستاره‌دار الزامی هستند.')
+        self.assertInHTML(
+            '<label for="id_title">عنوان اثر<span class="required-marker" aria-hidden="true">*</span></label>',
+            response.content.decode(),
+        )
+        self.assertInHTML(
+            '<label for="id_artist">خالق اثر</label>',
+            response.content.decode(),
+        )
 
 
 class ProductCreateFormTests(ProductCreateBaseTestCase):
@@ -200,8 +253,9 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
 
     def test_product_created_successfully(self):
         response = self.post_create(follow=True)
+        product = Product.objects.get()
 
-        self.assertRedirects(response, reverse('products:create'))
+        self.assertRedirects(response, reverse('products:detail', args=[product.pk]))
         self.assertContains(response, 'اثر با موفقیت ثبت شد.')
         self.assertEqual(Product.objects.count(), 1)
 
@@ -228,6 +282,26 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
 
         product = Product.objects.get()
         self.assertEqual(product.status, ProductStatusChoices.DRAFT)
+
+    def test_status_is_not_editable_through_form_submission(self):
+        self.post_create(data=self.get_valid_payload(status=ProductStatusChoices.PUBLISHED))
+
+        product = Product.objects.get()
+        self.assertEqual(product.status, ProductStatusChoices.DRAFT)
+
+    def test_source_fields_are_not_editable_through_form_submission(self):
+        self.post_create(
+            data=self.get_valid_payload(
+                source_type=ProductSourceTypeChoices.CHRISTIES,
+                source_name='منبع خارجی',
+                source_url='https://example.com/source',
+            )
+        )
+
+        product = Product.objects.get()
+        self.assertEqual(product.source_type, ProductSourceTypeChoices.MANUAL)
+        self.assertEqual(product.source_name, '')
+        self.assertEqual(product.source_url, '')
 
     def test_product_code_blank_is_saved_as_null(self):
         self.post_create(data=self.get_valid_payload(product_code='   '))
@@ -284,6 +358,26 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'حجم تصویر نباید بیشتر از 5 مگابایت باشد.')
         self.assertEqual(Product.objects.count(), 0)
+
+    def test_invalid_product_shows_form_errors(self):
+        response = self.post_create(
+            data=self.get_valid_payload(title='', suggested_price='-1'),
+            images=[self.create_test_image()],
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'این فیلد الزامی است.')
+        self.assertContains(response, 'قیمت نمی‌تواند منفی باشد.')
+
+    def test_create_page_does_not_render_source_or_status_fields(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:create'))
+
+        self.assertNotContains(response, 'name="source_type"', html=False)
+        self.assertNotContains(response, 'name="source_name"', html=False)
+        self.assertNotContains(response, 'name="source_url"', html=False)
+        self.assertNotContains(response, 'name="status"', html=False)
 
     def test_transaction_rolls_back_when_image_save_fails(self):
         original_full_clean = ProductImage.full_clean

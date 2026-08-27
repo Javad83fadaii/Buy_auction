@@ -151,11 +151,10 @@ class ProductCreateView(RolePermissionMixin, FormView):
     template_name = 'products/product_create.html'
     form_class = ProductCreateForm
     permission_required = 'products.add_product'
-    success_url = reverse_lazy('products:create')
 
     def form_valid(self, form):
         try:
-            create_manual_product(
+            self.object = create_manual_product(
                 cleaned_data=form.cleaned_data,
                 images=form.cleaned_data.get('images', []),
                 user=self.request.user,
@@ -169,11 +168,17 @@ class ProductCreateView(RolePermissionMixin, FormView):
             return self.form_invalid(form)
 
         messages.success(self.request, 'اثر با موفقیت ثبت شد.')
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        if hasattr(self, 'object') and self.object is not None:
+            return reverse('products:detail', args=[self.object.pk])
+        return reverse_lazy('products:create')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'ثبت پیشنهاد جدید'
+        context['page_title'] = 'ثبت محصول'
+        context['cancel_url'] = reverse('products:list')
         return context
 
     def _apply_validation_errors(self, form, exc: ValidationError) -> None:

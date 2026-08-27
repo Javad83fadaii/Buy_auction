@@ -67,21 +67,21 @@ class ProductBaseForm(forms.ModelForm):
         model = Product
         fields = ()
         widgets = {
-            'suggested_by': forms.TextInput(attrs={'placeholder': 'نام پیشنهاددهنده'}),
+            'suggested_by': forms.TextInput(attrs={'placeholder': 'نام پیشنهاد دهنده'}),
             'contact_method': forms.Select(),
             'suggestion_date': forms.DateInput(attrs={'type': 'date'}),
             'title': forms.TextInput(attrs={'placeholder': 'عنوان اثر'}),
             'product_code': forms.TextInput(attrs={'placeholder': 'کد اثر'}),
-            'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'توضیحات تکمیلی'}),
-            'artist': forms.TextInput(attrs={'placeholder': 'نام هنرمند'}),
+            'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'توضیحات'}),
+            'artist': forms.TextInput(attrs={'placeholder': 'خالق اثر'}),
             'production_date': forms.DateInput(attrs={'type': 'date'}),
-            'production_location': forms.TextInput(attrs={'placeholder': 'محل تولید'}),
+            'production_location': forms.TextInput(attrs={'placeholder': 'مکان تولید'}),
             'material': forms.TextInput(attrs={'placeholder': 'متریال'}),
             'subject': forms.TextInput(attrs={'placeholder': 'موضوع'}),
             'usage': forms.TextInput(attrs={'placeholder': 'کاربرد'}),
             'art_type': forms.TextInput(attrs={'placeholder': 'نوع هنر'}),
-            'suggested_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
-            'suitable_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'suggested_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
+            'suitable_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
         }
 
     ordered_fields: tuple[str, ...] = ()
@@ -90,6 +90,8 @@ class ProductBaseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.ordered_fields:
             self.order_fields(self.ordered_fields)
+
+        self._configure_field_labels_and_help_texts()
 
         if not self.is_bound:
             for field_name, initial_value in self.get_initial_values().items():
@@ -105,10 +107,52 @@ class ProductBaseForm(forms.ModelForm):
 
             existing_class = widget.attrs.get('class', '')
             widget.attrs['class'] = f'{existing_class} text-input'.strip()
+            widget.attrs.setdefault('dir', 'rtl')
 
-        self.fields['contact_method'].empty_label = 'انتخاب کنید'
-        self.fields['suggested_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
-        self.fields['suitable_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
+            if isinstance(widget, forms.NumberInput):
+                widget.attrs.setdefault('inputmode', 'decimal')
+                widget.attrs.setdefault('autocomplete', 'off')
+
+            field.error_messages['required'] = 'این فیلد الزامی است.'
+
+        if 'contact_method' in self.fields:
+            contact_method_choices = list(self.fields['contact_method'].choices)
+            if contact_method_choices and contact_method_choices[0][0] == '':
+                contact_method_choices[0] = ('', 'انتخاب کنید')
+                self.fields['contact_method'].choices = contact_method_choices
+        if 'suggested_price' in self.fields:
+            self.fields['suggested_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
+        if 'suitable_price' in self.fields:
+            self.fields['suitable_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
+
+    def _configure_field_labels_and_help_texts(self):
+        field_text_map = {
+            'title': ('عنوان اثر', 'نام اثر را همان‌طور که باید ثبت شود وارد کنید.'),
+            'product_code': ('کد اثر', 'در صورت وجود، کد داخلی یا شناسایی اثر را وارد کنید.'),
+            'description': ('توضیحات', 'توضیحات تکمیلی درباره اثر را در صورت نیاز ثبت کنید.'),
+            'suggested_price': ('قیمت پیشنهادی', 'مبلغ را بدون جداکننده وارد کنید. پیش‌نمایش عددی در زیر فیلد نمایش داده می‌شود.'),
+            'suitable_price': ('قیمت مناسب', 'مبلغ برآوردشده مناسب برای اثر را وارد کنید.'),
+            'suggestion_date': ('تاریخ پیشنهاد', 'تاریخ دریافت پیشنهاد را ثبت کنید.'),
+            'production_date': ('تاریخ تولید', 'در صورت مشخص بودن، تاریخ تولید اثر را وارد کنید.'),
+            'production_location': ('مکان تولید', 'شهر، کشور یا محل تولید اثر را وارد کنید.'),
+            'artist': ('خالق اثر', 'نام هنرمند یا خالق اثر را وارد کنید.'),
+            'material': ('متریال', 'برای مثال: رنگ روغن روی بوم، برنز، کاغذ و ...'),
+            'subject': ('موضوع', 'موضوع یا مضمون اصلی اثر را وارد کنید.'),
+            'usage': ('کاربرد', 'کاربری یا زمینه استفاده اثر را ثبت کنید.'),
+            'art_type': ('نوع هنر', 'برای مثال: نقاشی، مجسمه، خوشنویسی و ...'),
+            'suggested_by': ('نام پیشنهاد دهنده', 'نام شخص یا مجموعه پیشنهاددهنده را وارد کنید.'),
+            'contact_method': ('طریقه پیشنهاد', 'روش دریافت این پیشنهاد را انتخاب کنید.'),
+            'is_cancelled': ('انصراف', 'اگر پیشنهاد در زمان ثبت انصراف داده شده است این گزینه را فعال کنید.'),
+            'is_notable': ('قابل توجه', 'برای آثاری که نیاز به پیگیری بیشتر دارند فعال شود.'),
+            'needs_expert_review': ('نیازمند کارشناسی', 'برای آثاری که به بررسی تخصصی نیاز دارند فعال شود.'),
+            'images': ('تصاویر اثر', 'می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.'),
+        }
+
+        for field_name, (label, help_text) in field_text_map.items():
+            if field_name not in self.fields:
+                continue
+            self.fields[field_name].label = label
+            self.fields[field_name].help_text = help_text
 
     def get_initial_values(self):
         return {}

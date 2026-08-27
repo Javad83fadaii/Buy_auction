@@ -130,6 +130,21 @@ def delete_product_image(*, product: Product, image: ProductImage) -> None:
             replacement_image.save(update_fields=['is_primary'])
 
 
+def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user=None) -> Product:
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        managed_product.is_cancelled = is_cancelled
+
+        update_fields = ['is_cancelled', 'updated_at']
+        if user is not None:
+            managed_product.updated_by = user
+            update_fields.append('updated_by')
+
+        managed_product.save(update_fields=update_fields)
+
+    return managed_product
+
+
 def _normalize_validation_error(exc: ValidationError, *, product: Product) -> ValidationError:
     error_dict = getattr(exc, 'error_dict', None)
     if not error_dict:

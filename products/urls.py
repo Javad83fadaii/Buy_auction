@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ProductCancelToggleView,
     ProductCreateView,
     ProductDetailView,
     ProductEditView,
@@ -16,6 +17,7 @@ app_name = 'products'
 urlpatterns = [
     path('', ProductListView.as_view(), name='list'),
     path('<int:id>/', ProductDetailView.as_view(), name='detail'),
+    path('<int:id>/cancel-toggle/', ProductCancelToggleView.as_view(), name='cancel_toggle'),
     path('<int:id>/images/upload/', ProductImageUploadView.as_view(), name='image_upload'),
     path(
         '<int:id>/images/<int:image_id>/primary/',

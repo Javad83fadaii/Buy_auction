@@ -48,6 +48,9 @@
         </section>
 
         <section class="product-summary-panel" aria-label="خلاصه وضعیت محصول">
+            {% if product.is_cancelled %}
+                <div class="detail-alert detail-alert-warning">این محصول لغو شده است.</div>
+            {% endif %}
             <div class="detail-info-list">
                 <div class="detail-info-item">
                     <span class="detail-info-label">وضعیت</span>
@@ -253,6 +256,20 @@
 
     <div class="actions-row">
         {% if perms.products.change_product %}
+            <form
+                method="post"
+                action="{% url 'products:cancel_toggle' product.pk %}"
+                data-product-cancel-form
+            >
+                {% csrf_token %}
+                <input type="hidden" name="action" value="{% if product.is_cancelled %}restore{% else %}cancel{% endif %}">
+                <button
+                    type="submit"
+                    class="button {% if product.is_cancelled %}button-primary{% else %}button-secondary{% endif %}"
+                >
+                    {% if product.is_cancelled %}فعال‌سازی مجدد{% else %}لغو محصول{% endif %}
+                </button>
+            </form>
             <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
         {% endif %}
         <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
@@ -296,6 +313,25 @@
                         event.preventDefault();
                     }
                 });
+            });
+        }());
+    </script>
+{% endif %}
+
+{% if perms.products.change_product and not product.is_cancelled %}
+    <script>
+        (function () {
+            const cancelForm = document.querySelector('[data-product-cancel-form]');
+
+            if (!cancelForm) {
+                return;
+            }
+
+            cancelForm.addEventListener('submit', function (event) {
+                const confirmed = window.confirm('از لغو این محصول مطمئن هستید؟');
+                if (!confirmed) {
+                    event.preventDefault();
+                }
             });
         }());
     </script>

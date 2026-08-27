@@ -67,6 +67,17 @@
             </div>
 
             <div class="form-field filter-field">
+                <label for="id_cancelled">وضعیت لغو</label>
+                <select id="id_cancelled" name="cancelled">
+                    {% for option in cancelled_filter_options %}
+                        <option value="{{ option.value }}" {% if selected_cancelled == option.value %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field filter-field">
                 <label for="id_date_from">از تاریخ</label>
                 <input
                     id="id_date_from"
@@ -119,6 +130,9 @@
         {% endif %}
         {% if selected_source %}
             <input type="hidden" name="source" value="{{ selected_source }}">
+        {% endif %}
+        {% if selected_cancelled != 'all' %}
+            <input type="hidden" name="cancelled" value="{{ selected_cancelled }}">
         {% endif %}
         {% if selected_art_type %}
             <input type="hidden" name="art_type" value="{{ selected_art_type }}">
@@ -178,7 +192,14 @@
                             <td>{{ product.artist|default:"-" }}</td>
                             <td>{{ product.art_type|default:"-" }}</td>
                             <td>{{ product.suitable_price|default:"-" }}</td>
-                            <td>{{ product.get_status_display }}</td>
+                            <td>
+                                <div class="table-badge-stack">
+                                    <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                    {% if product.is_cancelled %}
+                                        <span class="flag-badge flag-badge-warning">لغو شده</span>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td>{{ product.get_source_type_display }}</td>
                             <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
                             <td>

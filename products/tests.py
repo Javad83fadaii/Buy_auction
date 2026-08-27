@@ -1885,3 +1885,251 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
             response,
             f"{reverse('accounts:login')}?next={self.upload_url(product)}",
         )
+
+
+class ProductCancelArchiveTests(ProductCreateBaseTestCase):
+    def create_cancel_product(self, **overrides):
+        payload = {
+            'title': 'محصول قابل لغو',
+            'product_code': 'ART-CANCEL-1',
+            'artist': 'هنرمند لغو',
+            'art_type': 'نقاشی',
+            'status': ProductStatusChoices.PENDING_REVIEW,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'is_cancelled': False,
+            'created_by': self.admin_user,
+            'updated_by': self.admin_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def cancel_toggle_url(self, product):
+        return reverse('products:cancel_toggle', args=[product.pk])
+
+    def detail_url(self, product):
+        return reverse('products:detail', args=[product.pk])
+
+    def get_list(self, *, user=None, page=None, q=None, cancelled=None):
+        if user is not None:
+            self.client.force_login(user)
+
+        url = reverse('products:list')
+        query_params = {}
+        if q is not None:
+            query_params['q'] = q
+        if cancelled is not None:
+            query_params['cancelled'] = cancelled
+        if page is not None:
+            query_params['page'] = page
+        if query_params:
+            url = f'{url}?{urlencode(query_params)}'
+        return self.client.get(url)
+
+    def post_cancel(self, product, *, user=None, action='cancel', follow=False):
+        self.client.force_login(user or self.operator_user)
+        return self.client.post(
+            self.cancel_toggle_url(product),
+            data={'action': action},
+            follow=follow,
+        )
+
+    def test_admin_can_cancel(self):
+        product = self.create_cancel_product()
+
+        response = self.post_cancel(product, user=self.admin_user)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertTrue(product.is_cancelled)
+
+    def test_operator_can_cancel(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-2')
+
+        response = self.post_cancel(product, user=self.operator_user)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertTrue(product.is_cancelled)
+
+    def test_viewer_cannot_cancel(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-3')
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.post(self.cancel_toggle_url(product), data={'action': 'cancel'})
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.is_cancelled)
+
+    def test_anonymous_cannot_cancel(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-4')
+
+        response = self.client.post(self.cancel_toggle_url(product), data={'action': 'cancel'})
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.cancel_toggle_url(product)}",
+        )
+
+    def test_cancel_changes_is_cancelled_to_true(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-5', is_cancelled=False)
+
+        self.post_cancel(product)
+
+        product.refresh_from_db()
+        self.assertTrue(product.is_cancelled)
+
+    def test_cancel_does_not_delete_product(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-6')
+
+        self.post_cancel(product)
+
+        self.assertTrue(Product.objects.filter(pk=product.pk).exists())
+
+    def test_cancel_does_not_change_status(self):
+        product = self.create_cancel_product(
+            product_code='ART-CANCEL-7',
+            status=ProductStatusChoices.APPROVED,
+        )
+
+        self.post_cancel(product)
+
+        product.refresh_from_db()
+        self.assertEqual(product.status, ProductStatusChoices.APPROVED)
+
+    def test_admin_can_restore(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-8', is_cancelled=True)
+
+        response = self.post_cancel(product, user=self.admin_user, action='restore')
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertFalse(product.is_cancelled)
+
+    def test_operator_can_restore(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-9', is_cancelled=True)
+
+        response = self.post_cancel(product, user=self.operator_user, action='restore')
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
+        self.assertFalse(product.is_cancelled)
+
+    def test_viewer_cannot_restore(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-10', is_cancelled=True)
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.post(self.cancel_toggle_url(product), data={'action': 'restore'})
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(product.is_cancelled)
+
+    def test_restore_changes_is_cancelled_to_false(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-11', is_cancelled=True)
+
+        self.post_cancel(product, action='restore')
+
+        product.refresh_from_db()
+        self.assertFalse(product.is_cancelled)
+
+    def test_cancelled_badge_displayed(self):
+        active_product = self.create_cancel_product(product_code='ART-CANCEL-12', title='محصول فعال', is_cancelled=False)
+        cancelled_product = self.create_cancel_product(
+            product_code='ART-CANCEL-13',
+            title='محصول لغوشده',
+            is_cancelled=True,
+        )
+
+        response = self.get_list(user=self.viewer_user)
+
+        self.assertContains(response, active_product.title)
+        self.assertContains(response, cancelled_product.title)
+        self.assertContains(response, 'لغو شده')
+
+    def test_cancelled_filter_works(self):
+        cancelled_product = self.create_cancel_product(
+            product_code='ART-CANCEL-14',
+            title='محصول لغوشده فیلتر',
+            is_cancelled=True,
+        )
+        self.create_cancel_product(
+            product_code='ART-CANCEL-15',
+            title='محصول فعال فیلتر',
+            is_cancelled=False,
+        )
+
+        response = self.get_list(user=self.viewer_user, cancelled='1')
+
+        self.assertEqual(list(response.context['products']), [cancelled_product])
+
+    def test_active_filter_works(self):
+        active_product = self.create_cancel_product(
+            product_code='ART-CANCEL-16',
+            title='محصول فعال فیلتر دوم',
+            is_cancelled=False,
+        )
+        self.create_cancel_product(
+            product_code='ART-CANCEL-17',
+            title='محصول لغوشده فیلتر دوم',
+            is_cancelled=True,
+        )
+
+        response = self.get_list(user=self.viewer_user, cancelled='0')
+
+        self.assertEqual(list(response.context['products']), [active_product])
+
+    def test_cancelled_filter_and_search_work_together(self):
+        cancelled_product = self.create_cancel_product(
+            product_code='ART-CANCEL-18',
+            title='محمد محصول لغوشده',
+            is_cancelled=True,
+        )
+        self.create_cancel_product(
+            product_code='ART-CANCEL-19',
+            title='محمد محصول فعال',
+            is_cancelled=False,
+        )
+
+        response = self.get_list(user=self.viewer_user, cancelled='1', q='محمد')
+
+        self.assertEqual(list(response.context['products']), [cancelled_product])
+
+    def test_cancelled_filter_and_pagination_work_together(self):
+        for index in range(21):
+            self.create_cancel_product(
+                product_code=f'ART-CANCEL-PAGE-{index}',
+                title=f'محمد محصول لغوشده {index}',
+                is_cancelled=True,
+            )
+        self.create_cancel_product(
+            product_code='ART-CANCEL-PAGE-ACTIVE',
+            title='محمد محصول فعال بیرون از فیلتر',
+            is_cancelled=False,
+        )
+
+        response = self.get_list(user=self.viewer_user, cancelled='1', q='محمد')
+
+        self.assertTrue(response.context['is_paginated'])
+        self.assertContains(
+            response,
+            '?q=%D9%85%D8%AD%D9%85%D8%AF&amp;cancelled=1&amp;page=2',
+            html=False,
+        )
+
+    def test_invalid_product_id_returns_404(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(reverse('products:cancel_toggle', args=[999999]), data={'action': 'cancel'})
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_cannot_cancel_product(self):
+        product = self.create_cancel_product(product_code='ART-CANCEL-20')
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(self.cancel_toggle_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 405)
+        self.assertFalse(product.is_cancelled)

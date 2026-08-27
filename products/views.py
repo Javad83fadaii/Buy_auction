@@ -27,6 +27,7 @@ from .services import (
     create_manual_product,
     delete_product_image,
     set_product_image_primary,
+    update_product_cancelled_state,
     update_product_image_sort_order,
 )
 
@@ -196,6 +197,11 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
     context_object_name = 'products'
     paginate_by = 20
     default_sort = PRODUCT_LIST_DEFAULT_SORT
+    cancelled_filter_options = (
+        {'value': 'all', 'label': 'همه'},
+        {'value': '0', 'label': 'فعال'},
+        {'value': '1', 'label': 'لغو شده'},
+    )
     allowed_sorts = {
         '-created_at': ('-created_at', '-pk'),
         'created_at': ('created_at', 'pk'),
@@ -236,6 +242,11 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         source_filter = self.get_source_filter()
         if source_filter:
             queryset = queryset.filter(source_type=source_filter)
+        cancelled_filter = self.get_cancelled_filter()
+        if cancelled_filter == '1':
+            queryset = queryset.filter(is_cancelled=True)
+        elif cancelled_filter == '0':
+            queryset = queryset.filter(is_cancelled=False)
         art_type_filter = self.get_art_type_filter()
         if art_type_filter:
             queryset = queryset.annotate(normalized_art_type=Trim('art_type')).filter(
@@ -274,6 +285,12 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
     def get_art_type_filter(self):
         return self.request.GET.get('art_type', '').strip()
 
+    def get_cancelled_filter(self):
+        cancelled_filter = self.request.GET.get('cancelled', 'all').strip()
+        if cancelled_filter in {'all', '0', '1'}:
+            return cancelled_filter
+        return 'all'
+
     def get_date_from_filter(self):
         return self.get_filter_form().cleaned_data.get('date_from')
 
@@ -311,6 +328,9 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
             for value, label in PRODUCT_LIST_SORT_CHOICES
         ]
 
+    def get_cancelled_filter_options(self):
+        return list(self.cancelled_filter_options)
+
     def get_pagination_query(self):
         query_data = self.request.GET.copy()
         query_data.pop('page', None)
@@ -328,6 +348,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         selected_status = self.get_status_filter()
         selected_source = self.get_source_filter()
         selected_art_type = self.get_art_type_filter()
+        selected_cancelled = self.get_cancelled_filter()
         filter_form = self.get_filter_form()
         selected_sort = self.get_selected_sort()
         context['page_title'] = 'لیست محصولات'
@@ -335,6 +356,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         context['selected_status'] = selected_status
         context['selected_source'] = selected_source
         context['selected_art_type'] = selected_art_type
+        context['selected_cancelled'] = selected_cancelled
         context['filter_form'] = filter_form
         context['selected_sort'] = selected_sort
         context['default_sort'] = self.default_sort
@@ -342,6 +364,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         context['source_options'] = self.get_source_options()
         context['art_type_options'] = self.get_art_type_options()
         context['sort_options'] = self.get_sort_options()
+        context['cancelled_filter_options'] = self.get_cancelled_filter_options()
         context['has_art_type_options'] = bool(context['art_type_options'])
         context['pagination_query'] = self.get_pagination_query()
         context['clear_filters_url'] = self.get_clear_filters_url()
@@ -349,6 +372,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
             selected_status
             or selected_source
             or selected_art_type
+            or selected_cancelled != 'all'
             or filter_form['date_from'].value()
             or filter_form['date_to'].value()
             or selected_sort != self.default_sort
@@ -486,4 +510,31 @@ class ProductImageDeleteView(ProductImageManagementMixin, View):
             image=self.get_image(),
         )
         messages.success(request, 'تصویر با موفقیت حذف شد.')
+        return redirect(self.get_success_url())
+
+
+class ProductCancelToggleView(RolePermissionMixin, View):
+    permission_required = 'products.change_product'
+    http_method_names = ['post']
+
+    def get_product(self):
+        if not hasattr(self, '_product'):
+            self._product = get_object_or_404(Product, pk=self.kwargs['id'])
+        return self._product
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.get_product().pk])
+
+    def post(self, request, *args, **kwargs):
+        product = self.get_product()
+        activate = request.POST.get('action') == 'restore'
+        updated_product = update_product_cancelled_state(
+            product=product,
+            is_cancelled=not activate,
+            user=request.user,
+        )
+        if updated_product.is_cancelled:
+            messages.success(request, 'محصول با موفقیت لغو شد.')
+        else:
+            messages.success(request, 'محصول با موفقیت فعال‌سازی مجدد شد.')
         return redirect(self.get_success_url())

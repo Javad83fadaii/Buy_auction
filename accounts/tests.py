@@ -128,7 +128,7 @@ class AccountsTestCase(TestCase):
         self.assertContains(response, 'مدیریت محصولات')
         self.assertContains(
             response,
-            f'href="{reverse("products:list")}"',
+            f'href="{reverse("products:dashboard")}"',
             html=False,
         )
 
@@ -141,7 +141,7 @@ class AccountsTestCase(TestCase):
         self.assertContains(response, 'مدیریت محصولات')
         self.assertContains(
             response,
-            f'href="{reverse("products:list")}"',
+            f'href="{reverse("products:dashboard")}"',
             html=False,
         )
 
@@ -154,6 +154,6 @@ class AccountsTestCase(TestCase):
         self.assertNotContains(response, 'مدیریت محصولات')
         self.assertNotContains(
             response,
-            f'href="{reverse("products:list")}"',
+            f'href="{reverse("products:dashboard")}"',
             html=False,
         )

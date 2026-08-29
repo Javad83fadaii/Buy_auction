@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت محصولات{% endblock %}
+
+{% block content %}
+<section class="card product-dashboard-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="muted-text">مدیریت، مشاهده و ثبت محصولات</p>
+        </div>
+        <div class="header-actions">
+            <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد اصلی</a>
+            <a class="button button-primary" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
+        </div>
+    </div>
+
+    <section class="dashboard-section" aria-labelledby="product-statistics-title">
+        <div class="section-header">
+            <h2 id="product-statistics-title">آمار محصولات</h2>
+        </div>
+        <div class="stats-grid">
+            {% for stat in statistics %}
+                <article class="stat-card stat-card-{{ stat.accent }}">
+                    <span class="stat-card-label">{{ stat.label }}</span>
+                    <strong class="stat-card-value">{{ stat.count }}</strong>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="dashboard-section" aria-labelledby="product-quick-actions-title">
+        <div class="section-header">
+            <h2 id="product-quick-actions-title">دسترسی سریع</h2>
+        </div>
+        <div class="dashboard-grid">
+            <article class="info-panel">
+                <h2>مشاهده محصولات</h2>
+                <p>فهرست کامل محصولات ثبت‌شده را مشاهده و مدیریت کنید.</p>
+                <a class="button button-primary" href="{% url 'products:list' %}">مشاهده محصولات</a>
+            </article>
+            {% if can_review_products %}
+                <article class="info-panel">
+                    <h2>محصولات در انتظار بررسی</h2>
+                    <p>محصولات منتظر تصمیم نهایی را مستقیم با فیلتر وضعیت مشاهده کنید.</p>
+                    <a class="button button-primary" href="{{ pending_review_url }}">محصولات در انتظار بررسی</a>
+                </article>
+            {% endif %}
+            <article class="info-panel">
+                <h2>ثبت محصول جدید</h2>
+                <p>برای ثبت یک اثر جدید از فرم ایجاد محصول استفاده کنید.</p>
+                <a class="button button-primary" href="{% url 'products:create' %}">ثبت محصول جدید</a>
+            </article>
+        </div>
+    </section>
+
+    <section class="dashboard-section" aria-labelledby="recent-products-title">
+        <div class="section-header">
+            <h2 id="recent-products-title">محصولات اخیر</h2>
+        </div>
+
+        {% if recent_products %}
+            <div class="table-shell">
+                <table class="data-table recent-products-table">
+                    <thead>
+                        <tr>
+                            <th>عنوان</th>
+                            <th>کد اثر</th>
+                            <th>خالق</th>
+                            <th>وضعیت</th>
+                            <th>تاریخ ثبت</th>
+                            <th>مشاهده</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in recent_products %}
+                            <tr>
+                                <td>{{ product.title }}</td>
+                                <td>{{ product.product_code|default:"-" }}</td>
+                                <td>{{ product.artist|default:"-" }}</td>
+                                <td>
+                                    <div class="table-badge-stack">
+                                        <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                        {% if product.is_cancelled %}
+                                            <span class="flag-badge flag-badge-warning">لغو شده</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
+                                <td>
+                                    <a class="button button-secondary" href="{% url 'products:detail' product.pk %}">مشاهده</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <section class="empty-state" aria-live="polite">
+                <h2>هنوز محصولی ثبت نشده است.</h2>
+            </section>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

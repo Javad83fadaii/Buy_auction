@@ -231,7 +231,7 @@ class ProductCreateForm(ProductBaseForm):
 
     def _post_clean(self):
         self.instance.source_type = ProductSourceTypeChoices.MANUAL
-        self.instance.status = ProductStatusChoices.DRAFT
+        self.instance.status = ProductStatusChoices.PENDING_REVIEW
         super()._post_clean()
 
 

@@ -101,6 +101,9 @@ class Product(models.Model):
         verbose_name = 'محصول'
         verbose_name_plural = 'محصولات'
         ordering = ('-created_at',)
+        permissions = (
+            ('review_product', 'Can review product'),
+        )
         indexes = [
             models.Index(fields=['source_type', 'status'], name='products_src_status_idx'),
         ]

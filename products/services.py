@@ -26,12 +26,22 @@ MANUAL_PRODUCT_FORM_FIELDS = (
     'needs_expert_review',
 )
 
+REVIEW_STATUS_TRANSITIONS = {
+    ProductStatusChoices.PENDING_REVIEW: {
+        ProductStatusChoices.APPROVED,
+        ProductStatusChoices.REJECTED,
+    },
+    ProductStatusChoices.REJECTED: {
+        ProductStatusChoices.PENDING_REVIEW,
+    },
+}
+
 
 def create_manual_product(*, cleaned_data: dict, images: list, user) -> Product:
     product = Product(
         **{field: cleaned_data.get(field) for field in MANUAL_PRODUCT_FORM_FIELDS},
         source_type=ProductSourceTypeChoices.MANUAL,
-        status=ProductStatusChoices.DRAFT,
+        status=ProductStatusChoices.PENDING_REVIEW,
         created_by=user,
         updated_by=user,
     )
@@ -141,6 +151,24 @@ def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user
             update_fields.append('updated_by')
 
         managed_product.save(update_fields=update_fields)
+
+    return managed_product
+
+
+def update_product_review_status(*, product: Product, status: str, user) -> Product:
+    allowed_statuses = REVIEW_STATUS_TRANSITIONS.get(product.status, set())
+    if status not in allowed_statuses:
+        raise ValidationError('تغییر وضعیت در این مرحله مجاز نیست.')
+
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        current_allowed_statuses = REVIEW_STATUS_TRANSITIONS.get(managed_product.status, set())
+        if status not in current_allowed_statuses:
+            raise ValidationError('تغییر وضعیت در این مرحله مجاز نیست.')
+
+        managed_product.status = status
+        managed_product.updated_by = user
+        managed_product.save(update_fields=['status', 'updated_by', 'updated_at'])
 
     return managed_product
 

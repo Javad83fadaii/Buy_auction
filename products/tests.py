@@ -277,17 +277,17 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
         product = Product.objects.get()
         self.assertEqual(product.source_type, ProductSourceTypeChoices.MANUAL)
 
-    def test_status_is_draft(self):
+    def test_operator_create_sets_status_to_pending_review(self):
         self.post_create(data=self.get_valid_payload())
 
         product = Product.objects.get()
-        self.assertEqual(product.status, ProductStatusChoices.DRAFT)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
 
     def test_status_is_not_editable_through_form_submission(self):
         self.post_create(data=self.get_valid_payload(status=ProductStatusChoices.PUBLISHED))
 
         product = Product.objects.get()
-        self.assertEqual(product.status, ProductStatusChoices.DRAFT)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
 
     def test_source_fields_are_not_editable_through_form_submission(self):
         self.post_create(
@@ -1498,6 +1498,42 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
         self.assertContains(response, 'تصویر اصلی')
         self.assertContains(response, 'حذف')
 
+    def test_admin_review_action_visible(self):
+        product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=False)
+
+        response = self.get_detail(product, user=self.admin_user)
+
+        self.assertContains(response, 'تأیید محصول')
+        self.assertContains(response, 'رد محصول')
+        self.assertContains(
+            response,
+            f'action="{reverse("products:approve", args=[product.pk])}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'action="{reverse("products:reject", args=[product.pk])}"',
+            html=False,
+        )
+
+    def test_operator_review_action_hidden(self):
+        product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=False)
+
+        response = self.get_detail(product, user=self.operator_user)
+
+        self.assertNotContains(response, 'تأیید محصول')
+        self.assertNotContains(response, 'رد محصول')
+        self.assertNotContains(
+            response,
+            f'action="{reverse("products:approve", args=[product.pk])}"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            f'action="{reverse("products:reject", args=[product.pk])}"',
+            html=False,
+        )
+
 
 class ProductEditViewTests(ProductCreateBaseTestCase):
     def get_edit(self, product_id, *, user=None):
@@ -2227,3 +2263,367 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         product.refresh_from_db()
         self.assertEqual(response.status_code, 405)
         self.assertFalse(product.is_cancelled)
+
+
+class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
+    def create_review_product(self, **overrides):
+        payload = {
+            'title': 'محصول قابل بررسی',
+            'product_code': 'ART-REVIEW-1',
+            'artist': 'هنرمند بررسی',
+            'art_type': 'نقاشی',
+            'status': ProductStatusChoices.PENDING_REVIEW,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'is_cancelled': False,
+            'created_by': self.operator_user,
+            'updated_by': self.operator_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def approve_url(self, product):
+        return reverse('products:approve', args=[product.pk])
+
+    def reject_url(self, product):
+        return reverse('products:reject', args=[product.pk])
+
+    def rereview_url(self, product):
+        return reverse('products:re_review', args=[product.pk])
+
+    def detail_url(self, product):
+        return reverse('products:detail', args=[product.pk])
+
+    def test_admin_approve(self):
+        product = self.create_review_product()
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(self.approve_url(product), follow=True)
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.APPROVED)
+
+    def test_admin_reject(self):
+        product = self.create_review_product(product_code='ART-REVIEW-2')
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(self.reject_url(product), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.REJECTED)
+
+    def test_admin_rereview(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-3',
+            status=ProductStatusChoices.REJECTED,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(self.rereview_url(product), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_operator_cannot_approve(self):
+        product = self.create_review_product(product_code='ART-REVIEW-4')
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(self.approve_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_operator_cannot_reject(self):
+        product = self.create_review_product(product_code='ART-REVIEW-5')
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(self.reject_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_viewer_cannot_review(self):
+        product = self.create_review_product(product_code='ART-REVIEW-6')
+        self.client.force_login(self.viewer_user)
+
+        response = self.client.post(self.approve_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_anonymous_cannot_review(self):
+        product = self.create_review_product(product_code='ART-REVIEW-7')
+
+        response = self.client.post(self.approve_url(product))
+
+        product.refresh_from_db()
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.approve_url(product)}",
+        )
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_updated_by_is_set_correctly_on_review(self):
+        product = self.create_review_product(product_code='ART-REVIEW-8', updated_by=self.operator_user)
+        self.client.force_login(self.admin_user)
+
+        self.client.post(self.approve_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(product.updated_by, self.admin_user)
+
+    def test_get_cannot_change_status(self):
+        product = self.create_review_product(product_code='ART-REVIEW-9')
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(self.approve_url(product))
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_admin_can_see_rereview_action_for_rejected_product(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-10',
+            status=ProductStatusChoices.REJECTED,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(self.detail_url(product))
+
+        self.assertContains(response, 'ارسال مجدد برای بررسی')
+        self.assertContains(
+            response,
+            f'action="{self.rereview_url(product)}"',
+            html=False,
+        )
+
+
+class ProductDashboardViewTests(ProductCreateBaseTestCase):
+    def dashboard_url(self):
+        return reverse('products:dashboard')
+
+    def get_dashboard(self, *, user=None):
+        if user is not None:
+            self.client.force_login(user)
+        return self.client.get(self.dashboard_url())
+
+    def set_created_at(self, product, created_at):
+        Product.objects.filter(pk=product.pk).update(created_at=created_at)
+        product.refresh_from_db()
+        return product
+
+    def create_dashboard_product(self, **overrides):
+        payload = {
+            'title': 'محصول داشبورد',
+            'product_code': 'ART-DASHBOARD-1',
+            'artist': 'هنرمند داشبورد',
+            'art_type': 'نقاشی',
+            'status': ProductStatusChoices.DRAFT,
+            'source_type': ProductSourceTypeChoices.MANUAL,
+            'is_cancelled': False,
+            'created_by': self.admin_user,
+            'updated_by': self.admin_user,
+        }
+        payload.update(overrides)
+        return Product.objects.create(**payload)
+
+    def test_anonymous_cannot_access_dashboard(self):
+        response = self.get_dashboard()
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.dashboard_url()}",
+        )
+
+    def test_viewer_cannot_access_dashboard(self):
+        response = self.get_dashboard(user=self.viewer_user)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_can_access_dashboard(self):
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مدیریت محصولات')
+
+    def test_admin_can_access_dashboard(self):
+        response = self.get_dashboard(user=self.admin_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مدیریت محصولات')
+
+    def test_statistics_counts_are_calculated_from_database(self):
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-1',
+            title='پیش‌نویس فعال',
+            status=ProductStatusChoices.DRAFT,
+            is_cancelled=False,
+        )
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-2',
+            title='در انتظار بررسی',
+            status=ProductStatusChoices.PENDING_REVIEW,
+            is_cancelled=False,
+        )
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-3',
+            title='تأیید شده',
+            status=ProductStatusChoices.APPROVED,
+            is_cancelled=False,
+        )
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-4',
+            title='منتشر شده',
+            status=ProductStatusChoices.PUBLISHED,
+            is_cancelled=False,
+        )
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-5',
+            title='لغوشده منتشر شده',
+            status=ProductStatusChoices.PUBLISHED,
+            is_cancelled=True,
+        )
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-STATS-6',
+            title='لغوشده تأیید شده',
+            status=ProductStatusChoices.APPROVED,
+            is_cancelled=True,
+        )
+
+        response = self.get_dashboard(user=self.operator_user)
+        statistics = {item['label']: item['count'] for item in response.context['statistics']}
+
+        self.assertEqual(statistics['کل محصولات'], 6)
+        self.assertEqual(statistics['محصولات فعال'], 4)
+        self.assertEqual(statistics['محصولات لغوشده'], 2)
+        self.assertEqual(statistics['در انتظار بررسی'], 1)
+        self.assertEqual(statistics['تأیید شده'], 2)
+        self.assertEqual(statistics['منتشر شده'], 2)
+
+    def test_latest_five_products_displayed_in_recent_products(self):
+        now = timezone.now()
+        products = []
+        for index in range(6):
+            product = self.create_dashboard_product(
+                product_code=f'ART-DASHBOARD-RECENT-{index}',
+                title=f'محصول اخیر {index}',
+            )
+            products.append(self.set_created_at(product, now - timedelta(hours=index)))
+
+        response = self.get_dashboard(user=self.operator_user)
+        recent_products = response.context['recent_products']
+
+        self.assertEqual(len(recent_products), 5)
+        self.assertEqual(
+            [product.pk for product in recent_products],
+            [product.pk for product in products[:5]],
+        )
+        self.assertContains(response, 'محصول اخیر 0')
+        self.assertContains(response, 'محصول اخیر 4')
+        self.assertNotContains(response, 'محصول اخیر 5')
+
+    def test_recent_products_are_ordered_by_created_at_descending(self):
+        now = timezone.now()
+        oldest_product = self.set_created_at(
+            self.create_dashboard_product(
+                product_code='ART-DASHBOARD-ORDER-1',
+                title='قدیمی‌ترین',
+            ),
+            now - timedelta(days=3),
+        )
+        newest_product = self.set_created_at(
+            self.create_dashboard_product(
+                product_code='ART-DASHBOARD-ORDER-2',
+                title='جدیدترین',
+            ),
+            now - timedelta(days=1),
+        )
+        middle_product = self.set_created_at(
+            self.create_dashboard_product(
+                product_code='ART-DASHBOARD-ORDER-3',
+                title='میانی',
+            ),
+            now - timedelta(days=2),
+        )
+
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertEqual(
+            [product.pk for product in response.context['recent_products']],
+            [newest_product.pk, middle_product.pk, oldest_product.pk],
+        )
+
+    def test_recent_products_include_product_detail_link(self):
+        product = self.create_dashboard_product(
+            product_code='ART-DASHBOARD-LINK-1',
+            title='محصول دارای لینک',
+        )
+
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertContains(
+            response,
+            f'href="{reverse("products:detail", args=[product.pk])}"',
+            html=False,
+        )
+
+    def test_empty_state_is_displayed_when_no_product_exists(self):
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertContains(response, 'هنوز محصولی ثبت نشده است.')
+
+    def test_cancelled_badge_displayed_in_recent_products(self):
+        self.create_dashboard_product(
+            product_code='ART-DASHBOARD-CANCELLED-1',
+            title='محصول لغوشده داشبورد',
+            is_cancelled=True,
+        )
+
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertContains(response, 'لغو شده')
+
+    def test_product_dashboard_links_work(self):
+        response = self.get_dashboard(user=self.admin_user)
+
+        self.assertContains(
+            response,
+            f'href="{reverse("dashboard")}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("products:list")}"',
+            count=2,
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("products:create")}"',
+            html=False,
+        )
+
+    def test_admin_sees_pending_review_quick_action(self):
+        response = self.get_dashboard(user=self.admin_user)
+
+        self.assertContains(response, 'محصولات در انتظار بررسی')
+        self.assertContains(
+            response,
+            f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
+            html=False,
+        )
+
+    def test_operator_does_not_see_pending_review_quick_action(self):
+        response = self.get_dashboard(user=self.operator_user)
+
+        self.assertNotContains(response, 'محصولات در انتظار بررسی')
+        self.assertNotContains(
+            response,
+            f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
+            html=False,
+        )

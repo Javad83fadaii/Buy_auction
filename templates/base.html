@@ -8,6 +8,20 @@
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
 </head>
 <body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-brand" href="{% url 'home' %}">
+                <span class="site-brand-mark">هنر</span>
+                <span>
+                    <span class="site-brand-title">کاتالوگ آثار</span>
+                    <span class="site-brand-sub">Fine Art Registry</span>
+                </span>
+            </a>
+            {% if request.user.is_authenticated %}
+                <span class="site-header-user">{{ request.user.username }} · {{ request.user.role_display }}</span>
+            {% endif %}
+        </div>
+    </header>
     <main class="page-shell">
         {% if messages %}
             <section class="messages-stack" aria-label="پیام‌ها">

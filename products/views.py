@@ -3,11 +3,11 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import F, Prefetch, Q
+from django.db.models import Count, F, Prefetch, Q
 from django.db.models.functions import Trim
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
-from django.views.generic import DetailView, FormView, ListView, UpdateView, View
+from django.views.generic import DetailView, FormView, ListView, TemplateView, UpdateView, View
 
 from accounts.permissions import RolePermissionMixin
 
@@ -29,6 +29,7 @@ from .services import (
     set_product_image_primary,
     update_product_cancelled_state,
     update_product_image_sort_order,
+    update_product_review_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,59 @@ class ProductDisplayLabelsMixin:
 
     def get_source_label(self, product: Product) -> str:
         return self.source_filter_labels.get(product.source_type, product.get_source_type_display())
+
+
+class ProductDashboardView(RolePermissionMixin, TemplateView):
+    template_name = 'products/product_dashboard.html'
+    permission_required = 'products.add_product'
+
+    def get_statistics(self) -> list[dict[str, str | int]]:
+        stats = Product.objects.aggregate(
+            total_products=Count('id'),
+            active_products=Count('id', filter=Q(is_cancelled=False)),
+            cancelled_products=Count('id', filter=Q(is_cancelled=True)),
+            pending_review_products=Count(
+                'id',
+                filter=Q(status=ProductStatusChoices.PENDING_REVIEW),
+            ),
+            approved_products=Count(
+                'id',
+                filter=Q(status=ProductStatusChoices.APPROVED),
+            ),
+            published_products=Count(
+                'id',
+                filter=Q(status=ProductStatusChoices.PUBLISHED),
+            ),
+        )
+        return [
+            {'label': 'کل محصولات', 'count': stats['total_products'], 'accent': 'primary'},
+            {'label': 'محصولات فعال', 'count': stats['active_products'], 'accent': 'success'},
+            {'label': 'محصولات لغوشده', 'count': stats['cancelled_products'], 'accent': 'warning'},
+            {
+                'label': 'در انتظار بررسی',
+                'count': stats['pending_review_products'],
+                'accent': 'warning',
+            },
+            {'label': 'تأیید شده', 'count': stats['approved_products'], 'accent': 'success'},
+            {'label': 'منتشر شده', 'count': stats['published_products'], 'accent': 'info'},
+        ]
+
+    def get_recent_products(self):
+        return (
+            Product.objects.select_related('created_by')
+            .order_by('-created_at', '-pk')[:5]
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'مدیریت محصولات'
+        context['statistics'] = self.get_statistics()
+        context['recent_products'] = list(self.get_recent_products())
+        context['can_review_products'] = self.request.user.has_perm('products.review_product')
+        context['pending_review_url'] = (
+            f"{reverse('products:list')}?{urlencode({'status': ProductStatusChoices.PENDING_REVIEW})}"
+        )
+        return context
 
 
 class ProductDetailContextMixin(ProductDisplayLabelsMixin):
@@ -110,6 +164,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
         product = product or self.get_product()
         gallery_images = list(product.images.all())
         primary_image = self.get_primary_image(gallery_images)
+        can_review_product = self.request.user.has_perm('products.review_product')
 
         return {
             'page_title': product.title,
@@ -119,6 +174,16 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'managed_images': self.build_managed_images(gallery_images, image_sort_forms=image_sort_forms),
             'image_upload_form': image_upload_form or self.get_image_upload_form(),
             'can_manage_images': self.request.user.has_perm('products.change_product'),
+            'can_review_product': can_review_product,
+            'show_approve_action': (
+                can_review_product and product.status == ProductStatusChoices.PENDING_REVIEW
+            ),
+            'show_reject_action': (
+                can_review_product and product.status == ProductStatusChoices.PENDING_REVIEW
+            ),
+            'show_rereview_action': (
+                can_review_product and product.status == ProductStatusChoices.REJECTED
+            ),
             'status_label': self.get_status_label(product),
             'source_label': self.get_source_label(product),
             'back_url': self.get_back_url(),
@@ -543,3 +608,47 @@ class ProductCancelToggleView(RolePermissionMixin, View):
         else:
             messages.success(request, 'محصول با موفقیت فعال‌سازی مجدد شد.')
         return redirect(self.get_success_url())
+
+
+class ProductReviewActionView(RolePermissionMixin, View):
+    permission_required = 'products.review_product'
+    http_method_names = ['post']
+    target_status = ''
+    success_message = ''
+
+    def get_product(self):
+        if not hasattr(self, '_product'):
+            self._product = get_object_or_404(Product, pk=self.kwargs['id'])
+        return self._product
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.get_product().pk])
+
+    def post(self, request, *args, **kwargs):
+        try:
+            update_product_review_status(
+                product=self.get_product(),
+                status=self.target_status,
+                user=request.user,
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0] if exc.messages else 'تغییر وضعیت ممکن نیست.')
+            return redirect(self.get_success_url())
+
+        messages.success(request, self.success_message)
+        return redirect(self.get_success_url())
+
+
+class ProductApproveView(ProductReviewActionView):
+    target_status = ProductStatusChoices.APPROVED
+    success_message = 'محصول با موفقیت تأیید شد.'
+
+
+class ProductRejectView(ProductReviewActionView):
+    target_status = ProductStatusChoices.REJECTED
+    success_message = 'محصول با موفقیت رد شد.'
+
+
+class ProductReReviewView(ProductReviewActionView):
+    target_status = ProductStatusChoices.PENDING_REVIEW
+    success_message = 'محصول با موفقیت برای بررسی مجدد ارسال شد.'

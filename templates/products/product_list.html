@@ -176,7 +176,7 @@
                 <tbody>
                     {% for product in products %}
                         <tr>
-                            <td>
+                            <td data-label="تصویر اصلی">
                                 {% if product.primary_images %}
                                     <img
                                         class="product-thumb"
@@ -187,12 +187,12 @@
                                     <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
                                 {% endif %}
                             </td>
-                            <td>{{ product.title }}</td>
-                            <td>{{ product.product_code|default:"-" }}</td>
-                            <td>{{ product.artist|default:"-" }}</td>
-                            <td>{{ product.art_type|default:"-" }}</td>
-                            <td>{{ product.suitable_price|default:"-" }}</td>
-                            <td>
+                            <td data-label="عنوان">{{ product.title }}</td>
+                            <td data-label="کد اثر">{{ product.product_code|default:"-" }}</td>
+                            <td data-label="خالق">{{ product.artist|default:"-" }}</td>
+                            <td data-label="نوع هنر">{{ product.art_type|default:"-" }}</td>
+                            <td data-label="قیمت مناسب">{{ product.suitable_price|default:"-" }}</td>
+                            <td data-label="وضعیت">
                                 <div class="table-badge-stack">
                                     <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
                                     {% if product.is_cancelled %}
@@ -200,9 +200,9 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td>{{ product.get_source_type_display }}</td>
-                            <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
-                            <td>
+                            <td data-label="منبع">{{ product.get_source_type_display }}</td>
+                            <td data-label="تاریخ ثبت">{{ product.created_at|date:"Y/m/d H:i" }}</td>
+                            <td data-label="مشاهده">
                                 <a
                                     class="button button-secondary"
                                     href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"

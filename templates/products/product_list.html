@@ -22,98 +22,111 @@
             <input type="hidden" name="q" value="{{ search_query }}">
         {% endif %}
 
-        <div class="form-grid form-grid-3">
-            <div class="form-field filter-field">
-                <label for="id_status">وضعیت</label>
-                <select id="id_status" name="status">
-                    <option value="">همه</option>
-                    {% for option in status_options %}
-                        <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>
-                            {{ option.label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="filter-group">
+            <h3 class="filter-group-title">وضعیت و منبع</h3>
+            <div class="filter-group-grid">
+                <div class="form-field filter-field">
+                    <label for="id_status">وضعیت</label>
+                    <select id="id_status" name="status">
+                        <option value="">همه</option>
+                        {% for option in status_options %}
+                            <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <div class="form-field filter-field">
-                <label for="id_source">منبع</label>
-                <select id="id_source" name="source">
-                    <option value="">همه</option>
-                    {% for option in source_options %}
-                        <option value="{{ option.value }}" {% if selected_source == option.value %}selected{% endif %}>
-                            {{ option.label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+                <div class="form-field filter-field">
+                    <label for="id_source">منبع</label>
+                    <select id="id_source" name="source">
+                        <option value="">همه</option>
+                        {% for option in source_options %}
+                            <option value="{{ option.value }}" {% if selected_source == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <div class="form-field filter-field">
-                <label for="id_art_type">نوع هنر</label>
-                <select
-                    id="id_art_type"
-                    name="art_type"
-                    {% if not has_art_type_options %}disabled{% endif %}
-                >
-                    <option value="">همه</option>
-                    {% for art_type in art_type_options %}
-                        <option value="{{ art_type }}" {% if selected_art_type == art_type %}selected{% endif %}>
-                            {{ art_type }}
-                        </option>
-                    {% endfor %}
-                </select>
-                {% if not has_art_type_options %}
-                    <small class="muted-text">در حال حاضر نوع هنر قابل فیلتر وجود ندارد.</small>
-                {% endif %}
+                <div class="form-field filter-field">
+                    <label for="id_cancelled">وضعیت لغو</label>
+                    <select id="id_cancelled" name="cancelled">
+                        {% for option in cancelled_filter_options %}
+                            <option value="{{ option.value }}" {% if selected_cancelled == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="form-field filter-field">
-                <label for="id_cancelled">وضعیت لغو</label>
-                <select id="id_cancelled" name="cancelled">
-                    {% for option in cancelled_filter_options %}
-                        <option value="{{ option.value }}" {% if selected_cancelled == option.value %}selected{% endif %}>
-                            {{ option.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+        <div class="filter-group">
+            <h3 class="filter-group-title">دسته‌بندی اثر</h3>
+            <div class="filter-group-grid">
+                <div class="form-field filter-field">
+                    <label for="id_art_type">نوع هنر</label>
+                    <select
+                        id="id_art_type"
+                        name="art_type"
+                        {% if not has_art_type_options %}disabled{% endif %}
+                    >
+                        <option value="">همه</option>
+                        {% for art_type in art_type_options %}
+                            <option value="{{ art_type }}" {% if selected_art_type == art_type %}selected{% endif %}>
+                                {{ art_type }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if not has_art_type_options %}
+                        <small class="muted-text">در حال حاضر نوع هنر قابل فیلتر وجود ندارد.</small>
+                    {% endif %}
+                </div>
             </div>
+        </div>
 
-            <div class="form-field filter-field">
-                <label for="id_date_from">از تاریخ</label>
-                <input
-                    id="id_date_from"
-                    type="date"
-                    name="date_from"
-                    class="text-input"
-                    value="{{ filter_form.date_from.value|default_if_none:'' }}"
-                >
-                {% if filter_form.date_from.errors %}
-                    <small class="field-error">{{ filter_form.date_from.errors|join:", " }}</small>
-                {% endif %}
-            </div>
+        <div class="filter-group">
+            <h3 class="filter-group-title">بازه تاریخ و مرتب‌سازی</h3>
+            <div class="filter-group-grid">
+                <div class="form-field filter-field">
+                    <label for="id_date_from">از تاریخ</label>
+                    <input
+                        id="id_date_from"
+                        type="date"
+                        name="date_from"
+                        class="text-input"
+                        value="{{ filter_form.date_from.value|default_if_none:'' }}"
+                    >
+                    {% if filter_form.date_from.errors %}
+                        <small class="field-error">{{ filter_form.date_from.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
 
-            <div class="form-field filter-field">
-                <label for="id_date_to">تا تاریخ</label>
-                <input
-                    id="id_date_to"
-                    type="date"
-                    name="date_to"
-                    class="text-input"
-                    value="{{ filter_form.date_to.value|default_if_none:'' }}"
-                >
-                {% if filter_form.date_to.errors %}
-                    <small class="field-error">{{ filter_form.date_to.errors|join:", " }}</small>
-                {% endif %}
-            </div>
+                <div class="form-field filter-field">
+                    <label for="id_date_to">تا تاریخ</label>
+                    <input
+                        id="id_date_to"
+                        type="date"
+                        name="date_to"
+                        class="text-input"
+                        value="{{ filter_form.date_to.value|default_if_none:'' }}"
+                    >
+                    {% if filter_form.date_to.errors %}
+                        <small class="field-error">{{ filter_form.date_to.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
 
-            <div class="form-field filter-field">
-                <label for="id_sort">مرتب‌سازی</label>
-                <select id="id_sort" name="sort">
-                    {% for option in sort_options %}
-                        <option value="{{ option.value }}" {% if selected_sort == option.value %}selected{% endif %}>
-                            {{ option.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div class="form-field filter-field">
+                    <label for="id_sort">مرتب‌سازی</label>
+                    <select id="id_sort" name="sort">
+                        {% for option in sort_options %}
+                            <option value="{{ option.value }}" {% if selected_sort == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -157,7 +170,12 @@
     </form>
 
     {% if products %}
-        <div class="table-shell">
+        <div class="view-toggle" data-view-toggle-group>
+            <button type="button" class="toggle-btn is-active" data-view-toggle="list">نمایش لیستی</button>
+            <button type="button" class="toggle-btn" data-view-toggle="card">نمایش کارتی</button>
+        </div>
+
+        <div class="table-shell" data-view-panel="list">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -170,13 +188,17 @@
                         <th>وضعیت</th>
                         <th>منبع</th>
                         <th>تاریخ ثبت</th>
-                        <th>مشاهده</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for product in products %}
-                        <tr>
-                            <td data-label="تصویر اصلی">
+                        <tr
+                            class="row-clickable"
+                            tabindex="0"
+                            role="link"
+                            data-row-href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
+                        >
+                            <td>
                                 {% if product.primary_images %}
                                     <img
                                         class="product-thumb"
@@ -187,12 +209,12 @@
                                     <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
                                 {% endif %}
                             </td>
-                            <td data-label="عنوان">{{ product.title }}</td>
-                            <td data-label="کد اثر">{{ product.product_code|default:"-" }}</td>
-                            <td data-label="خالق">{{ product.artist|default:"-" }}</td>
-                            <td data-label="نوع هنر">{{ product.art_type|default:"-" }}</td>
-                            <td data-label="قیمت مناسب">{{ product.suitable_price|default:"-" }}</td>
-                            <td data-label="وضعیت">
+                            <td>{{ product.title }}</td>
+                            <td>{{ product.product_code|default:"-" }}</td>
+                            <td>{{ product.artist|default:"-" }}</td>
+                            <td>{{ product.art_type|default:"-" }}</td>
+                            <td>{{ product.suitable_price|default:"-" }}</td>
+                            <td>
                                 <div class="table-badge-stack">
                                     <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
                                     {% if product.is_cancelled %}
@@ -200,20 +222,48 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td data-label="منبع">{{ product.get_source_type_display }}</td>
-                            <td data-label="تاریخ ثبت">{{ product.created_at|date:"Y/m/d H:i" }}</td>
-                            <td data-label="مشاهده">
-                                <a
-                                    class="button button-secondary"
-                                    href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
-                                >
-                                    مشاهده
-                                </a>
-                            </td>
+                            <td>{{ product.get_source_type_display }}</td>
+                            <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div class="product-card-grid" data-view-panel="card" hidden>
+            {% for product in products %}
+                <a
+                    class="product-card"
+                    href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
+                >
+                    {% if product.primary_images %}
+                        <img
+                            class="product-card-thumb"
+                            src="{{ product.primary_images.0.image.url }}"
+                            alt="تصویر اصلی {{ product.title }}"
+                        >
+                    {% else %}
+                        <div class="product-card-thumb product-card-thumb-placeholder">بدون تصویر</div>
+                    {% endif %}
+                    <h3 class="product-card-title">{{ product.title }}</h3>
+                    <div class="product-card-meta">
+                        <span>کد اثر: {{ product.product_code|default:"-" }}</span>
+                        <span>خالق: {{ product.artist|default:"-" }}</span>
+                        <span>نوع هنر: {{ product.art_type|default:"-" }}</span>
+                        <span>منبع: {{ product.get_source_type_display }}</span>
+                        <span>تاریخ ثبت: {{ product.created_at|date:"Y/m/d" }}</span>
+                    </div>
+                    <div class="table-badge-stack">
+                        <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                        {% if product.is_cancelled %}
+                            <span class="flag-badge flag-badge-warning">لغو شده</span>
+                        {% endif %}
+                    </div>
+                    {% if product.suitable_price %}
+                        <span class="product-card-price">{{ product.suitable_price }}</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
         </div>
 
         {% if is_paginated %}
@@ -248,4 +298,59 @@
         {% endif %}
     {% endif %}
 </section>
+
+{% if products %}
+    <script>
+        (function () {
+            var rows = document.querySelectorAll('[data-row-href]');
+            rows.forEach(function (row) {
+                function go() {
+                    window.location.href = row.dataset.rowHref;
+                }
+                row.addEventListener('click', go);
+                row.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        go();
+                    }
+                });
+            });
+
+            var STORAGE_KEY = 'products-view-mode';
+            var toggleButtons = document.querySelectorAll('[data-view-toggle]');
+            var panels = document.querySelectorAll('[data-view-panel]');
+
+            function setView(mode) {
+                panels.forEach(function (panel) {
+                    panel.hidden = panel.dataset.viewPanel !== mode;
+                });
+                toggleButtons.forEach(function (button) {
+                    button.classList.toggle('is-active', button.dataset.viewToggle === mode);
+                });
+                try {
+                    window.localStorage.setItem(STORAGE_KEY, mode);
+                } catch (error) {
+                    /* localStorage may be unavailable; ignore */
+                }
+            }
+
+            toggleButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setView(button.dataset.viewToggle);
+                });
+            });
+
+            var savedMode = null;
+            try {
+                savedMode = window.localStorage.getItem(STORAGE_KEY);
+            } catch (error) {
+                savedMode = null;
+            }
+
+            if (savedMode === 'card' || savedMode === 'list') {
+                setView(savedMode);
+            }
+        }());
+    </script>
+{% endif %}
 {% endblock %}

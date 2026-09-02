@@ -13,7 +13,9 @@
             {% if perms.products.add_product %}
                 <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
             {% endif %}
-            <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+            {% if perms.accounts.view_dashboard %}
+                <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+            {% endif %}
         </div>
     </div>
 

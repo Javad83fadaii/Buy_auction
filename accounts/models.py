@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 
-from .constants import ADMIN_ROLE, ROLE_NAME_SET
+from .constants import ADMIN_ROLE, ROLE_NAME_SET, get_role_title
 from .managers import CustomUserManager
 
 
@@ -37,8 +37,12 @@ class User(AbstractUser):
         return self.roles[0] if self.roles else ''
 
     @property
+    def primary_role_title(self) -> str:
+        return get_role_title(self.primary_role)
+
+    @property
     def role_display(self) -> str:
-        return ', '.join(self.roles) or '-'
+        return ', '.join(get_role_title(role_name) for role_name in self.roles) or '-'
 
     def has_role(self, role_name: str) -> bool:
         return self.groups.filter(name=role_name).exists()

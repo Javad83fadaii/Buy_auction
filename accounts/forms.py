@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group
 
-from .constants import ROLE_NAME_SET
+from .constants import ROLE_NAME_SET, get_role_title
 
 User = get_user_model()
 
@@ -40,6 +40,7 @@ class RoleAdminMixin(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['role'].queryset = get_role_queryset()
+        self.fields['role'].label_from_instance = lambda group: get_role_title(group.name)
 
         if self.instance.pk:
             self.fields['role'].initial = (

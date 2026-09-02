@@ -18,3 +18,8 @@ ROLE_DEFINITIONS = (
 )
 
 ROLE_NAME_SET = {role.name for role in ROLE_DEFINITIONS}
+ROLE_TITLE_MAP = {role.name: role.title for role in ROLE_DEFINITIONS}
+
+
+def get_role_title(role_name: str) -> str:
+    return ROLE_TITLE_MAP.get(role_name, role_name or '-')

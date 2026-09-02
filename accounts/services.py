@@ -31,10 +31,6 @@ ROLE_PERMISSION_BLUEPRINTS = {
     ),
     VIEWER_ROLE: (
         PermissionBlueprint(
-            app_label='accounts',
-            codenames=('view_dashboard', 'view_viewer_dashboard'),
-        ),
-        PermissionBlueprint(
             app_label='products',
             codenames=('view_product',),
         ),

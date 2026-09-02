@@ -30,20 +30,57 @@
             </div>
 
             {% if gallery_images %}
-                <div class="product-gallery-thumbnails">
-                    {% for image in gallery_images %}
-                        <button
-                            type="button"
-                            class="product-gallery-thumb{% if primary_image and image.pk == primary_image.pk %} is-active{% endif %}"
-                            data-gallery-trigger
-                            data-image-url="{{ image.image.url }}"
-                            data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
-                            aria-label="نمایش تصویر {{ forloop.counter }}"
-                        >
-                            <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
-                        </button>
-                    {% endfor %}
-                </div>
+                {% with total_images=gallery_images|length %}
+                    <div class="product-gallery-thumbnails">
+                        {% for image in gallery_images|slice:":4" %}
+                            {% if forloop.last and total_images > 4 %}
+                                <button
+                                    type="button"
+                                    class="product-gallery-thumb product-gallery-thumb-more"
+                                    data-gallery-lightbox-trigger
+                                    aria-label="نمایش همه تصاویر"
+                                >
+                                    <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
+                                    <span class="product-gallery-thumb-more-count">+{{ total_images|add:"-3" }}</span>
+                                </button>
+                            {% else %}
+                                <button
+                                    type="button"
+                                    class="product-gallery-thumb{% if primary_image and image.pk == primary_image.pk %} is-active{% endif %}"
+                                    data-gallery-trigger
+                                    data-image-url="{{ image.image.url }}"
+                                    data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
+                                    aria-label="نمایش تصویر {{ forloop.counter }}"
+                                >
+                                    <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
+                                </button>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endwith %}
+
+                {% if gallery_images|length > 4 %}
+                    <div class="lightbox-overlay" data-lightbox hidden>
+                        <div class="lightbox-panel">
+                            <div class="lightbox-header">
+                                <h3>همه تصاویر ({{ gallery_images|length }})</h3>
+                                <button type="button" class="button button-secondary" data-lightbox-close>بستن</button>
+                            </div>
+                            <div class="lightbox-grid">
+                                {% for image in gallery_images %}
+                                    <button
+                                        type="button"
+                                        class="lightbox-thumb"
+                                        data-image-url="{{ image.image.url }}"
+                                        data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
+                                    >
+                                        <img src="{{ image.image.url }}" alt="تصویر {{ forloop.counter }} {{ product.title }}">
+                                    </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             {% endif %}
         </section>
 
@@ -88,52 +125,45 @@
     </div>
 
     <div class="detail-sections">
-        <section class="detail-section">
-            <h2>اطلاعات اثر</h2>
+        <section class="detail-section accent-sapphire">
+            <h2>عنوان و شناسه</h2>
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">عنوان</span><span class="detail-info-value">{{ product.title|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">کد اثر</span><span class="detail-info-value">{{ product.product_code|default:"—" }}</span></div>
-                <div class="detail-info-item detail-info-item-wide"><span class="detail-info-label">توضیحات</span><span class="detail-info-value detail-description">{{ product.description|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">تاریخ تولید</span><span class="detail-info-value">{{ product.production_date|date:"Y/m/d"|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">مکان تولید</span><span class="detail-info-value">{{ product.production_location|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">موضوع</span><span class="detail-info-value">{{ product.subject|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">کاربرد</span><span class="detail-info-value">{{ product.usage|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">نوع هنر</span><span class="detail-info-value">{{ product.art_type|default:"—" }}</span></div>
+            </div>
+            <div class="detail-description-block">
+                <span class="detail-info-label">توضیحات</span>
+                <p class="detail-info-value detail-description">{{ product.description|default:"—" }}</p>
             </div>
         </section>
 
-        <section class="detail-section">
-            <h2>اطلاعات پیشنهاد</h2>
+        <section class="detail-section accent-sapphire">
+            <h2>مشخصات ظاهری</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">نوع هنر</span><span class="detail-info-value">{{ product.art_type|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">موضوع</span><span class="detail-info-value">{{ product.subject|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">کاربرد</span><span class="detail-info-value">{{ product.usage|default:"—" }}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section accent-emerald">
+            <h2>جنس و تولید</h2>
+            <div class="detail-info-list detail-info-list-2">
+                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">تاریخ تولید</span><span class="detail-info-value">{{ product.production_date|date:"Y/m/d"|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">مکان تولید</span><span class="detail-info-value">{{ product.production_location|default:"—" }}</span></div>
+            </div>
+        </section>
+
+        <section class="detail-section accent-copper">
+            <h2>پیشنهاد، قیمت و منبع</h2>
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">نام پیشنهاددهنده</span><span class="detail-info-value">{{ product.suggested_by|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">روش پیشنهاد</span><span class="detail-info-value">{{ product.get_contact_method_display|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">تاریخ پیشنهاد</span><span class="detail-info-value">{{ product.suggestion_date|date:"Y/m/d"|default:"—" }}</span></div>
-            </div>
-        </section>
-
-        <section class="detail-section">
-            <h2>قیمت</h2>
-            <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">قیمت پیشنهادی</span><span class="detail-info-value">{{ product.suggested_price|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">قیمت مناسب</span><span class="detail-info-value">{{ product.suitable_price|default:"—" }}</span></div>
-            </div>
-        </section>
-
-        <section class="detail-section">
-            <h2>وضعیت</h2>
-            <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">وضعیت Product</span><span class="detail-info-value"><span class="status-badge status-badge-{{ product.status|lower }}">{{ status_label }}</span></span></div>
-                <div class="detail-info-item"><span class="detail-info-label">انصراف</span><span class="detail-info-value">{% if product.is_cancelled %}انصراف داده شده{% else %}—{% endif %}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">قابل توجه</span><span class="detail-info-value">{% if product.is_notable %}قابل توجه{% else %}—{% endif %}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">نیازمند کارشناسی</span><span class="detail-info-value">{% if product.needs_expert_review %}نیازمند کارشناسی{% else %}—{% endif %}</span></div>
-            </div>
-        </section>
-
-        <section class="detail-section">
-            <h2>منبع</h2>
-            <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">نوع منبع</span><span class="detail-info-value">{{ source_label }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">نام منبع</span><span class="detail-info-value">{{ product.source_name|default:"—" }}</span></div>
                 {% if product.source_url %}
@@ -148,7 +178,7 @@
         </section>
 
         {% if can_manage_images %}
-            <section class="detail-section" aria-label="مدیریت تصاویر">
+            <section class="detail-section accent-emerald" aria-label="مدیریت تصاویر">
                 <h2>مدیریت تصاویر</h2>
 
                 <form
@@ -177,62 +207,64 @@
                 <div class="image-management-list">
                     {% for managed_image in managed_images %}
                         <article class="image-management-card">
-                            <div class="image-management-header">
-                                <h3>تصویر {{ forloop.counter }}</h3>
-                                {% if managed_image.image.is_primary %}
-                                    <span class="flag-badge flag-badge-info">تصویر اصلی فعلی</span>
-                                {% endif %}
-                            </div>
-
                             <img
                                 class="image-management-preview"
                                 src="{{ managed_image.image.image.url }}"
                                 alt="پیش‌نمایش تصویر {{ forloop.counter }} {{ product.title }}"
                             >
 
-                            <div class="image-management-actions">
-                                <form
-                                    method="post"
-                                    action="{% url 'products:image_set_primary' product.pk managed_image.image.pk %}"
-                                >
-                                    {% csrf_token %}
-                                    <button
-                                        type="submit"
-                                        class="button {% if managed_image.image.is_primary %}button-primary{% else %}button-secondary{% endif %}"
+                            <div class="image-management-body">
+                                <div class="image-management-header">
+                                    <h3>تصویر {{ forloop.counter }}</h3>
+                                    {% if managed_image.image.is_primary %}
+                                        <span class="flag-badge flag-badge-info">تصویر اصلی فعلی</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="image-management-actions">
+                                    <form
+                                        method="post"
+                                        action="{% url 'products:image_set_primary' product.pk managed_image.image.pk %}"
                                     >
-                                        تصویر اصلی
-                                    </button>
-                                </form>
+                                        {% csrf_token %}
+                                        <button
+                                            type="submit"
+                                            class="button {% if managed_image.image.is_primary %}button-primary{% else %}button-secondary{% endif %}"
+                                        >
+                                            تصویر اصلی
+                                        </button>
+                                    </form>
 
-                                <form
-                                    method="post"
-                                    action="{% url 'products:image_sort_update' product.pk managed_image.image.pk %}"
-                                    class="image-sort-form"
-                                >
-                                    {% csrf_token %}
-                                    <label class="image-sort-label" for="{{ managed_image.sort_form.sort_order.id_for_label }}">
-                                        ترتیب:
-                                    </label>
-                                    {{ managed_image.sort_form.sort_order }}
-                                    <button type="submit" class="button button-secondary">ذخیره</button>
-                                </form>
+                                    <form
+                                        method="post"
+                                        action="{% url 'products:image_sort_update' product.pk managed_image.image.pk %}"
+                                        class="image-sort-form"
+                                    >
+                                        {% csrf_token %}
+                                        <label class="image-sort-label" for="{{ managed_image.sort_form.sort_order.id_for_label }}">
+                                            ترتیب:
+                                        </label>
+                                        {{ managed_image.sort_form.sort_order }}
+                                        <button type="submit" class="button button-secondary">ذخیره</button>
+                                    </form>
 
-                                <form
-                                    method="post"
-                                    action="{% url 'products:image_delete' product.pk managed_image.image.pk %}"
-                                    data-image-delete-form
-                                >
-                                    {% csrf_token %}
-                                    <button type="submit" class="button button-secondary">حذف</button>
-                                </form>
+                                    <form
+                                        method="post"
+                                        action="{% url 'products:image_delete' product.pk managed_image.image.pk %}"
+                                        data-image-delete-form
+                                    >
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-secondary">حذف</button>
+                                    </form>
+                                </div>
+
+                                {% for error in managed_image.sort_form.sort_order.errors %}
+                                    <div class="field-error">{{ error }}</div>
+                                {% endfor %}
+                                {% for error in managed_image.sort_form.non_field_errors %}
+                                    <div class="field-error">{{ error }}</div>
+                                {% endfor %}
                             </div>
-
-                            {% for error in managed_image.sort_form.sort_order.errors %}
-                                <div class="field-error">{{ error }}</div>
-                            {% endfor %}
-                            {% for error in managed_image.sort_form.non_field_errors %}
-                                <div class="field-error">{{ error }}</div>
-                            {% endfor %}
                         </article>
                     {% empty %}
                         <div class="empty-state">
@@ -243,7 +275,7 @@
             </section>
         {% endif %}
 
-        <section class="detail-section">
+        <section class="detail-section accent-copper">
             <h2>اطلاعات ثبت</h2>
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">ایجادکننده</span><span class="detail-info-value">{{ product.created_by|default:"—" }}</span></div>
@@ -282,21 +314,57 @@
             const mainImage = document.getElementById('product-main-image');
             const triggers = document.querySelectorAll('[data-gallery-trigger]');
 
-            if (!mainImage || !triggers.length) {
-                return;
+            function setActiveThumb(trigger) {
+                document.querySelectorAll('.product-gallery-thumb').forEach(function (item) {
+                    item.classList.remove('is-active');
+                });
+                if (trigger) {
+                    trigger.classList.add('is-active');
+                }
             }
 
-            triggers.forEach(function (trigger) {
-                trigger.addEventListener('click', function () {
-                    mainImage.src = trigger.dataset.imageUrl;
-                    mainImage.alt = trigger.dataset.imageAlt;
-
-                    triggers.forEach(function (item) {
-                        item.classList.remove('is-active');
+            if (mainImage && triggers.length) {
+                triggers.forEach(function (trigger) {
+                    trigger.addEventListener('click', function () {
+                        mainImage.src = trigger.dataset.imageUrl;
+                        mainImage.alt = trigger.dataset.imageAlt;
+                        setActiveThumb(trigger);
                     });
-                    trigger.classList.add('is-active');
                 });
-            });
+            }
+
+            const lightbox = document.querySelector('[data-lightbox]');
+            const lightboxTrigger = document.querySelector('[data-gallery-lightbox-trigger]');
+            const lightboxClose = document.querySelector('[data-lightbox-close]');
+
+            if (lightbox && lightboxTrigger) {
+                lightboxTrigger.addEventListener('click', function () {
+                    lightbox.hidden = false;
+                });
+
+                if (lightboxClose) {
+                    lightboxClose.addEventListener('click', function () {
+                        lightbox.hidden = true;
+                    });
+                }
+
+                lightbox.addEventListener('click', function (event) {
+                    if (event.target === lightbox) {
+                        lightbox.hidden = true;
+                    }
+                });
+
+                lightbox.querySelectorAll('.lightbox-thumb').forEach(function (thumb) {
+                    thumb.addEventListener('click', function () {
+                        if (mainImage) {
+                            mainImage.src = thumb.dataset.imageUrl;
+                            mainImage.alt = thumb.dataset.imageAlt;
+                        }
+                        setActiveThumb(null);
+                        lightbox.hidden = true;
+                    });
+                });
+            }
         }());
     </script>
 {% endif %}

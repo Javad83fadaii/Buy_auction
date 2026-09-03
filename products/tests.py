@@ -1526,6 +1526,41 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             html=False,
         )
 
+    def test_admin_submit_review_action_visible_for_draft(self):
+        product = self.create_detail_product(status=ProductStatusChoices.DRAFT, is_cancelled=False)
+
+        response = self.get_detail(product, user=self.admin_user)
+
+        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertContains(
+            response,
+            f'action="{reverse("products:submit_review", args=[product.pk])}"',
+            html=False,
+        )
+
+    def test_admin_publish_action_visible_for_approved_product(self):
+        product = self.create_detail_product(status=ProductStatusChoices.APPROVED, is_cancelled=False)
+
+        response = self.get_detail(product, user=self.admin_user)
+
+        self.assertContains(response, 'انتشار محصول')
+        self.assertContains(
+            response,
+            f'action="{reverse("products:publish", args=[product.pk])}"',
+            html=False,
+        )
+
+    def test_cancelled_product_hides_workflow_actions(self):
+        product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=True)
+
+        response = self.get_detail(product, user=self.admin_user)
+
+        self.assertNotContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'تأیید محصول')
+        self.assertNotContains(response, 'رد محصول')
+        self.assertNotContains(response, 'انتشار محصول')
+        self.assertNotContains(response, 'ارسال مجدد برای بررسی')
+
     def test_operator_review_action_hidden(self):
         product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=False)
 
@@ -2294,8 +2329,14 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
     def approve_url(self, product):
         return reverse('products:approve', args=[product.pk])
 
+    def submit_review_url(self, product):
+        return reverse('products:submit_review', args=[product.pk])
+
     def reject_url(self, product):
         return reverse('products:reject', args=[product.pk])
+
+    def publish_url(self, product):
+        return reverse('products:publish', args=[product.pk])
 
     def rereview_url(self, product):
         return reverse('products:re_review', args=[product.pk])
@@ -2312,6 +2353,19 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product))
         self.assertEqual(product.status, ProductStatusChoices.APPROVED)
 
+    def test_admin_submit_draft_for_review(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-DRAFT-1',
+            status=ProductStatusChoices.DRAFT,
+        )
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(self.submit_review_url(product), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+
     def test_admin_reject(self):
         product = self.create_review_product(product_code='ART-REVIEW-2')
         self.client.force_login(self.admin_user)
@@ -2321,6 +2375,19 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         product.refresh_from_db()
         self.assertRedirects(response, self.detail_url(product))
         self.assertEqual(product.status, ProductStatusChoices.REJECTED)
+
+    def test_admin_publish(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-PUBLISH-1',
+            status=ProductStatusChoices.APPROVED,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(self.publish_url(product), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.PUBLISHED)
 
     def test_admin_rereview(self):
         product = self.create_review_product(
@@ -2385,6 +2452,21 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         product.refresh_from_db()
         self.assertEqual(product.updated_by, self.admin_user)
+
+    def test_cancelled_product_cannot_change_workflow_status(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-CANCELLED-1',
+            status=ProductStatusChoices.PENDING_REVIEW,
+            is_cancelled=True,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(self.approve_url(product), follow=True)
+
+        product.refresh_from_db()
+        self.assertRedirects(response, self.detail_url(product))
+        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+        self.assertContains(response, 'محصول لغوشده قابل تغییر وضعیت نیست')
 
     def test_get_cannot_change_status(self):
         product = self.create_review_product(product_code='ART-REVIEW-9')

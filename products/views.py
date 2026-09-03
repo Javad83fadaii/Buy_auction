@@ -26,6 +26,7 @@ from .services import (
     add_product_image,
     create_manual_product,
     delete_product_image,
+    get_available_status_transitions,
     set_product_image_primary,
     update_product_cancelled_state,
     update_product_image_sort_order,
@@ -165,6 +166,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
         gallery_images = list(product.images.all())
         primary_image = self.get_primary_image(gallery_images)
         can_review_product = self.request.user.has_perm('products.review_product')
+        available_status_transitions = get_available_status_transitions(product=product)
 
         return {
             'page_title': product.title,
@@ -175,14 +177,20 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'image_upload_form': image_upload_form or self.get_image_upload_form(),
             'can_manage_images': self.request.user.has_perm('products.change_product'),
             'can_review_product': can_review_product,
+            'show_submit_review_action': (
+                can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
+            ),
             'show_approve_action': (
-                can_review_product and product.status == ProductStatusChoices.PENDING_REVIEW
+                can_review_product and ProductStatusChoices.APPROVED in available_status_transitions
             ),
             'show_reject_action': (
-                can_review_product and product.status == ProductStatusChoices.PENDING_REVIEW
+                can_review_product and ProductStatusChoices.REJECTED in available_status_transitions
+            ),
+            'show_publish_action': (
+                can_review_product and ProductStatusChoices.PUBLISHED in available_status_transitions
             ),
             'show_rereview_action': (
-                can_review_product and product.status == ProductStatusChoices.REJECTED
+                can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
             ),
             'status_label': self.get_status_label(product),
             'source_label': self.get_source_label(product),
@@ -644,9 +652,19 @@ class ProductApproveView(ProductReviewActionView):
     success_message = 'محصول با موفقیت تأیید شد.'
 
 
+class ProductSubmitReviewView(ProductReviewActionView):
+    target_status = ProductStatusChoices.PENDING_REVIEW
+    success_message = 'محصول با موفقیت برای بررسی ارسال شد.'
+
+
 class ProductRejectView(ProductReviewActionView):
     target_status = ProductStatusChoices.REJECTED
     success_message = 'محصول با موفقیت رد شد.'
+
+
+class ProductPublishView(ProductReviewActionView):
+    target_status = ProductStatusChoices.PUBLISHED
+    success_message = 'محصول با موفقیت منتشر شد.'
 
 
 class ProductReReviewView(ProductReviewActionView):

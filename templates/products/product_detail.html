@@ -287,6 +287,36 @@
     </div>
 
     <div class="actions-row">
+        {% if show_submit_review_action %}
+            <form method="post" action="{% url 'products:submit_review' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-primary">ارسال برای بررسی</button>
+            </form>
+        {% endif %}
+        {% if show_approve_action %}
+            <form method="post" action="{% url 'products:approve' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-primary">تأیید محصول</button>
+            </form>
+        {% endif %}
+        {% if show_reject_action %}
+            <form method="post" action="{% url 'products:reject' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-secondary">رد محصول</button>
+            </form>
+        {% endif %}
+        {% if show_publish_action %}
+            <form method="post" action="{% url 'products:publish' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-primary">انتشار محصول</button>
+            </form>
+        {% endif %}
+        {% if show_rereview_action %}
+            <form method="post" action="{% url 'products:re_review' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-secondary">ارسال مجدد برای بررسی</button>
+            </form>
+        {% endif %}
         {% if perms.products.change_product %}
             <form
                 method="post"

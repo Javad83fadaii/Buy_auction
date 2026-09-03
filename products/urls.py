@@ -12,8 +12,10 @@ from .views import (
     ProductImageSortOrderUpdateView,
     ProductImageUploadView,
     ProductListView,
+    ProductPublishView,
     ProductRejectView,
     ProductReReviewView,
+    ProductSubmitReviewView,
 )
 
 app_name = 'products'
@@ -22,8 +24,10 @@ urlpatterns = [
     path('', ProductListView.as_view(), name='list'),
     path('dashboard/', ProductDashboardView.as_view(), name='dashboard'),
     path('<int:id>/', ProductDetailView.as_view(), name='detail'),
+    path('<int:id>/submit-review/', ProductSubmitReviewView.as_view(), name='submit_review'),
     path('<int:id>/approve/', ProductApproveView.as_view(), name='approve'),
     path('<int:id>/reject/', ProductRejectView.as_view(), name='reject'),
+    path('<int:id>/publish/', ProductPublishView.as_view(), name='publish'),
     path('<int:id>/re-review/', ProductReReviewView.as_view(), name='re_review'),
     path('<int:id>/cancel-toggle/', ProductCancelToggleView.as_view(), name='cancel_toggle'),
     path('<int:id>/images/upload/', ProductImageUploadView.as_view(), name='image_upload'),

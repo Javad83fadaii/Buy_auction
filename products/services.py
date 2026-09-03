@@ -1,4 +1,4 @@
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import ImproperlyConfigured, NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 
@@ -26,15 +26,48 @@ MANUAL_PRODUCT_FORM_FIELDS = (
     'needs_expert_review',
 )
 
-REVIEW_STATUS_TRANSITIONS = {
+WORKFLOW_STATUS_TRANSITIONS = {
+    ProductStatusChoices.DRAFT: {
+        ProductStatusChoices.PENDING_REVIEW,
+    },
     ProductStatusChoices.PENDING_REVIEW: {
         ProductStatusChoices.APPROVED,
         ProductStatusChoices.REJECTED,
     },
+    ProductStatusChoices.APPROVED: {
+        ProductStatusChoices.PUBLISHED,
+    },
+    ProductStatusChoices.PUBLISHED: set(),
     ProductStatusChoices.REJECTED: {
         ProductStatusChoices.PENDING_REVIEW,
     },
 }
+
+
+def _collect_defined_workflow_statuses() -> set[str]:
+    defined_statuses = set(WORKFLOW_STATUS_TRANSITIONS)
+    for target_statuses in WORKFLOW_STATUS_TRANSITIONS.values():
+        defined_statuses.update(target_statuses)
+    return defined_statuses
+
+
+def _assert_workflow_status_coverage() -> None:
+    required_statuses = set(ProductStatusChoices.values)
+    missing_statuses = sorted(required_statuses - _collect_defined_workflow_statuses())
+    if missing_statuses:
+        missing_statuses_text = ', '.join(missing_statuses)
+        raise ImproperlyConfigured(
+            f'Product workflow status definitions are incomplete: {missing_statuses_text}'
+        )
+
+
+_assert_workflow_status_coverage()
+
+
+def get_available_status_transitions(*, product: Product) -> set[str]:
+    if product.is_cancelled:
+        return set()
+    return set(WORKFLOW_STATUS_TRANSITIONS.get(product.status, set()))
 
 
 def create_manual_product(*, cleaned_data: dict, images: list, user) -> Product:
@@ -156,13 +189,19 @@ def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user
 
 
 def update_product_review_status(*, product: Product, status: str, user) -> Product:
-    allowed_statuses = REVIEW_STATUS_TRANSITIONS.get(product.status, set())
+    if product.is_cancelled:
+        raise ValidationError('محصول لغوشده قابل تغییر وضعیت نیست. ابتدا آن را فعال‌سازی مجدد کنید.')
+
+    allowed_statuses = get_available_status_transitions(product=product)
     if status not in allowed_statuses:
         raise ValidationError('تغییر وضعیت در این مرحله مجاز نیست.')
 
     with transaction.atomic():
         managed_product = Product.objects.select_for_update().get(pk=product.pk)
-        current_allowed_statuses = REVIEW_STATUS_TRANSITIONS.get(managed_product.status, set())
+        if managed_product.is_cancelled:
+            raise ValidationError('محصول لغوشده قابل تغییر وضعیت نیست. ابتدا آن را فعال‌سازی مجدد کنید.')
+
+        current_allowed_statuses = get_available_status_transitions(product=managed_product)
         if status not in current_allowed_statuses:
             raise ValidationError('تغییر وضعیت در این مرحله مجاز نیست.')
 

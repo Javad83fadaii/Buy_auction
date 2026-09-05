@@ -1,0 +1,37 @@
+{# Product card used in the card view of the product list page. #}
+<a
+    class="product-card"
+    href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
+>
+    {% if product.primary_images %}
+        <img
+            class="product-card-thumb"
+            src="{{ product.primary_images.0.image.url }}"
+            alt="تصویر اصلی {{ product.title }}"
+        >
+    {% else %}
+        <div class="product-card-thumb product-card-thumb-placeholder">بدون تصویر</div>
+    {% endif %}
+
+    <h3 class="product-card-title">{{ product.title }}</h3>
+
+    {# Core product metadata shown in the compact card layout. #}
+    <div class="product-card-meta">
+        <span>کد اثر: {{ product.product_code|default:"-" }}</span>
+        <span>خالق: {{ product.artist|default:"-" }}</span>
+        <span>نوع هنر: {{ product.art_type|default:"-" }}</span>
+        <span>منبع: {{ product.get_source_type_display }}</span>
+        <span>تاریخ ثبت: {{ product.created_at|date:"Y/m/d" }}</span>
+    </div>
+
+    <div class="table-badge-stack">
+        <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+        {% if product.is_cancelled %}
+            <span class="flag-badge flag-badge-warning">لغو شده</span>
+        {% endif %}
+    </div>
+
+    {% if product.suitable_price %}
+        <span class="product-card-price">{{ product.suitable_price }}</span>
+    {% endif %}
+</a>

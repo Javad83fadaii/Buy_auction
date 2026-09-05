@@ -1,0 +1,39 @@
+{# Price fields: shared between create and edit forms. #}
+<section class="form-section">
+    <div class="form-section-heading">
+        <div>
+            <h2>قیمت</h2>
+            {% if show_price_preview %}
+                <p class="muted-text">برای مبلغ‌های بزرگ، پیش‌نمایش عددی زیر هر فیلد نمایش داده می‌شود.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="form-grid form-grid-2">
+        <div class="form-field">
+            <label for="{{ form.suggested_price.id_for_label }}">
+                {{ form.suggested_price.label }}
+                {% if show_required_markers and form.suggested_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.suggested_price }}
+            {% if form.suggested_price.help_text %}<small class="field-help">{{ form.suggested_price.help_text }}</small>{% endif %}
+            {% if show_price_preview %}
+                <small id="price-preview-suggested_price" class="field-help price-preview" data-price-preview></small>
+            {% endif %}
+            {% if form.suggested_price.errors %}<small class="field-error">{{ form.suggested_price.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.suitable_price.id_for_label }}">
+                {{ form.suitable_price.label }}
+                {% if show_required_markers and form.suitable_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.suitable_price }}
+            {% if form.suitable_price.help_text %}<small class="field-help">{{ form.suitable_price.help_text }}</small>{% endif %}
+            {% if show_price_preview %}
+                <small id="price-preview-suitable_price" class="field-help price-preview" data-price-preview></small>
+            {% endif %}
+            {% if form.suitable_price.errors %}<small class="field-error">{{ form.suitable_price.errors|join:", " }}</small>{% endif %}
+        </div>
+    </div>
+</section>

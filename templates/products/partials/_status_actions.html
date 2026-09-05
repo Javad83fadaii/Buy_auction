@@ -1,0 +1,58 @@
+{# Status and workflow actions displayed on the product detail page. #}
+<div class="actions-row">
+    {% if show_submit_review_action %}
+        <form method="post" action="{% url 'products:submit_review' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-primary">ارسال برای بررسی</button>
+        </form>
+    {% endif %}
+
+    {% if show_approve_action %}
+        <form method="post" action="{% url 'products:approve' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-primary">تأیید محصول</button>
+        </form>
+    {% endif %}
+
+    {% if show_reject_action %}
+        <form method="post" action="{% url 'products:reject' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-secondary">رد محصول</button>
+        </form>
+    {% endif %}
+
+    {% if show_publish_action %}
+        <form method="post" action="{% url 'products:publish' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-primary">انتشار محصول</button>
+        </form>
+    {% endif %}
+
+    {% if show_rereview_action %}
+        <form method="post" action="{% url 'products:re_review' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-secondary">ارسال مجدد برای بررسی</button>
+        </form>
+    {% endif %}
+
+    {% if perms.products.change_product %}
+        <form
+            method="post"
+            action="{% url 'products:cancel_toggle' product.pk %}"
+            data-product-cancel-form
+        >
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{% if product.is_cancelled %}restore{% else %}cancel{% endif %}">
+            <button
+                type="submit"
+                class="button {% if product.is_cancelled %}button-primary{% else %}button-secondary{% endif %}"
+            >
+                {% if product.is_cancelled %}فعال‌سازی مجدد{% else %}لغو محصول{% endif %}
+            </button>
+        </form>
+
+        <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
+    {% endif %}
+
+    <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
+</div>

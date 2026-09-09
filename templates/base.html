@@ -6,24 +6,8 @@
     <title>{% block title %}Buy Auction{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
-    <script>
-        (function () {
-            try {
-                var savedTheme = window.localStorage.getItem('site-theme');
-                if (savedTheme === 'neumorphism') {
-                    document.documentElement.setAttribute('data-theme', 'neumorphism');
-                }
-            } catch (error) {
-                /* localStorage may be unavailable; default theme applies */
-            }
-        }());
-    </script>
 </head>
 <body>
-    <button type="button" class="theme-toggle-fab" data-theme-toggle aria-label="تغییر تم سایت">
-        <span data-theme-toggle-label>حالت نئومورفیک</span>
-    </button>
-
     <main class="page-shell">
         {% if messages %}
             <section class="messages-stack" aria-label="پیام‌ها">
@@ -34,50 +18,5 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
-
-    <script>
-        (function () {
-            var toggleButton = document.querySelector('[data-theme-toggle]');
-            var toggleLabel = document.querySelector('[data-theme-toggle-label]');
-            if (!toggleButton) {
-                return;
-            }
-
-            function currentTheme() {
-                return document.documentElement.getAttribute('data-theme') === 'neumorphism'
-                    ? 'neumorphism'
-                    : 'glass';
-            }
-
-            function updateLabel() {
-                if (!toggleLabel) {
-                    return;
-                }
-                toggleLabel.textContent = currentTheme() === 'neumorphism'
-                    ? 'حالت شیشه‌ای'
-                    : 'حالت نئومورفیک';
-            }
-
-            updateLabel();
-
-            toggleButton.addEventListener('click', function () {
-                var nextTheme = currentTheme() === 'neumorphism' ? 'glass' : 'neumorphism';
-
-                if (nextTheme === 'neumorphism') {
-                    document.documentElement.setAttribute('data-theme', 'neumorphism');
-                } else {
-                    document.documentElement.removeAttribute('data-theme');
-                }
-
-                try {
-                    window.localStorage.setItem('site-theme', nextTheme);
-                } catch (error) {
-                    /* localStorage may be unavailable; theme still applies for this page view */
-                }
-
-                updateLabel();
-            });
-        }());
-    </script>
 </body>
 </html>

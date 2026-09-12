@@ -218,9 +218,113 @@ class ExpertAppraisal(models.Model):
 
     review_notes = models.TextField('نکات قابل بررسی در مورد اثر', blank=True)
 
+    # --- تحلیل پژوهشی ---
+    introduction = models.TextField('معرفی اثر', blank=True)
+    historical_importance = models.TextField('اهمیت تاریخی', blank=True)
+    artistic_importance = models.TextField('اهمیت هنری', blank=True)
+    unique_features = models.TextField('ویژگی‌های منحصر به فرد', blank=True)
+    expert_opinion = models.TextField('نظر کارشناسی (تحلیل)', blank=True)
+    references = models.TextField('رفرنس‌ها', blank=True)
+    marginal_notes = models.TextField('متن‌های حاشیه‌ای مهم', blank=True)
+
+    # --- ارزش‌گذاری ---
+    seller_suggested_price_toman = models.DecimalField(
+        'قیمت پیشنهادی فروشنده (تومان)',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    estimated_price_min_toman = models.DecimalField(
+        'قیمت برآوردی کارشناسی - کمینه (تومان)',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    estimated_price_max_toman = models.DecimalField(
+        'قیمت برآوردی کارشناسی - بیشینه (تومان)',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    final_auction_price_toman = models.DecimalField(
+        'قیمت نهایی شرکت در حراج (تومان)',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    final_price_usd = models.DecimalField(
+        'قیمت نهایی به دلار',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    usd_exchange_rate = models.DecimalField(
+        'قیمت روز دلار',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    gold_18k_gram_price_toman = models.DecimalField(
+        'قیمت روز هر گرم طلای ۱۸ عیار (تومان)',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+
+    # --- مالک و دریافت اثر ---
+    owner_name = models.CharField('نام مالک/ارائه‌دهنده', max_length=255, blank=True)
+    received_date = models.DateField('تاریخ دریافت اثر برای کارشناسی', blank=True, null=True)
+
+    # --- نتیجه نهایی ---
+    final_result_summary = models.TextField('نتیجه نهایی کارشناسی', blank=True)
+    final_verdict = models.CharField(
+        'نظر نهایی کارشناس',
+        max_length=32,
+        choices=FinalVerdictChoices.choices,
+        blank=True,
+    )
+
+    # --- ردگیری سیستمی ---
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='created_expert_appraisals',
+        blank=True,
+        null=True,
+        verbose_name='ایجاد شده توسط',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='updated_expert_appraisals',
+        blank=True,
+        null=True,
+        verbose_name='آخرین ویرایش توسط',
+    )
+    created_at = models.DateTimeField('زمان ایجاد', auto_now_add=True)
+    updated_at = models.DateTimeField('زمان ویرایش', auto_now=True)
+
     class Meta:
         verbose_name = 'کارشناسی اثر'
         verbose_name_plural = 'کارشناسی‌های آثار'
+        ordering = ('-appraisal_date', '-created_at')
+        permissions = (
+            ('review_expert_appraisal', 'Can review expert appraisal'),
+        )
 
     def __str__(self) -> str:
         return f'کارشناسی {self.product.title} - {self.appraisal_date}'

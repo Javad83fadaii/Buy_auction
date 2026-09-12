@@ -108,6 +108,97 @@ class ExpertAppraisal(models.Model):
         blank=True,
     )
 
+    # --- مشخصات فیزیکی ---
+    dimensions = models.CharField('ابعاد (سانتی‌متر)', max_length=64, blank=True)
+    dimensions_with_frame = models.CharField('ابعاد با قاب (سانتی‌متر)', max_length=64, blank=True)
+    dimensions_with_margin = models.CharField('ابعاد با حاشیه (سانتی‌متر)', max_length=64, blank=True)
+    weight_kg = models.DecimalField(
+        'وزن (کیلوگرم)',
+        max_digits=10,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+
+    # --- جنس ---
+    material = models.CharField(
+        'جنس',
+        max_length=32,
+        choices=MaterialChoices.choices,
+        blank=True,
+    )
+    material_other = models.CharField('جنس (سایر)', max_length=64, blank=True)
+    pages_or_pieces_count = models.PositiveIntegerField('تعداد صفحات/قطعات', blank=True, null=True)
+
+    # --- مرکب و تکنیک ---
+    ink_type = models.CharField(
+        'نوع مرکب',
+        max_length=16,
+        choices=InkTypeChoices.choices,
+        blank=True,
+    )
+    ink_type_other = models.CharField('نوع مرکب (سایر)', max_length=64, blank=True)
+    illumination_technique = models.CharField(
+        'تکنیک تذهیب/نگاره',
+        max_length=16,
+        choices=IlluminationTechniqueChoices.choices,
+        blank=True,
+    )
+    illumination_technique_other = models.CharField('تکنیک تذهیب/نگاره (سایر)', max_length=64, blank=True)
+    painting_type = models.CharField(
+        'نوع نگاره',
+        max_length=16,
+        choices=PaintingTypeChoices.choices,
+        blank=True,
+    )
+    painting_type_other = models.CharField('نوع نگاره (سایر)', max_length=64, blank=True)
+
+    # --- جلد ---
+    cover_type = models.CharField(
+        'نوع جلد',
+        max_length=32,
+        choices=CoverTypeChoices.choices,
+        blank=True,
+    )
+
+    # --- فرش و منسوجات (در صورت کاربرد) ---
+    warp_material = models.CharField(
+        'جنس تار',
+        max_length=16,
+        choices=WarpWeftMaterialChoices.choices,
+        blank=True,
+    )
+    warp_material_other = models.CharField('جنس تار (سایر)', max_length=64, blank=True)
+    weft_material = models.CharField(
+        'جنس پود',
+        max_length=16,
+        choices=WarpWeftMaterialChoices.choices,
+        blank=True,
+    )
+    weft_material_other = models.CharField('جنس پود (سایر)', max_length=64, blank=True)
+    fabric_type = models.CharField(
+        'نوع پارچه',
+        max_length=16,
+        choices=FabricTypeChoices.choices,
+        blank=True,
+    )
+    fabric_type_other = models.CharField('نوع پارچه (سایر)', max_length=64, blank=True)
+    knot_type = models.CharField(
+        'نوع گره',
+        max_length=16,
+        choices=KnotTypeChoices.choices,
+        blank=True,
+    )
+    knot_type_other = models.CharField('نوع گره (سایر)', max_length=64, blank=True)
+    design_pattern = models.CharField(
+        'طرح نقشه',
+        max_length=16,
+        choices=DesignPatternChoices.choices,
+        blank=True,
+    )
+    design_pattern_other = models.CharField('طرح نقشه (سایر)', max_length=64, blank=True)
+
     class Meta:
         verbose_name = 'کارشناسی اثر'
         verbose_name_plural = 'کارشناسی‌های آثار'

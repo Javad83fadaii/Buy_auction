@@ -199,9 +199,53 @@ class ExpertAppraisal(models.Model):
     )
     design_pattern_other = models.CharField('طرح نقشه (سایر)', max_length=64, blank=True)
 
+    # --- وضعیت سلامت ---
+    health_status = models.CharField(
+        'وضعیت سلامت اثر',
+        max_length=16,
+        choices=HealthStatusChoices.choices,
+        blank=True,
+    )
+    health_status_other = models.CharField('وضعیت سلامت اثر (سایر)', max_length=64, blank=True)
+
+    # --- مرمت ---
+    needs_restoration = models.BooleanField('نیاز به مرمت دارد', default=False)
+    needs_restoration_part = models.CharField('نیاز به مرمت - کدام قسمت', max_length=255, blank=True)
+    has_previous_restoration = models.BooleanField('مرمت قبلی دارد', default=False)
+    previous_restoration_part = models.CharField('مرمت قبلی - کدام قسمت', max_length=255, blank=True)
+    has_missing_pages = models.BooleanField('کمبود صفحات دارد', default=False)
+    missing_pages_part = models.CharField('کمبود صفحات - کدام قسمت', max_length=255, blank=True)
+
+    review_notes = models.TextField('نکات قابل بررسی در مورد اثر', blank=True)
+
     class Meta:
         verbose_name = 'کارشناسی اثر'
         verbose_name_plural = 'کارشناسی‌های آثار'
 
     def __str__(self) -> str:
         return f'کارشناسی {self.product.title} - {self.appraisal_date}'
+
+
+class DamageAssessment(models.Model):
+    appraisal = models.ForeignKey(
+        ExpertAppraisal,
+        on_delete=models.CASCADE,
+        related_name='damage_assessments',
+        verbose_name='کارشناسی',
+    )
+    damage_type = models.CharField(
+        'نوع آسیب',
+        max_length=32,
+        choices=DamageTypeChoices.choices,
+    )
+    location = models.CharField('محل آسیب', max_length=255, blank=True)
+    severity = models.CharField('میزان آسیب', max_length=255, blank=True)
+    description = models.TextField('توضیح', blank=True)
+
+    class Meta:
+        verbose_name = 'ارزیابی آسیب'
+        verbose_name_plural = 'ارزیابی‌های آسیب'
+        ordering = ('id',)
+
+    def __str__(self) -> str:
+        return f'{self.get_damage_type_display()} - {self.appraisal_id}'

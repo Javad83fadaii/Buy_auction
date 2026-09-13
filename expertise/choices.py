@@ -4,6 +4,8 @@ from django.db import models
 class LoanTypeChoices(models.TextChoices):
     LOANED = 'LOANED', 'امانی'
     INTERNAL = 'INTERNAL', 'داخلی'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class ArtworkTypeChoices(models.TextChoices):
@@ -22,6 +24,8 @@ class ArtworkTypeChoices(models.TextChoices):
     METAL_ARTIFACT = 'METAL_ARTIFACT', 'مصنوعات فلزی'
     PHOTOGRAPH = 'PHOTOGRAPH', 'عکس'
     JEWELRY = 'JEWELRY', 'زیورآلات'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class ContentSubjectChoices(models.TextChoices):
@@ -37,18 +41,24 @@ class ContentSubjectChoices(models.TextChoices):
     BIBLE = 'BIBLE', 'انجیل'
     TORAH = 'TORAH', 'تورات'
     MYSTICISM = 'MYSTICISM', 'عرفان'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class CalendarTypeChoices(models.TextChoices):
     SHAMSI = 'SHAMSI', 'هجری شمسی'
     QAMARI = 'QAMARI', 'هجری قمری'
     MILADI = 'MILADI', 'میلادی'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class HistoricalMatchChoices(models.TextChoices):
     CONFIRMED = 'CONFIRMED', 'تایید می‌شود'
     PROBABLE = 'PROBABLE', 'احتمالی'
     REJECTED = 'REJECTED', 'مردود'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class AttributionCertaintyChoices(models.TextChoices):
@@ -56,6 +66,8 @@ class AttributionCertaintyChoices(models.TextChoices):
     ATTRIBUTED = 'ATTRIBUTED', 'منسوب'
     PROBABLE = 'PROBABLE', 'احتمالی'
     UNKNOWN = 'UNKNOWN', 'ناشناس'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class LanguageChoices(models.TextChoices):
@@ -64,6 +76,7 @@ class LanguageChoices(models.TextChoices):
     LATIN = 'LATIN', 'لاتین'
     HEBREW = 'HEBREW', 'عبری'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class ScriptChoices(models.TextChoices):
@@ -79,6 +92,8 @@ class ScriptChoices(models.TextChoices):
     SHEKASTE_NASTALIQ = 'SHEKASTE_NASTALIQ', 'شکسته نستعلیق'
     DIVANI = 'DIVANI', 'دیوانی'
     OBSOLETE_SCRIPTS = 'OBSOLETE_SCRIPTS', 'خطوط منسوخ شده'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class MaterialChoices(models.TextChoices):
@@ -94,6 +109,8 @@ class MaterialChoices(models.TextChoices):
     WOOD = 'WOOD', 'چوب'
     GLASS = 'GLASS', 'شیشه'
     MIRROR = 'MIRROR', 'آینه'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class InkTypeChoices(models.TextChoices):
@@ -103,6 +120,7 @@ class InkTypeChoices(models.TextChoices):
     LAPIS = 'LAPIS', 'لاجورد'
     WHITE_LEAD = 'WHITE_LEAD', 'سفیدآب'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class IlluminationTechniqueChoices(models.TextChoices):
@@ -113,6 +131,7 @@ class IlluminationTechniqueChoices(models.TextChoices):
     MOHARAR = 'MOHARAR', 'محرر'
     SIAH_GHALAM = 'SIAH_GHALAM', 'سیاه قلم'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class PaintingTypeChoices(models.TextChoices):
@@ -123,6 +142,7 @@ class PaintingTypeChoices(models.TextChoices):
     MINIATURE = 'MINIATURE', 'مینیاتور'
     HALKARI = 'HALKARI', 'حلکاری'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class CoverTypeChoices(models.TextChoices):
@@ -134,6 +154,8 @@ class CoverTypeChoices(models.TextChoices):
     LACQUER = 'LACQUER', 'جلد لاکی'
     WOODEN = 'WOODEN', 'چوبی'
     GILDED_LEATHER = 'GILDED_LEATHER', 'چرم طلاکاری/سوخت'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class WarpWeftMaterialChoices(models.TextChoices):
@@ -142,6 +164,7 @@ class WarpWeftMaterialChoices(models.TextChoices):
     WOOL = 'WOOL', 'پشم'
     COTTON = 'COTTON', 'پنبه'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class FabricTypeChoices(models.TextChoices):
@@ -152,11 +175,13 @@ class FabricTypeChoices(models.TextChoices):
     COTTON = 'COTTON', 'پنبه'
     PAISLEY = 'PAISLEY', 'بته جقه'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class KnotTypeChoices(models.TextChoices):
     DOUBLE = 'DOUBLE', 'جفتی'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class DesignPatternChoices(models.TextChoices):
@@ -166,6 +191,7 @@ class DesignPatternChoices(models.TextChoices):
     AROOS_BAFT = 'AROOS_BAFT', 'عروس بافت'
     LEILI_MAJNUN = 'LEILI_MAJNUN', 'لیلی مجنون'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class HealthStatusChoices(models.TextChoices):
@@ -173,6 +199,7 @@ class HealthStatusChoices(models.TextChoices):
     FULL_HEALTH = 'FULL_HEALTH', 'سلامت کامل'
     SEVERE_RISK = 'SEVERE_RISK', 'در معرض آسیب جدی'
     OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'
 
 
 class DamageTypeChoices(models.TextChoices):
@@ -187,9 +214,12 @@ class DamageTypeChoices(models.TextChoices):
     DETACHMENT = 'DETACHMENT', 'افتادگی/جداشدگی'
     FRAME_DAMAGE = 'FRAME_DAMAGE', 'آسیب قاب'
     MISSING_PARTS = 'MISSING_PARTS', 'نقص قطعات'
+    OTHER = 'OTHER', 'دیگر'
 
 
 class FinalVerdictChoices(models.TextChoices):
     AUCTION_READY = 'AUCTION_READY', 'قابل عرضه در حراج'
     NOT_SUITABLE = 'NOT_SUITABLE', 'غیر قابل عرضه'
     NEEDS_FURTHER_REVIEW = 'NEEDS_FURTHER_REVIEW', 'نیازمند بررسی بیشتر'
+    OTHER = 'OTHER', 'دیگر'
+    NONE = 'NONE', 'هیچ‌کدام'

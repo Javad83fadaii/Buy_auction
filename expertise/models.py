@@ -30,10 +30,11 @@ from .choices import (
 
 class ExpertAppraisal(models.Model):
     # --- هویت و شناسایی ---
-    product = models.OneToOneField(
+    # یک اثر می‌تواند چندبار و توسط کارشناسان مختلف کارشناسی شود، بنابراین این رابطه ForeignKey است نه OneToOne.
+    product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name='expert_appraisal',
+        related_name='expert_appraisals',
         verbose_name='اثر',
     )
     expert = models.ForeignKey(
@@ -49,7 +50,18 @@ class ExpertAppraisal(models.Model):
         choices=LoanTypeChoices.choices,
         blank=True,
     )
-    appraisal_date = models.DateField('تاریخ کارشناسی')
+    loan_type_other = models.CharField('امانی/داخلی (سایر)', max_length=64, blank=True)
+
+    # تاریخ ارجاع: همان لحظه‌ای که مدیر این اثر را برای کارشناسی ارجاع می‌دهد (خودکار، غیرقابل ویرایش).
+    referral_date = models.DateField('تاریخ ارجاع', auto_now_add=True)
+    # تاریخ کارشناسی: در لحظه ارجاع خالی است و با ثبت نهایی کارشناسی توسط منطق برنامه پر می‌شود
+    # (نه با ورودی دستی کاربر/کارشناس).
+    appraisal_date = models.DateField(
+        'تاریخ کارشناسی',
+        blank=True,
+        null=True,
+        editable=False,
+    )
 
     # --- نوع و موضوع اثر ---
     artwork_type = models.CharField(
@@ -58,12 +70,14 @@ class ExpertAppraisal(models.Model):
         choices=ArtworkTypeChoices.choices,
         blank=True,
     )
+    artwork_type_other = models.CharField('نوع اثر (سایر)', max_length=64, blank=True)
     content_subject = models.CharField(
         'موضوع اثر',
         max_length=32,
         choices=ContentSubjectChoices.choices,
         blank=True,
     )
+    content_subject_other = models.CharField('موضوع اثر (سایر)', max_length=64, blank=True)
 
     # --- تاریخ اثر ---
     inscribed_date_text = models.CharField('تاریخ ذکر شده در اثر', max_length=128, blank=True)
@@ -73,6 +87,7 @@ class ExpertAppraisal(models.Model):
         choices=CalendarTypeChoices.choices,
         blank=True,
     )
+    calendar_type_other = models.CharField('نوع تقویم (سایر)', max_length=64, blank=True)
     historical_period = models.CharField('قرن/دوره تاریخی', max_length=128, blank=True)
 
     # --- هنرمند/کاتب ---
@@ -85,12 +100,14 @@ class ExpertAppraisal(models.Model):
         choices=HistoricalMatchChoices.choices,
         blank=True,
     )
+    historical_match_status_other = models.CharField('مطابقت تاریخی با اصل اثر (سایر)', max_length=64, blank=True)
     attribution_certainty = models.CharField(
         'انتساب اثر به هنرمند',
         max_length=16,
         choices=AttributionCertaintyChoices.choices,
         blank=True,
     )
+    attribution_certainty_other = models.CharField('انتساب اثر به هنرمند (سایر)', max_length=64, blank=True)
     signature_location = models.CharField('محل امضاء در اثر', max_length=255, blank=True)
 
     # --- زبان و خط ---
@@ -107,6 +124,7 @@ class ExpertAppraisal(models.Model):
         choices=ScriptChoices.choices,
         blank=True,
     )
+    script_other = models.CharField('خط (سایر)', max_length=64, blank=True)
 
     # --- مشخصات فیزیکی ---
     dimensions = models.CharField('ابعاد (سانتی‌متر)', max_length=64, blank=True)
@@ -161,6 +179,7 @@ class ExpertAppraisal(models.Model):
         choices=CoverTypeChoices.choices,
         blank=True,
     )
+    cover_type_other = models.CharField('نوع جلد (سایر)', max_length=64, blank=True)
 
     # --- فرش و منسوجات (در صورت کاربرد) ---
     warp_material = models.CharField(
@@ -297,6 +316,7 @@ class ExpertAppraisal(models.Model):
         choices=FinalVerdictChoices.choices,
         blank=True,
     )
+    final_verdict_other = models.CharField('نظر نهایی کارشناس (سایر)', max_length=64, blank=True)
 
     # --- ردگیری سیستمی ---
     created_by = models.ForeignKey(
@@ -321,13 +341,13 @@ class ExpertAppraisal(models.Model):
     class Meta:
         verbose_name = 'کارشناسی اثر'
         verbose_name_plural = 'کارشناسی‌های آثار'
-        ordering = ('-appraisal_date', '-created_at')
+        ordering = ('-referral_date', '-created_at')
         permissions = (
             ('review_expert_appraisal', 'Can review expert appraisal'),
         )
 
     def __str__(self) -> str:
-        return f'کارشناسی {self.product.title} - {self.appraisal_date}'
+        return f'کارشناسی {self.product.title} - {self.referral_date}'
 
 
 class DamageAssessment(models.Model):
@@ -342,6 +362,7 @@ class DamageAssessment(models.Model):
         max_length=32,
         choices=DamageTypeChoices.choices,
     )
+    damage_type_other = models.CharField('نوع آسیب (سایر)', max_length=64, blank=True)
     location = models.CharField('محل آسیب', max_length=255, blank=True)
     severity = models.CharField('میزان آسیب', max_length=255, blank=True)
     description = models.TextField('توضیح', blank=True)

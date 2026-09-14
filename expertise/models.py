@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -12,6 +13,7 @@ from .choices import (
     CoverTypeChoices,
     DamageTypeChoices,
     DesignPatternChoices,
+    ExpertAppraisalStatusChoices,
     FabricTypeChoices,
     FinalVerdictChoices,
     HealthStatusChoices,
@@ -42,6 +44,27 @@ class ExpertAppraisal(models.Model):
         on_delete=models.PROTECT,
         related_name='expert_appraisals',
         verbose_name='کارشناس',
+    )
+    referred_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='referred_expert_appraisals',
+        blank=True,
+        null=True,
+        verbose_name='ارجاع‌دهنده (مدیر)',
+    )
+    status = models.CharField(
+        'وضعیت کارشناسی',
+        max_length=32,
+        choices=ExpertAppraisalStatusChoices.choices,
+        default=ExpertAppraisalStatusChoices.REFERRED,
+        db_index=True,
+    )
+    is_locked = models.BooleanField(
+        'قفل شده (تاریخچه غیرقابل تغییر)',
+        default=False,
+        db_index=True,
+        help_text='در صورت قفل شدن، اطلاعات کارشناسی جهت حفظ تاریخچه غیرقابل ویرایش می‌گردد.',
     )
     archive_number = models.CharField('شماره بایگانی', max_length=64, blank=True)
     loan_type = models.CharField(
@@ -360,6 +383,14 @@ class ExpertAppraisal(models.Model):
 
     def __str__(self) -> str:
         return f'کارشناسی {self.product.title} - {self.referral_date}'
+
+    def clean(self) -> None:
+        super().clean()
+        if self.pk:
+            db_instance = type(self).objects.filter(pk=self.pk).values('is_locked').first()
+            if db_instance and db_instance['is_locked'] and self.is_locked:
+                raise ValidationError('این برگه کارشناسی قفل شده است و امکان تغییر اطلاعات آن وجود ندارد.')
+
 
 
 class DamageAssessment(models.Model):

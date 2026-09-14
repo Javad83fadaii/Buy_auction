@@ -223,3 +223,12 @@ class FinalVerdictChoices(models.TextChoices):
     NEEDS_FURTHER_REVIEW = 'NEEDS_FURTHER_REVIEW', 'نیازمند بررسی بیشتر'
     OTHER = 'OTHER', 'دیگر'
     NONE = 'NONE', 'هیچ‌کدام'
+
+
+class ExpertAppraisalStatusChoices(models.TextChoices):
+    REFERRED = 'REFERRED', 'ارجاع داده شده'
+    IN_PROGRESS = 'IN_PROGRESS', 'در حال کارشناسی'
+    COMPLETED = 'COMPLETED', 'تکمیل شده'
+    PENDING_MANAGER_APPROVAL = 'PENDING_MANAGER_APPROVAL', 'در انتظار تأیید مدیر'
+    APPROVED = 'APPROVED', 'تأیید شده'
+    REJECTED = 'REJECTED', 'رد شده'

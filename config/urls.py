@@ -2,12 +2,12 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from accounts.views import DashboardView, OperatorDashboardView
-from config.views import home
 
 urlpatterns = [
-    path('', home, name='home'),
+    path('', RedirectView.as_view(pattern_name='accounts:login', permanent=False), name='home'),
     path('accounts/', include('accounts.urls')),
     path('products/', include('products.urls')),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),

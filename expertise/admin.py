@@ -17,11 +17,14 @@ class ExpertAppraisalAdmin(admin.ModelAdmin):
         'appraisal_date',
         'artwork_type',
         'final_verdict',
+        'manager_approved',
+        'manager_approved_by',
+        'manager_approved_at',
         'created_at',
     )
-    list_filter = ('artwork_type', 'final_verdict', 'loan_type', 'appraisal_date')
+    list_filter = ('artwork_type', 'final_verdict', 'manager_approved', 'loan_type', 'appraisal_date')
     search_fields = ('product__title', 'archive_number', 'artist_or_scribe_name', 'owner_name')
     ordering = ('-appraisal_date',)
     readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('product', 'expert', 'created_by', 'updated_by')
+    raw_id_fields = ('product', 'expert', 'manager_approved_by', 'created_by', 'updated_by')
     inlines = (DamageAssessmentInline,)

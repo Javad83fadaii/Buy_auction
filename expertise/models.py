@@ -318,6 +318,18 @@ class ExpertAppraisal(models.Model):
     )
     final_verdict_other = models.CharField('نظر نهایی کارشناس (سایر)', max_length=64, blank=True)
 
+    # --- تأیید مدیر ---
+    manager_approved = models.BooleanField('تأیید مدیر', default=False, db_index=True)
+    manager_approved_at = models.DateTimeField('زمان تأیید مدیر', blank=True, null=True)
+    manager_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='approved_expert_appraisals',
+        blank=True,
+        null=True,
+        verbose_name='تأیید شده توسط مدیر',
+    )
+
     # --- ردگیری سیستمی ---
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

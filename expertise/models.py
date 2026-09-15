@@ -277,16 +277,8 @@ class ExpertAppraisal(models.Model):
         null=True,
         validators=[MinValueValidator(0)],
     )
-    estimated_price_min_toman = models.DecimalField(
-        'قیمت برآوردی کارشناسی - کمینه (تومان)',
-        max_digits=18,
-        decimal_places=2,
-        blank=True,
-        null=True,
-        validators=[MinValueValidator(0)],
-    )
-    estimated_price_max_toman = models.DecimalField(
-        'قیمت برآوردی کارشناسی - بیشینه (تومان)',
+    expert_suggested_price_toman = models.DecimalField(
+        'قیمت پیشنهادی کارشناس (تومان)',
         max_digits=18,
         decimal_places=2,
         blank=True,

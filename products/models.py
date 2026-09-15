@@ -63,6 +63,14 @@ class Product(models.Model):
     is_cancelled = models.BooleanField('انصراف', default=False)
     is_notable = models.BooleanField('قابل توجه', default=False)
     needs_expert_review = models.BooleanField('نیازمند کارشناسی', default=False)
+    assigned_expert = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='assigned_products_for_expertise',
+        blank=True,
+        null=True,
+        verbose_name='کارشناس ارجاعی',
+    )
     source_type = models.CharField(
         'نوع منبع',
         max_length=32,

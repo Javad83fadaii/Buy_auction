@@ -24,6 +24,7 @@ MANUAL_PRODUCT_FORM_FIELDS = (
     'is_cancelled',
     'is_notable',
     'needs_expert_review',
+    'assigned_expert',
 )
 
 WORKFLOW_STATUS_TRANSITIONS = {
@@ -210,6 +211,52 @@ def update_product_review_status(*, product: Product, status: str, user) -> Prod
         managed_product.save(update_fields=['status', 'updated_by', 'updated_at'])
 
     return managed_product
+
+
+def refer_product_to_expert(*, product: Product, expert, user):
+    from expertise.choices import ExpertAppraisalStatusChoices
+    from expertise.models import ExpertAppraisal
+
+    active_referral_statuses = (
+        ExpertAppraisalStatusChoices.REFERRED,
+        ExpertAppraisalStatusChoices.IN_PROGRESS,
+        ExpertAppraisalStatusChoices.PENDING_MANAGER_APPROVAL,
+    )
+
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+
+        if managed_product.is_cancelled:
+            raise ValidationError('محصول لغوشده قابل ارجاع به کارشناس نیست. ابتدا آن را فعال‌سازی مجدد کنید.')
+
+        if not managed_product.needs_expert_review:
+            raise ValidationError('این محصول به عنوان نیازمند کارشناسی ثبت نشده است.')
+
+        if expert is None:
+            raise ValidationError('ابتدا کارشناس را انتخاب کنید.')
+
+        duplicate_referral_exists = ExpertAppraisal.objects.select_for_update().filter(
+            product=managed_product,
+            expert=expert,
+            status__in=active_referral_statuses,
+        ).exists()
+        if duplicate_referral_exists:
+            raise ValidationError('برای این محصول قبلاً یک ارجاع فعال به این کارشناس ثبت شده است.')
+
+        managed_product.assigned_expert = expert
+        managed_product.updated_by = user
+        managed_product.save(update_fields=['assigned_expert', 'updated_by', 'updated_at'])
+
+        appraisal = ExpertAppraisal.objects.create(
+            product=managed_product,
+            expert=expert,
+            referred_by=user,
+            status=ExpertAppraisalStatusChoices.REFERRED,
+            created_by=user,
+            updated_by=user,
+        )
+
+    return appraisal
 
 
 def _normalize_validation_error(exc: ValidationError, *, product: Product) -> ValidationError:

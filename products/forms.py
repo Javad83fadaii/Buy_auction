@@ -1,10 +1,15 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
+
+from accounts.constants import OPERATOR_ROLE
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
 from .models import Product, ProductImage
 from .validators import validate_product_image
+
+User = get_user_model()
 
 PRODUCT_LIST_DEFAULT_SORT = '-created_at'
 PRODUCT_LIST_SORT_CHOICES = (
@@ -59,7 +64,15 @@ PRODUCT_EDIT_FIELDS = (
     'is_cancelled',
     'is_notable',
     'needs_expert_review',
+    'assigned_expert',
 )
+
+
+def get_expert_queryset():
+    return User.objects.filter(
+        is_active=True,
+        groups__name=OPERATOR_ROLE,
+    ).order_by('first_name', 'last_name', 'username').distinct()
 
 
 class ProductBaseForm(forms.ModelForm):
@@ -82,6 +95,7 @@ class ProductBaseForm(forms.ModelForm):
             'art_type': forms.TextInput(attrs={'placeholder': 'نوع هنر'}),
             'suggested_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
             'suitable_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
+            'assigned_expert': forms.Select(),
         }
 
     ordered_fields: tuple[str, ...] = ()
@@ -124,6 +138,9 @@ class ProductBaseForm(forms.ModelForm):
             self.fields['suggested_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
         if 'suitable_price' in self.fields:
             self.fields['suitable_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
+        if 'assigned_expert' in self.fields:
+            self.fields['assigned_expert'].queryset = get_expert_queryset()
+            self.fields['assigned_expert'].empty_label = 'انتخاب کنید'
 
     def _configure_field_labels_and_help_texts(self):
         field_text_map = {
@@ -145,6 +162,7 @@ class ProductBaseForm(forms.ModelForm):
             'is_cancelled': ('انصراف', 'اگر پیشنهاد در زمان ثبت انصراف داده شده است این گزینه را فعال کنید.'),
             'is_notable': ('قابل توجه', 'برای آثاری که نیاز به پیگیری بیشتر دارند فعال شود.'),
             'needs_expert_review': ('نیازمند کارشناسی', 'برای آثاری که به بررسی تخصصی نیاز دارند فعال شود.'),
+            'assigned_expert': ('ارجاع به کارشناس', 'کارشناس مدنظر را انتخاب کنید. ارجاع نهایی با دکمه اختصاصی ثبت می‌شود.'),
             'images': ('تصاویر اثر', 'می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.'),
         }
 
@@ -261,6 +279,23 @@ class ProductImageUploadForm(forms.Form):
         image = self.cleaned_data.get('image')
         validate_product_image(image)
         return image
+
+
+class ProductExpertReferralForm(forms.Form):
+    expert = forms.ModelChoiceField(
+        label='ارجاع به کارشناس',
+        queryset=User.objects.none(),
+        empty_label='انتخاب کنید',
+        widget=forms.Select(),
+        error_messages={'required': 'انتخاب کارشناس الزامی است.'},
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['expert'].queryset = get_expert_queryset()
+        existing_class = self.fields['expert'].widget.attrs.get('class', '')
+        self.fields['expert'].widget.attrs['class'] = f'{existing_class} text-input'.strip()
+        self.fields['expert'].widget.attrs.setdefault('dir', 'rtl')
 
 
 class ProductImageSortOrderForm(forms.ModelForm):

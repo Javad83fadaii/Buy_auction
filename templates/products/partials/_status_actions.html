@@ -1,5 +1,13 @@
 {# Status and workflow actions displayed on the product detail page. #}
 <div class="actions-row">
+    {% if can_refer_to_expert %}
+        <form method="post" action="{% url 'products:refer_to_expert' product.pk %}">
+            {% csrf_token %}
+            {{ expert_referral_form.expert }}
+            <button type="submit" class="button button-primary">ارجاع به کارشناس</button>
+        </form>
+    {% endif %}
+
     {% if show_submit_review_action %}
         <form method="post" action="{% url 'products:submit_review' product.pk %}">
             {% csrf_token %}

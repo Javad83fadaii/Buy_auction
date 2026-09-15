@@ -17,6 +17,7 @@ from .forms import (
     PRODUCT_LIST_SORT_CHOICES,
     ProductCreateForm,
     ProductEditForm,
+    ProductExpertReferralForm,
     ProductImageSortOrderForm,
     ProductImageUploadForm,
     ProductListFilterForm,
@@ -27,6 +28,7 @@ from .services import (
     create_manual_product,
     delete_product_image,
     get_available_status_transitions,
+    refer_product_to_expert,
     set_product_image_primary,
     update_product_cancelled_state,
     update_product_image_sort_order,
@@ -123,7 +125,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'is_primary',
             'sort_order',
         ).order_by('sort_order', 'id')
-        return Product.objects.select_related('created_by', 'updated_by').prefetch_related(
+        return Product.objects.select_related('created_by', 'updated_by', 'assigned_expert').prefetch_related(
             Prefetch('images', queryset=image_queryset)
         )
 
@@ -150,6 +152,13 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
     def get_image_upload_form(self):
         return ProductImageUploadForm()
 
+    def get_expert_referral_form(self, *, product=None, data=None):
+        product = product or self.get_product()
+        initial = {}
+        if product.assigned_expert_id:
+            initial['expert'] = product.assigned_expert_id
+        return ProductExpertReferralForm(data=data, initial=initial)
+
     def build_managed_images(self, gallery_images, image_sort_forms=None):
         bound_forms = image_sort_forms or {}
         return [
@@ -167,6 +176,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
         primary_image = self.get_primary_image(gallery_images)
         can_review_product = self.request.user.has_perm('products.review_product')
         available_status_transitions = get_available_status_transitions(product=product)
+        expert_referral_form = self.get_expert_referral_form(product=product)
 
         return {
             'page_title': product.title,
@@ -192,6 +202,8 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'show_rereview_action': (
                 can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
             ),
+            'can_refer_to_expert': can_review_product and product.needs_expert_review and not product.is_cancelled,
+            'expert_referral_form': expert_referral_form,
             'status_label': self.get_status_label(product),
             'source_label': self.get_source_label(product),
             'back_url': self.get_back_url(),
@@ -644,6 +656,49 @@ class ProductReviewActionView(RolePermissionMixin, View):
             return redirect(self.get_success_url())
 
         messages.success(request, self.success_message)
+        return redirect(self.get_success_url())
+
+
+class ProductExpertReferralView(RolePermissionMixin, FormView):
+    permission_required = 'products.review_product'
+    form_class = ProductExpertReferralForm
+    http_method_names = ['post']
+
+    def get_product(self):
+        if not hasattr(self, '_product'):
+            self._product = get_object_or_404(Product.objects.select_related('assigned_expert'), pk=self.kwargs['id'])
+        return self._product
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.get_product().pk])
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        product = self.get_product()
+        if product.assigned_expert_id and 'initial' not in kwargs:
+            kwargs['initial'] = {'expert': product.assigned_expert_id}
+        return kwargs
+
+    def form_valid(self, form):
+        try:
+            refer_product_to_expert(
+                product=self.get_product(),
+                expert=form.cleaned_data['expert'],
+                user=self.request.user,
+            )
+        except ValidationError as exc:
+            messages.error(
+                self.request,
+                exc.messages[0] if exc.messages else 'ارجاع به کارشناس انجام نشد.',
+            )
+            return redirect(self.get_success_url())
+
+        messages.success(self.request, 'محصول با موفقیت به کارشناس ارجاع شد.')
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        error_message = form.errors.get('expert', ['انتخاب کارشناس الزامی است.'])[0]
+        messages.error(self.request, error_message)
         return redirect(self.get_success_url())
 
 

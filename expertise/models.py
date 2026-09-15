@@ -11,6 +11,7 @@ from .choices import (
     CalendarTypeChoices,
     ContentSubjectChoices,
     CoverTypeChoices,
+    DamageSeverityChoices,
     DamageTypeChoices,
     DesignPatternChoices,
     ExpertAppraisalStatusChoices,
@@ -402,7 +403,12 @@ class DamageAssessment(models.Model):
     )
     damage_type_other = models.CharField('نوع آسیب (سایر)', max_length=64, blank=True)
     location = models.CharField('محل آسیب', max_length=255, blank=True)
-    severity = models.CharField('میزان آسیب', max_length=255, blank=True)
+    severity = models.CharField(
+        'میزان آسیب',
+        max_length=16,
+        choices=DamageSeverityChoices.choices,
+        blank=True,
+    )
     description = models.TextField('توضیح', blank=True)
 
     class Meta:

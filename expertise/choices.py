@@ -217,6 +217,14 @@ class DamageTypeChoices(models.TextChoices):
     OTHER = 'OTHER', 'دیگر'
 
 
+class DamageSeverityChoices(models.TextChoices):
+    MINOR = 'MINOR', 'جزئی'
+    MODERATE = 'MODERATE', 'متوسط'
+    SEVERE = 'SEVERE', 'شدید'
+    CRITICAL = 'CRITICAL', 'بحرانی'
+    OTHER = 'OTHER', 'دیگر'
+
+
 class FinalVerdictChoices(models.TextChoices):
     AUCTION_READY = 'AUCTION_READY', 'قابل عرضه در حراج'
     NOT_SUITABLE = 'NOT_SUITABLE', 'غیر قابل عرضه'

@@ -66,7 +66,6 @@ class ExpertAppraisal(models.Model):
         db_index=True,
         help_text='در صورت قفل شدن، اطلاعات کارشناسی جهت حفظ تاریخچه غیرقابل ویرایش می‌گردد.',
     )
-    archive_number = models.CharField('شماره بایگانی', max_length=64, blank=True)
     loan_type = models.CharField(
         'امانی/داخلی',
         max_length=16,
@@ -383,6 +382,10 @@ class ExpertAppraisal(models.Model):
 
     def __str__(self) -> str:
         return f'کارشناسی {self.product.title} - {self.referral_date}'
+
+    @property
+    def archive_number(self) -> str:
+        return self.product.product_code or ''
 
     def clean(self) -> None:
         super().clean()

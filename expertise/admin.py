@@ -31,7 +31,7 @@ class ExpertAppraisalAdmin(admin.ModelAdmin):
         'loan_type',
         'appraisal_date',
     )
-    search_fields = ('product__title', 'archive_number', 'artist_or_scribe_name', 'owner_name')
+    search_fields = ('product__title', 'product__product_code', 'artist_or_scribe_name', 'owner_name')
     ordering = ('-appraisal_date', '-created_at')
     readonly_fields = ('created_at', 'updated_at')
     raw_id_fields = ('product', 'expert', 'referred_by', 'manager_approved_by', 'created_by', 'updated_by')
@@ -45,4 +45,3 @@ class ExpertAppraisalAdmin(admin.ModelAdmin):
                 if field not in readonly:
                     readonly.append(field)
         return readonly
-

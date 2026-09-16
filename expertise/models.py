@@ -31,6 +31,37 @@ from .choices import (
 )
 
 
+class ArtistOrScribe(models.Model):
+    name = models.CharField('نام هنرمند/کاتب', max_length=255, unique=True, db_index=True)
+    created_at = models.DateTimeField('زمان ثبت', auto_now_add=True)
+    updated_at = models.DateTimeField('زمان ویرایش', auto_now=True)
+
+    class Meta:
+        verbose_name = 'هنرمند/کاتب'
+        verbose_name_plural = 'هنرمندان و کاتبان'
+        ordering = ('name',)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def clean(self) -> None:
+        super().clean()
+        if self.name:
+            self.name = ' '.join(self.name.split())
+
+
+def get_or_create_artist_or_scribe(name: str):
+    cleaned = ' '.join((name or '').split())
+    if not cleaned:
+        return None
+    artist, _ = ArtistOrScribe.objects.get_or_create(name=cleaned)
+    return artist
+
+
+def get_artist_or_scribe_names() -> list[str]:
+    return list(ArtistOrScribe.objects.order_by('name').values_list('name', flat=True))
+
+
 class ExpertAppraisal(models.Model):
     # --- هویت و شناسایی ---
     # یک اثر می‌تواند چندبار و توسط کارشناسان مختلف کارشناسی شود، بنابراین این رابطه ForeignKey است نه OneToOne.
@@ -382,10 +413,18 @@ class ExpertAppraisal(models.Model):
 
     def clean(self) -> None:
         super().clean()
+        if self.artist_or_scribe_name:
+            self.artist_or_scribe_name = ' '.join(self.artist_or_scribe_name.split())
         if self.pk:
             db_instance = type(self).objects.filter(pk=self.pk).values('is_locked').first()
             if db_instance and db_instance['is_locked'] and self.is_locked:
                 raise ValidationError('این برگه کارشناسی قفل شده است و امکان تغییر اطلاعات آن وجود ندارد.')
+
+    def save(self, *args, **kwargs):
+        if self.artist_or_scribe_name:
+            self.artist_or_scribe_name = ' '.join(self.artist_or_scribe_name.split())
+            get_or_create_artist_or_scribe(self.artist_or_scribe_name)
+        super().save(*args, **kwargs)
 
 
 

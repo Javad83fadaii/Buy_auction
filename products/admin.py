@@ -1,6 +1,20 @@
+from django import forms
 from django.contrib import admin
 
+from expertise.forms import ArtistOrScribeDatalistWidget
+
 from .models import Product, ProductImage
+
+
+class ProductAdminForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = '__all__'
+        widgets = {
+            'artist': ArtistOrScribeDatalistWidget(
+                attrs={'placeholder': 'خالق اثر / هنرمند', 'style': 'width: 100%; max-width: 25rem;'}
+            ),
+        }
 
 
 class ProductImageInline(admin.TabularInline):
@@ -12,6 +26,7 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    form = ProductAdminForm
     list_display = (
         'title',
         'product_code',

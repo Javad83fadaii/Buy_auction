@@ -4,6 +4,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
 
 from accounts.constants import OPERATOR_ROLE
+from expertise.forms import ArtistOrScribeDatalistWidget
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
 from .models import Product, ProductImage
@@ -86,7 +87,7 @@ class ProductBaseForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'placeholder': 'عنوان اثر'}),
             'product_code': forms.TextInput(attrs={'placeholder': 'کد اثر'}),
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'توضیحات'}),
-            'artist': forms.TextInput(attrs={'placeholder': 'خالق اثر'}),
+            'artist': ArtistOrScribeDatalistWidget(attrs={'placeholder': 'خالق اثر'}),
             'production_date': forms.DateInput(attrs={'type': 'date'}),
             'production_location': forms.TextInput(attrs={'placeholder': 'مکان تولید'}),
             'material': forms.TextInput(attrs={'placeholder': 'متریال'}),
@@ -180,6 +181,10 @@ class ProductBaseForm(forms.ModelForm):
 
     def clean_suitable_price(self):
         return self._clean_non_negative_price('suitable_price')
+
+    def clean_artist(self):
+        val = self.cleaned_data.get('artist') or ''
+        return ' '.join(val.split())
 
     def _clean_non_negative_price(self, field_name):
         value = self.cleaned_data.get(field_name)

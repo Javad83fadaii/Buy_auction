@@ -139,11 +139,19 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         self._normalize_blank_fields()
+        if self.artist:
+            try:
+                from expertise.models import get_or_create_artist_or_scribe
+                get_or_create_artist_or_scribe(self.artist)
+            except Exception:
+                pass
         return super().save(*args, **kwargs)
 
     def _normalize_blank_fields(self) -> None:
         if self.product_code is not None:
             self.product_code = self.product_code.strip() or None
+        if self.artist:
+            self.artist = ' '.join(self.artist.split())
 
 
 class ProductImage(models.Model):

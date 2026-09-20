@@ -6,8 +6,14 @@ from django.utils import timezone
 from accounts.constants import OPERATOR_ROLE
 from expertise.forms import ArtistOrScribeDatalistWidget
 
-from .choices import ProductSourceTypeChoices, ProductStatusChoices
-from .models import Product, ProductImage
+from .choices import (
+    AuctionHouseChoices,
+    AuctionStatusChoices,
+    CurrencyChoices,
+    ProductSourceTypeChoices,
+    ProductStatusChoices,
+)
+from .models import Auction, Product, ProductImage
 from .validators import validate_product_image
 
 User = get_user_model()
@@ -47,6 +53,7 @@ class MultipleImageField(forms.FileField):
 
 
 PRODUCT_EDIT_FIELDS = (
+    'auction',
     'suggested_by',
     'contact_method',
     'suggestion_date',
@@ -66,6 +73,10 @@ PRODUCT_EDIT_FIELDS = (
     'is_notable',
     'needs_expert_review',
     'assigned_expert',
+    'to_buy',
+    'has_initial_info',
+    'has_all_prices',
+    'final_inspection_done',
 )
 
 
@@ -77,10 +88,21 @@ def get_expert_queryset():
 
 
 class ProductBaseForm(forms.ModelForm):
+    registration_mode = forms.ChoiceField(
+        choices=(
+            ('manual', 'ثبت پیشنهاد دستی'),
+            ('auction', 'ثبت از حراجی خارجی'),
+        ),
+        initial='manual',
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
     class Meta:
         model = Product
         fields = ()
         widgets = {
+            'auction': forms.Select(),
             'suggested_by': forms.TextInput(attrs={'placeholder': 'نام پیشنهاد دهنده'}),
             'contact_method': forms.Select(),
             'suggestion_date': forms.DateInput(attrs={'type': 'date'}),
@@ -142,9 +164,19 @@ class ProductBaseForm(forms.ModelForm):
         if 'assigned_expert' in self.fields:
             self.fields['assigned_expert'].queryset = get_expert_queryset()
             self.fields['assigned_expert'].empty_label = 'انتخاب کنید'
+        if 'auction' in self.fields:
+            self.fields['auction'].queryset = Auction.objects.all().order_by('-start_date', 'name')
+            self.fields['auction'].empty_label = 'انتخاب حراجی'
+
+        if self.instance.pk:
+            if self.instance.auction_id or self.instance.source_type != ProductSourceTypeChoices.MANUAL:
+                self.fields['registration_mode'].initial = 'auction'
+            else:
+                self.fields['registration_mode'].initial = 'manual'
 
     def _configure_field_labels_and_help_texts(self):
         field_text_map = {
+            'auction': ('حراجی مرتبط', 'حراجی برگزارکننده این اثر را انتخاب کنید.'),
             'title': ('عنوان اثر', 'نام اثر را همان‌طور که باید ثبت شود وارد کنید.'),
             'product_code': ('کد اثر', 'در صورت وجود، کد داخلی یا شناسایی اثر را وارد کنید.'),
             'description': ('توضیحات', 'توضیحات تکمیلی درباره اثر را در صورت نیاز ثبت کنید.'),
@@ -164,6 +196,10 @@ class ProductBaseForm(forms.ModelForm):
             'is_notable': ('قابل توجه', 'برای آثاری که نیاز به پیگیری بیشتر دارند فعال شود.'),
             'needs_expert_review': ('نیازمند کارشناسی', 'برای آثاری که به بررسی تخصصی نیاز دارند فعال شود.'),
             'assigned_expert': ('ارجاع به کارشناس', 'کارشناس مدنظر را انتخاب کنید. ارجاع نهایی با دکمه اختصاصی ثبت می‌شود.'),
+            'to_buy': ('خریداری شود', 'این اثر هدف خرید ما در این حراجی است.'),
+            'has_initial_info': ('اطلاعات اولیه وارد شده', 'اطلاعات شناسنامه‌ای و اولیه این اثر تکمیل است.'),
+            'has_all_prices': ('تمام قیمت‌ها وارد شده', 'تمام قیمت‌های پایه، برآورد و مناسب تکمیل است.'),
+            'final_inspection_done': ('بازدید نهایی شده', 'بازدید فیزیکی و کارشناسی نهایی در محل حراجی انجام شده است.'),
             'images': ('تصاویر اثر', 'می‌توانید چند تصویر انتخاب کنید. اولین تصویر انتخاب‌شده به عنوان تصویر اصلی ثبت می‌شود.'),
         }
 
@@ -247,13 +283,29 @@ class ProductCreateForm(ProductBaseForm):
     class Meta(ProductBaseForm.Meta):
         fields = PRODUCT_EDIT_FIELDS
 
-    ordered_fields = Meta.fields + ('images',)
+    ordered_fields = ('registration_mode',) + Meta.fields + ('images',)
 
     def get_initial_values(self):
         return {'suggestion_date': timezone.localdate()}
 
     def _post_clean(self):
-        self.instance.source_type = ProductSourceTypeChoices.MANUAL
+        registration_mode = self.cleaned_data.get('registration_mode') or 'manual'
+        auction = self.cleaned_data.get('auction')
+
+        if registration_mode == 'auction' or auction is not None:
+            if auction:
+                if auction.source_house == 'CHRISTIES':
+                    self.instance.source_type = ProductSourceTypeChoices.CHRISTIES
+                elif auction.source_house == 'SOTHEBYS':
+                    self.instance.source_type = ProductSourceTypeChoices.SOTHEBYS
+                else:
+                    self.instance.source_type = ProductSourceTypeChoices.OTHER_AUCTION
+                self.instance.source_name = auction.name
+            else:
+                self.instance.source_type = ProductSourceTypeChoices.OTHER_AUCTION
+        else:
+            self.instance.source_type = ProductSourceTypeChoices.MANUAL
+
         self.instance.status = ProductStatusChoices.PENDING_REVIEW
         super()._post_clean()
 
@@ -262,7 +314,25 @@ class ProductEditForm(ProductBaseForm):
     class Meta(ProductBaseForm.Meta):
         fields = PRODUCT_EDIT_FIELDS
 
-    ordered_fields = Meta.fields
+    ordered_fields = ('registration_mode',) + Meta.fields
+
+    def _post_clean(self):
+        super()._post_clean()
+        registration_mode = self.cleaned_data.get('registration_mode') or 'manual'
+        auction = self.cleaned_data.get('auction')
+        if registration_mode == 'auction' or auction is not None:
+            if auction:
+                if auction.source_house == 'CHRISTIES':
+                    self.instance.source_type = ProductSourceTypeChoices.CHRISTIES
+                elif auction.source_house == 'SOTHEBYS':
+                    self.instance.source_type = ProductSourceTypeChoices.SOTHEBYS
+                else:
+                    self.instance.source_type = ProductSourceTypeChoices.OTHER_AUCTION
+                self.instance.source_name = auction.name
+            else:
+                self.instance.source_type = ProductSourceTypeChoices.OTHER_AUCTION
+        else:
+            self.instance.source_type = ProductSourceTypeChoices.MANUAL
 
 
 class ProductImageUploadForm(forms.Form):
@@ -341,9 +411,23 @@ class ProductListFilterForm(forms.Form):
         error_messages={'invalid': 'تاریخ پایان معتبر نیست.'},
     )
     sort = forms.CharField(required=False)
+    auction = forms.ModelChoiceField(
+        queryset=Auction.objects.none(),
+        required=False,
+        empty_label='همه حراجی‌ها',
+    )
+    to_buy = forms.ChoiceField(
+        choices=(('all', 'همه آثار'), ('1', 'فقط موارد خرید'), ('0', 'سایر')),
+        required=False,
+    )
+    final_inspection = forms.ChoiceField(
+        choices=(('all', 'همه وضعیت‌ها'), ('1', 'بازدید شده'), ('0', 'بازدید نشده')),
+        required=False,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['auction'].queryset = Auction.objects.all().order_by('-start_date', 'name')
         for name, field in self.fields.items():
             existing_class = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f'{existing_class} text-input'.strip()
@@ -354,3 +438,75 @@ class ProductListFilterForm(forms.Form):
         if not sort or sort not in allowed_sorts:
             return PRODUCT_LIST_DEFAULT_SORT
         return sort
+
+
+class AuctionForm(forms.ModelForm):
+    class Meta:
+        model = Auction
+        fields = (
+            'name',
+            'source_house',
+            'start_date',
+            'end_date',
+            'location',
+            'currency',
+            'commission_rate',
+            'status',
+            'total_lots',
+            'entered_lots_count',
+            'cancelled_lots_count',
+            'expert_lots_count',
+            'notable_lots_count',
+            'to_buy_count',
+            'initial_info_count',
+            'all_prices_count',
+            'final_inspection_count',
+        )
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'مثلاً: حراج پاییز ۲۰۲۴ ساتبیز لندن'}),
+            'source_house': forms.Select(),
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            'location': forms.TextInput(attrs={'placeholder': 'مثلاً: لندن، خیابان نیوباند'}),
+            'currency': forms.Select(),
+            'commission_rate': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'placeholder': '25.00'}),
+            'status': forms.Select(),
+            'total_lots': forms.NumberInput(attrs={'min': '0', 'placeholder': 'تعداد کل آثار'}),
+            'entered_lots_count': forms.NumberInput(attrs={'min': '0'}),
+            'cancelled_lots_count': forms.NumberInput(attrs={'min': '0'}),
+            'expert_lots_count': forms.NumberInput(attrs={'min': '0'}),
+            'notable_lots_count': forms.NumberInput(attrs={'min': '0'}),
+            'to_buy_count': forms.NumberInput(attrs={'min': '0'}),
+            'initial_info_count': forms.NumberInput(attrs={'min': '0'}),
+            'all_prices_count': forms.NumberInput(attrs={'min': '0'}),
+            'final_inspection_count': forms.NumberInput(attrs={'min': '0'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            existing_class = widget.attrs.get('class', '')
+            widget.attrs['class'] = f'{existing_class} text-input'.strip()
+            widget.attrs.setdefault('dir', 'rtl')
+            field.error_messages['required'] = 'این فیلد الزامی است.'
+
+
+class AuctionFilterForm(forms.Form):
+    q = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'جستجو در نام، مکان و ...'}))
+    source_house = forms.ChoiceField(
+        choices=(('', 'همه خانه‌ها'),) + tuple(AuctionHouseChoices.choices),
+        required=False,
+    )
+    status = forms.ChoiceField(
+        choices=(('', 'همه وضعیت‌ها'),) + tuple(AuctionStatusChoices.choices),
+        required=False,
+    )
+    date_from = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    date_to = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            existing_class = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{existing_class} text-input'.strip()

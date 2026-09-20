@@ -26,13 +26,20 @@ ROLE_PERMISSION_BLUEPRINTS = {
         ),
         PermissionBlueprint(
             app_label='products',
-            codenames=('add_product', 'change_product', 'view_product'),
+            codenames=(
+                'add_product',
+                'change_product',
+                'view_product',
+                'add_auction',
+                'change_auction',
+                'view_auction',
+            ),
         ),
     ),
     VIEWER_ROLE: (
         PermissionBlueprint(
             app_label='products',
-            codenames=('view_product',),
+            codenames=('view_product', 'view_auction'),
         ),
     ),
 }

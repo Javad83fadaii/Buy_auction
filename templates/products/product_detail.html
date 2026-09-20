@@ -88,6 +88,18 @@
             {% if product.is_cancelled %}
                 <div class="detail-alert detail-alert-warning">این محصول لغو شده است.</div>
             {% endif %}
+
+            {% if product.auction %}
+                <div class="auction-summary-chip">
+                    <span class="badge badge-house badge-house-{{ product.auction.source_house|lower }}">
+                        {{ product.auction.get_source_house_display }}
+                    </span>
+                    <a class="auction-link" href="{% url 'products:auction_detail' product.auction.pk %}">
+                        🏛️ {{ product.auction.name }}
+                    </a>
+                </div>
+            {% endif %}
+
             <div class="detail-info-list">
                 <div class="detail-info-item">
                     <span class="detail-info-label">وضعیت</span>
@@ -103,7 +115,13 @@
                 </div>
                 <div class="detail-info-item">
                     <span class="detail-info-label">قیمت مناسب</span>
-                    <span class="detail-info-value">{{ product.suitable_price|default:"—" }}</span>
+                    <span class="detail-info-value">
+                        {% if product.suitable_price %}
+                            {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="detail-info-item">
                     <span class="detail-info-label">کارشناس ارجاعی</span>
@@ -112,6 +130,18 @@
             </div>
 
             <div class="flag-list" aria-label="پرچم‌های محصول">
+                {% if product.to_buy %}
+                    <span class="flag-badge flag-badge-buy">🎯 هدف خرید</span>
+                {% endif %}
+                {% if product.final_inspection_done %}
+                    <span class="flag-badge flag-badge-inspect">🔍 بازدید نهایی شده</span>
+                {% endif %}
+                {% if product.has_all_prices %}
+                    <span class="flag-badge flag-badge-prices">💰 تمام قیمت‌ها ثبت شده</span>
+                {% endif %}
+                {% if product.has_initial_info %}
+                    <span class="flag-badge flag-badge-info">📋 اطلاعات اولیه کامل</span>
+                {% endif %}
                 {% if product.is_cancelled %}
                     <span class="flag-badge flag-badge-warning">انصراف داده شده</span>
                 {% endif %}
@@ -121,7 +151,7 @@
                 {% if product.needs_expert_review %}
                     <span class="flag-badge flag-badge-info">نیازمند کارشناسی</span>
                 {% endif %}
-                {% if not product.is_cancelled and not product.is_notable and not product.needs_expert_review %}
+                {% if not product.is_cancelled and not product.is_notable and not product.needs_expert_review and not product.to_buy and not product.final_inspection_done and not product.has_all_prices and not product.has_initial_info %}
                     <span class="detail-info-value">—</span>
                 {% endif %}
             </div>
@@ -129,6 +159,83 @@
     </div>
 
     <div class="detail-sections">
+        {# Auction Card Section (if linked to an external auction) #}
+        {% if product.auction %}
+            <section class="detail-section accent-amethyst auction-product-highlight">
+                <div class="section-header-inline">
+                    <h2>🏛️ اطلاعات حراجی خارجی و چک‌لیست خرید</h2>
+                    <a class="button button-secondary button-sm" href="{% url 'products:auction_detail' product.auction.pk %}">
+                        مشاهده کامل حراجی ←
+                    </a>
+                </div>
+                <div class="detail-info-list detail-info-list-2">
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">نام حراجی</span>
+                        <span class="detail-info-value">
+                            <a class="detail-link" href="{% url 'products:auction_detail' product.auction.pk %}">{{ product.auction.name }}</a>
+                        </span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">خانه حراجی</span>
+                        <span class="detail-info-value">{{ product.auction.get_source_house_display }}</span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">تاریخ برگزاری</span>
+                        <span class="detail-info-value">{{ product.auction.start_date|date:"Y/m/d" }}{% if product.auction.end_date %} تا {{ product.auction.end_date|date:"Y/m/d" }}{% endif %}</span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">مکان برگزاری</span>
+                        <span class="detail-info-value">{{ product.auction.location|default:"—" }}</span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">واحد پول</span>
+                        <span class="detail-info-value">{{ product.auction.get_currency_display }}</span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">درصد کمیسیون خریدار</span>
+                        <span class="detail-info-value">{{ product.auction.commission_rate }}٪</span>
+                    </div>
+                </div>
+
+                <div class="auction-lot-checklist">
+                    <h3 class="checklist-title">وضعیت‌های نظارتی اثر در این حراجی:</h3>
+                    <div class="checklist-grid">
+                        <div class="checklist-item {% if product.has_initial_info %}is-checked{% endif %}">
+                            <span class="checklist-icon">{% if product.has_initial_info %}✅{% else %}⚪{% endif %}</span>
+                            <div class="checklist-text">
+                                <strong>اطلاعات اولیه اثر</strong>
+                                <span>{% if product.has_initial_info %}کامل و ثبت شده{% else %}در انتظار تکمیل{% endif %}</span>
+                            </div>
+                        </div>
+
+                        <div class="checklist-item {% if product.has_all_prices %}is-checked{% endif %}">
+                            <span class="checklist-icon">{% if product.has_all_prices %}✅{% else %}⚪{% endif %}</span>
+                            <div class="checklist-text">
+                                <strong>تمام قیمت‌های اثر</strong>
+                                <span>{% if product.has_all_prices %}ثبت شده{% else %}در انتظار قیمت‌گذاری{% endif %}</span>
+                            </div>
+                        </div>
+
+                        <div class="checklist-item {% if product.final_inspection_done %}is-checked{% endif %}">
+                            <span class="checklist-icon">{% if product.final_inspection_done %}✅{% else %}⚪{% endif %}</span>
+                            <div class="checklist-text">
+                                <strong>بازدید نهایی فیزیکی</strong>
+                                <span>{% if product.final_inspection_done %}تأیید و انجام شده{% else %}انجام نشده{% endif %}</span>
+                            </div>
+                        </div>
+
+                        <div class="checklist-item {% if product.to_buy %}is-checked-buy{% endif %}">
+                            <span class="checklist-icon">{% if product.to_buy %}🎯{% else %}⚪{% endif %}</span>
+                            <div class="checklist-text">
+                                <strong>اولویت خرید</strong>
+                                <span>{% if product.to_buy %}در سبد خرید حراجی{% else %}عادی (بدون هدف خرید){% endif %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
         <section class="detail-section accent-sapphire">
             <h2>عنوان و شناسه</h2>
             <div class="detail-info-list detail-info-list-2">
@@ -163,11 +270,31 @@
         <section class="detail-section accent-copper">
             <h2>پیشنهاد، قیمت و منبع</h2>
             <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">نام پیشنهاددهنده</span><span class="detail-info-value">{{ product.suggested_by|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">روش پیشنهاد</span><span class="detail-info-value">{{ product.get_contact_method_display|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">تاریخ پیشنهاد</span><span class="detail-info-value">{{ product.suggestion_date|date:"Y/m/d"|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">قیمت پیشنهادی</span><span class="detail-info-value">{{ product.suggested_price|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">قیمت مناسب</span><span class="detail-info-value">{{ product.suitable_price|default:"—" }}</span></div>
+                {% if not product.auction %}
+                    <div class="detail-info-item"><span class="detail-info-label">نام پیشنهاددهنده</span><span class="detail-info-value">{{ product.suggested_by|default:"—" }}</span></div>
+                    <div class="detail-info-item"><span class="detail-info-label">روش پیشنهاد</span><span class="detail-info-value">{{ product.get_contact_method_display|default:"—" }}</span></div>
+                    <div class="detail-info-item"><span class="detail-info-label">تاریخ پیشنهاد</span><span class="detail-info-value">{{ product.suggestion_date|date:"Y/m/d"|default:"—" }}</span></div>
+                {% endif %}
+                <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت پیشنهادی</span>
+                    <span class="detail-info-value">
+                        {% if product.suggested_price %}
+                            {{ product.suggested_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت مناسب</span>
+                    <span class="detail-info-value">
+                        {% if product.suitable_price %}
+                            {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
                 <div class="detail-info-item"><span class="detail-info-label">نوع منبع</span><span class="detail-info-value">{{ source_label }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">نام منبع</span><span class="detail-info-value">{{ product.source_name|default:"—" }}</span></div>
                 {% if product.source_url %}

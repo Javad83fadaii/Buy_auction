@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="card auction-form-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="muted-text">اطلاعات حراجی خارجی، شرایط مالی، زمان‌بندی و شمارنده‌های کاتالوگ را وارد یا ویرایش فرمایید.</p>
+        </div>
+        <div class="header-actions">
+            <a class="button button-secondary" href="{{ cancel_url }}">بازگشت</a>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="detail-alert detail-alert-warning" role="alert">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="auction-form" novalidate>
+        {% csrf_token %}
+
+        {# Section 1: Basic Auction Information #}
+        <section class="form-section accent-sapphire">
+            <header class="form-section-header">
+                <h2>🏛️ مشخصات پایه حراجی</h2>
+                <p class="muted-text">نام رسمی، خانه حراجی بین‌المللی و وضعیت فعلی دوره حراجی.</p>
+            </header>
+            <div class="form-grid-3">
+                <div class="form-field">
+                    <label for="{{ form.name.id_for_label }}">نام حراجی <span class="required-indicator">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <small class="field-error">{{ form.name.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.source_house.id_for_label }}">خانه حراجی <span class="required-indicator">*</span></label>
+                    {{ form.source_house }}
+                    {% if form.source_house.errors %}
+                        <small class="field-error">{{ form.source_house.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.status.id_for_label }}">وضعیت حراجی <span class="required-indicator">*</span></label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <small class="field-error">{{ form.status.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# Section 2: Dates & Location #}
+        <section class="form-section accent-emerald">
+            <header class="form-section-header">
+                <h2>📅 زمان‌بندی و مکان برگزاری</h2>
+                <p class="muted-text">تاریخ شروع و پایان حراجی به همراه سالن یا کشور محل برگزاری.</p>
+            </header>
+            <div class="form-grid-3">
+                <div class="form-field">
+                    <label for="{{ form.start_date.id_for_label }}">تاریخ شروع <span class="required-indicator">*</span></label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                        <small class="field-error">{{ form.start_date.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.end_date.id_for_label }}">تاریخ پایان (اختیاری)</label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                        <small class="field-error">{{ form.end_date.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.location.id_for_label }}">مکان برگزاری</label>
+                    {{ form.location }}
+                    {% if form.location.errors %}
+                        <small class="field-error">{{ form.location.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# Section 3: Financial Terms #}
+        <section class="form-section accent-copper">
+            <header class="form-section-header">
+                <h2>💱 شرایط مالی و ارزی</h2>
+                <p class="muted-text">ارز معاملاتی قیمت‌ها و درصد کمیسیون خریدار (Buyer's Premium).</p>
+            </header>
+            <div class="form-grid-2">
+                <div class="form-field">
+                    <label for="{{ form.currency.id_for_label }}">واحد پول <span class="required-indicator">*</span></label>
+                    {{ form.currency }}
+                    {% if form.currency.errors %}
+                        <small class="field-error">{{ form.currency.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.commission_rate.id_for_label }}">درصد کمیسیون خریدار (٪) <span class="required-indicator">*</span></label>
+                    {{ form.commission_rate }}
+                    <small class="form-hint">مثلاً ۲۵ برای ۲۵٪ کارمزد حراجی.</small>
+                    {% if form.commission_rate.errors %}
+                        <small class="field-error">{{ form.commission_rate.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# Section 4: Lot Counters & Stats #}
+        <section class="form-section accent-amethyst">
+            <header class="form-section-header">
+                <h2>📊 آمار کاتالوگ و شمارنده‌های آثار</h2>
+                <p class="muted-text">
+                    این شمارنده‌ها با ورود آثار، تغییر پرچم‌ها و دکمهٔ «به‌روزرسانی آمار» به صورت خودکار محاسبه می‌شوند؛
+                    در عین حال می‌توانید شمارنده‌های اولیه کاتالوگ را نیز مستقیماً وارد یا اصلاح نمایید.
+                </p>
+            </header>
+
+            <div class="form-grid-3">
+                <div class="form-field">
+                    <label for="{{ form.total_lots.id_for_label }}">تعداد کل آثار کاتالوگ</label>
+                    {{ form.total_lots }}
+                    {% if form.total_lots.errors %}
+                        <small class="field-error">{{ form.total_lots.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.entered_lots_count.id_for_label }}">تعداد آثار وارد شده به سامانه</label>
+                    {{ form.entered_lots_count }}
+                    {% if form.entered_lots_count.errors %}
+                        <small class="field-error">{{ form.entered_lots_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.to_buy_count.id_for_label }}">🎯 تعداد مواردی که باید خریداری شود</label>
+                    {{ form.to_buy_count }}
+                    {% if form.to_buy_count.errors %}
+                        <small class="field-error">{{ form.to_buy_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.final_inspection_count.id_for_label }}">🔍 مواردی که بازدید نهایی شده‌اند</label>
+                    {{ form.final_inspection_count }}
+                    {% if form.final_inspection_count.errors %}
+                        <small class="field-error">{{ form.final_inspection_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.all_prices_count.id_for_label }}">💰 مواردی که تمام قیمت‌های آن وارد شده</label>
+                    {{ form.all_prices_count }}
+                    {% if form.all_prices_count.errors %}
+                        <small class="field-error">{{ form.all_prices_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.initial_info_count.id_for_label }}">📋 مواردی که اطلاعات اولیه وارد شده</label>
+                    {{ form.initial_info_count }}
+                    {% if form.initial_info_count.errors %}
+                        <small class="field-error">{{ form.initial_info_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.expert_lots_count.id_for_label }}">🔬 تعداد کارشناسی</label>
+                    {{ form.expert_lots_count }}
+                    {% if form.expert_lots_count.errors %}
+                        <small class="field-error">{{ form.expert_lots_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.notable_lots_count.id_for_label }}">⭐ تعداد قابل توجه (شاخص)</label>
+                    {{ form.notable_lots_count }}
+                    {% if form.notable_lots_count.errors %}
+                        <small class="field-error">{{ form.notable_lots_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ form.cancelled_lots_count.id_for_label }}">🚫 تعداد انصرافی</label>
+                    {{ form.cancelled_lots_count }}
+                    {% if form.cancelled_lots_count.errors %}
+                        <small class="field-error">{{ form.cancelled_lots_count.errors|join:", " }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <div class="form-actions-bar">
+            <button type="submit" class="button button-primary button-lg">ذخیره اطلاعات حراجی</button>
+            <a class="button button-secondary button-lg" href="{{ cancel_url }}">انصراف</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

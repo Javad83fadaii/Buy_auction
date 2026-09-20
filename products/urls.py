@@ -1,6 +1,11 @@
 from django.urls import path
 
 from .views import (
+    AuctionCreateView,
+    AuctionDetailView,
+    AuctionEditView,
+    AuctionListView,
+    AuctionSyncView,
     ProductApproveView,
     ProductCancelToggleView,
     ProductCreateView,
@@ -24,6 +29,11 @@ app_name = 'products'
 urlpatterns = [
     path('', ProductListView.as_view(), name='list'),
     path('dashboard/', ProductDashboardView.as_view(), name='dashboard'),
+    path('auctions/', AuctionListView.as_view(), name='auction_list'),
+    path('auctions/create/', AuctionCreateView.as_view(), name='auction_create'),
+    path('auctions/<int:id>/', AuctionDetailView.as_view(), name='auction_detail'),
+    path('auctions/<int:id>/edit/', AuctionEditView.as_view(), name='auction_edit'),
+    path('auctions/<int:id>/sync/', AuctionSyncView.as_view(), name='auction_sync'),
     path('<int:id>/', ProductDetailView.as_view(), name='detail'),
     path('<int:id>/submit-review/', ProductSubmitReviewView.as_view(), name='submit_review'),
     path('<int:id>/refer-to-expert/', ProductExpertReferralView.as_view(), name='refer_to_expert'),

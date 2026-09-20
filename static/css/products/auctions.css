@@ -1,0 +1,601 @@
+/* ==========================================================================
+   Auctions & External Auction Lot Management Styles
+   ========================================================================== */
+
+/* --- Mode Switcher (Manual Submission vs External Auction) --- */
+.mode-switch-group {
+    display: inline-flex;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 24px;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.mode-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-switch-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.mode-switch-btn.is-active {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* --- Live Auction Preview Box in Product Form --- */
+.auction-info-preview {
+    margin-top: 16px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-md);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    align-items: center;
+}
+
+.auction-preview-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13px;
+}
+
+.auction-preview-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.auction-preview-value {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.auction-preview-commission {
+    padding: 6px 12px;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* --- House Badges --- */
+.badge-house {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+}
+
+.badge-house-sothebys {
+    background: #002855;
+    color: #ffffff;
+    border-color: #001f44;
+}
+
+.badge-house-christies {
+    background: #8b0000;
+    color: #ffffff;
+    border-color: #6d0000;
+}
+
+.badge-house-bonhams {
+    background: #0f4c3a;
+    color: #ffffff;
+    border-color: #0b382b;
+}
+
+.badge-house-phillips {
+    background: #312e81;
+    color: #ffffff;
+    border-color: #242265;
+}
+
+.badge-house-other {
+    background: #475569;
+    color: #ffffff;
+    border-color: #334155;
+}
+
+/* --- Flag Badges (Lot Level) --- */
+.flag-badge-buy {
+    background: #fdf2f8;
+    color: #9d174d;
+    border: 1px solid #fbcfe8;
+    font-weight: 700;
+}
+
+.flag-badge-inspect {
+    background: #ecfeff;
+    color: #0e7490;
+    border: 1px solid #a5f3fc;
+    font-weight: 600;
+}
+
+.flag-badge-prices {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    font-weight: 600;
+}
+
+.flag-badge-notable {
+    background: #fefce8;
+    color: #a16207;
+    border: 1px solid #fef08a;
+    font-weight: 600;
+}
+
+.flag-badge-expert {
+    background: #ede9fe;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+    font-weight: 600;
+}
+
+/* --- Auction Grid & Cards --- */
+.auction-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 24px;
+    margin-top: 16px;
+}
+
+.auction-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.auction-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+.auction-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.auction-badge-stack {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.auction-card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.auction-card-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.auction-card-title a:hover {
+    color: var(--primary);
+}
+
+.auction-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.auction-meta-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.auction-meta-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.auction-meta-list .meta-label {
+    color: var(--text-muted);
+}
+
+/* --- Progress Bar --- */
+.auction-progress-section {
+    display: grid;
+    gap: 6px;
+    background: var(--surface-subtle);
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 9999px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Stat Chips --- */
+.auction-stat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+}
+
+.chip-buy {
+    background: #fdf2f8;
+    border-color: #fbcfe8;
+    color: #9d174d;
+}
+
+.chip-inspect {
+    background: #ecfeff;
+    border-color: #a5f3fc;
+    color: #0e7490;
+}
+
+.chip-expert {
+    background: #ede9fe;
+    border-color: #ddd6fe;
+    color: #6d28d9;
+}
+
+.chip-notable {
+    background: #fefce8;
+    border-color: #fef08a;
+    color: #a16207;
+}
+
+.chip-cancel {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.auction-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Buttons Helper Sizes --- */
+.button-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.button-lg {
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* --- Auction Detail Specs Grid --- */
+.auction-specs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    padding: 20px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+}
+
+.spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.spec-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.spec-val {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+/* --- 8 Metric Cards Grid --- */
+.auction-stats-eight {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+/* --- Auction Filter Shell --- */
+.auction-filter-shell {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.auction-filter-shell .filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.auction-filter-shell .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+    flex: 1;
+}
+
+.auction-filter-shell .filter-search {
+    flex: 2;
+    min-width: 220px;
+}
+
+.auction-filter-shell .filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.auction-filter-shell .filter-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* --- Table Auction Cell --- */
+.table-auction-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.table-auction-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.thumbnail-table {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.thumbnail-placeholder {
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* --- Detail Page Auction Highlight --- */
+.auction-summary-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+}
+
+.auction-summary-chip .auction-link {
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.auction-summary-chip .auction-link:hover {
+    text-decoration: underline;
+}
+
+.auction-product-highlight {
+    background: linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);
+    border-color: #f0abfc;
+}
+
+.section-header-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.checklist-title {
+    margin: 20px 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.checklist-item.is-checked {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.checklist-item.is-checked-buy {
+    border-color: #fbcfe8;
+    background: #fdf2f8;
+}
+
+.checklist-icon {
+    font-size: 20px;
+}
+
+.checklist-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.checklist-text strong {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.checklist-text span {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* --- Inline Button Group in Cards --- */
+.inline-btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.product-card-auction-meta {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* --- Responsive Breakpoints --- */
+@media (max-width: 1024px) {
+    .auction-stats-eight {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .auction-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auction-stats-eight {
+        grid-template-columns: 1fr;
+    }
+
+    .auction-filter-shell .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mode-switch-group {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mode-switch-btn {
+        justify-content: center;
+    }
+}

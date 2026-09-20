@@ -7,7 +7,7 @@
     <div class="dashboard-header">
         <div>
             <h1>{{ page_title }}</h1>
-            <p class="muted-text">فرم ثبت محصول برای ورود سریع و روزمره اطلاعات اثر آماده شده است. فیلدهای ستاره‌دار الزامی هستند.</p>
+            <p class="muted-text">ثبت مشخصات اثر در دو حالت پیشنهاد دستی یا ثبت از حراجی‌های بین‌المللی.</p>
         </div>
         <a class="button button-secondary" href="{{ cancel_url }}" data-unsaved-check="true">انصراف</a>
     </div>
@@ -27,10 +27,11 @@
             <span class="required-marker" aria-hidden="true">*</span>
             <span>فیلدهای ستاره‌دار الزامی هستند.</span>
         </div>
-        {% include "products/partials/_product_form.html" with form=form show_required_note=False show_required_markers=True primary_section_help="اطلاعات پایه و شناسنامه‌ای اثر را ثبت کنید." specifications_section_help="ویژگی‌های هنری و مشخصات تولید اثر را وارد کنید." suggestion_section_help="اطلاعات پیشنهاددهنده و نحوه ثبت پیشنهاد را تکمیل کنید." status_section_help="وضعیت اولیه محصول به‌صورت خودکار در backend تعیین می‌شود و از این فرم قابل تغییر نیست." show_price_preview=True show_images_section=True only %}
+
+        {% include "products/partials/_product_form.html" with form=form show_required_note=False show_required_markers=True primary_section_help="اطلاعات پایه و شناسنامه‌ای اثر را ثبت کنید." specifications_section_help="ویژگی‌های هنری و مشخصات تولید اثر را وارد کنید." suggestion_section_help="اطلاعات پیشنهاددهنده و نحوه ثبت پیشنهاد را تکمیل کنید." status_section_help="وضعیت اولیه محصول به‌صورت خودکار در backend تعیین می‌شود." show_price_preview=True show_images_section=True only %}
 
         <div class="actions-row">
-            <button type="submit" class="button button-primary">ثبت محصول</button>
+            <button type="submit" class="button button-primary">ثبت نهایی محصول</button>
             <a class="button button-secondary" href="{{ cancel_url }}" data-unsaved-check="true">انصراف</a>
         </div>
     </form>
@@ -79,24 +80,119 @@
             });
         });
 
+        // Mode Switching Logic
+        const modeInput = document.getElementById('{{ form.registration_mode.id_for_label }}');
+        const modeButtons = document.querySelectorAll('[data-mode-btn]');
+        const manualSection = document.querySelector('[data-section="manual"]');
+        const auctionSection = document.querySelector('[data-section="auction"]');
+        const auctionSelect = document.getElementById('{{ form.auction.id_for_label }}');
+        const auctionPreview = document.getElementById('auction-info-preview');
+
+        const auctionData = {
+            {% for a in auctions %}
+                "{{ a.pk }}": {
+                    name: "{{ a.name|escapejs }}",
+                    house: "{{ a.get_source_house_display|escapejs }}",
+                    currency: "{{ a.get_currency_display|escapejs }}",
+                    commission: {{ a.commission_rate|default:0 }},
+                    location: "{{ a.location|escapejs }}",
+                    startDate: "{{ a.start_date|date:'Y/m/d'|escapejs }}",
+                    totalLots: {{ a.total_lots|default:0 }},
+                    enteredLots: {{ a.entered_lots_count|default:0 }}
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function setRegistrationMode(mode) {
+            if (modeInput) {
+                modeInput.value = mode;
+            }
+            modeButtons.forEach(function (btn) {
+                const isActive = btn.getAttribute('data-mode-btn') === mode;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            if (mode === 'auction') {
+                if (manualSection) manualSection.style.display = 'none';
+                if (auctionSection) auctionSection.style.display = 'block';
+                renderAuctionPreview();
+            } else {
+                if (manualSection) manualSection.style.display = 'block';
+                if (auctionSection) auctionSection.style.display = 'none';
+            }
+            renderPricePreviews();
+        }
+
+        modeButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setRegistrationMode(btn.getAttribute('data-mode-btn'));
+                markDirty();
+            });
+        });
+
+        function renderAuctionPreview() {
+            if (!auctionSelect || !auctionPreview) return;
+            const selectedId = auctionSelect.value;
+            const info = auctionData[selectedId];
+            if (!info) {
+                auctionPreview.innerHTML = '<div class="preview-placeholder"><span>💡 با انتخاب حراجی، مشخصات خانه، واحد پول و درصد کمیسیون نمایش داده می‌شود.</span></div>';
+                return;
+            }
+
+            auctionPreview.innerHTML = `
+                <div class="auction-preview-details">
+                    <div class="auction-preview-badges">
+                        <span class="status-badge status-badge-primary">${info.house}</span>
+                        <span class="status-badge status-badge-info">واحد پول: ${info.currency}</span>
+                        <span class="status-badge status-badge-warning">کمیسیون: ${info.commission}٪</span>
+                    </div>
+                    <div class="auction-preview-meta">
+                        <span>📍 مکان: ${info.location || 'مشخص نشده'}</span>
+                        <span>📅 تاریخ شروع: ${info.startDate}</span>
+                        <span>📊 آثار ثبت‌شده: ${info.enteredLots} از ${info.totalLots}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (auctionSelect) {
+            auctionSelect.addEventListener('change', function () {
+                renderAuctionPreview();
+                renderPricePreviews();
+            });
+        }
+
+        // Price formatting and commission calculator
         const priceInputs = [
             {
                 input: document.getElementById('{{ form.suggested_price.id_for_label }}'),
-                preview: document.getElementById('price-preview-suggested_price')
+                preview: document.getElementById('price-preview-suggested_price'),
+                label: 'قیمت پیشنهادی'
             },
             {
                 input: document.getElementById('{{ form.suitable_price.id_for_label }}'),
-                preview: document.getElementById('price-preview-suitable_price')
+                preview: document.getElementById('price-preview-suitable_price'),
+                label: 'قیمت مناسب'
             }
         ];
         const formatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });
 
-        priceInputs.forEach(function (item) {
-            if (!item.input || !item.preview) {
-                return;
+        function renderPricePreviews() {
+            const currentMode = modeInput ? modeInput.value : 'manual';
+            let commissionPercent = 0;
+            let currencyName = 'تومان / ریال';
+
+            if (currentMode === 'auction' && auctionSelect && auctionSelect.value) {
+                const info = auctionData[auctionSelect.value];
+                if (info) {
+                    commissionPercent = Number(info.commission) || 0;
+                    currencyName = info.currency;
+                }
             }
 
-            function renderPricePreview() {
+            priceInputs.forEach(function (item) {
+                if (!item.input || !item.preview) return;
                 const rawValue = (item.input.value || '').trim();
                 if (!rawValue) {
                     item.preview.textContent = '';
@@ -109,13 +205,26 @@
                     return;
                 }
 
-                item.preview.textContent = 'پیش‌نمایش: ' + formatter.format(numericValue);
-            }
+                let text = 'پیش‌نمایش: ' + formatter.format(numericValue) + ' ' + currencyName;
+                if (commissionPercent > 0) {
+                    const totalWithCommission = numericValue * (1 + commissionPercent / 100);
+                    text += ' | با ' + commissionPercent + '٪ کمیسیون: ' + formatter.format(totalWithCommission) + ' ' + currencyName;
+                }
+                item.preview.textContent = text;
+            });
+        }
 
-            item.input.addEventListener('input', renderPricePreview);
-            renderPricePreview();
+        priceInputs.forEach(function (item) {
+            if (item.input) {
+                item.input.addEventListener('input', renderPricePreviews);
+            }
         });
 
+        // Initialize mode
+        const initialMode = (modeInput && modeInput.value === 'auction') || (auctionSelect && auctionSelect.value) ? 'auction' : 'manual';
+        setRegistrationMode(initialMode);
+
+        // Images preview
         const imageInput = document.getElementById('{{ form.images.id_for_label }}');
         const previewList = document.getElementById('image-preview-list');
 

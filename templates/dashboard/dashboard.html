@@ -35,9 +35,12 @@
 
         {% if can_manage_products %}
             <article class="info-panel">
-                <h2>مدیریت محصولات</h2>
-                <p>مشاهده، ثبت و مدیریت محصولات</p>
-                <a class="button button-primary" href="{% url 'products:dashboard' %}">ورود به داشبورد محصولات</a>
+                <h2>مدیریت محصولات و حراجی‌ها</h2>
+                <p>مشاهده، ثبت و مدیریت آثار و رهگیری حراجی‌های بین‌المللی</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                    <a class="button button-primary" href="{% url 'products:dashboard' %}">داشبورد محصولات</a>
+                    <a class="button button-secondary" href="{% url 'products:auction_list' %}">🏛️ حراجی‌های خارجی</a>
+                </div>
             </article>
         {% endif %}
     </div>

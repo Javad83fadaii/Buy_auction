@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}{{ auction.name }} - جزئیات حراجی{% endblock %}
+
+{% block content %}
+<section class="card auction-detail-card">
+    <div class="dashboard-header">
+        <div>
+            <div class="auction-header-badges">
+                <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
+                    {{ auction.get_source_house_display }}
+                </span>
+                <span class="status-badge status-badge-{{ auction.status|lower }}">
+                    {{ auction.get_status_display }}
+                </span>
+            </div>
+            <h1>{{ auction.name }}</h1>
+            <p class="muted-text">اطلاعات برگزاری، آمارهای تحلیلی و آثار ثبت‌شده از این حراجی.</p>
+        </div>
+        <div class="header-actions">
+            <a class="button button-secondary" href="{% url 'products:auction_list' %}">بازگشت به لیست حراجی‌ها</a>
+            {% if can_add_product %}
+                <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر به این حراجی</a>
+            {% endif %}
+            {% if can_manage_auctions %}
+                <a class="button button-secondary" href="{% url 'products:auction_edit' auction.pk %}">ویرایش حراجی</a>
+                <form method="post" action="{% url 'products:auction_sync' auction.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-secondary" title="محاسبه و همگام‌سازی آمار از روی آثار ثبت‌شده">🔄 به‌روزرسانی آمار</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Information Overview Box #}
+    <div class="auction-specs-grid">
+        <div class="spec-item">
+            <span class="spec-label">خانه حراجی</span>
+            <strong class="spec-val">{{ auction.get_source_house_display }}</strong>
+        </div>
+        <div class="spec-item">
+            <span class="spec-label">تاریخ برگزاری</span>
+            <strong class="spec-val">{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</strong>
+        </div>
+        <div class="spec-item">
+            <span class="spec-label">مکان برگزاری</span>
+            <strong class="spec-val">{{ auction.location|default:"-" }}</strong>
+        </div>
+        <div class="spec-item">
+            <span class="spec-label">واحد پول</span>
+            <strong class="spec-val">{{ auction.get_currency_display }}</strong>
+        </div>
+        <div class="spec-item">
+            <span class="spec-label">درصد کمیسیون (Buyer's Premium)</span>
+            <strong class="spec-val">{{ auction.commission_rate }}٪</strong>
+        </div>
+        <div class="spec-item">
+            <span class="spec-label">وضعیت برگزاری</span>
+            <strong class="spec-val">{{ auction.get_status_display }}</strong>
+        </div>
+    </div>
+
+    {# 8 Metric Cards #}
+    <section class="dashboard-section" aria-labelledby="auction-statistics-title">
+        <div class="section-header">
+            <h2 id="auction-statistics-title">آمار و وضعیت آثار حراجی</h2>
+        </div>
+        <div class="stats-grid auction-stats-eight">
+            <article class="stat-card stat-card-primary">
+                <span class="stat-card-label">تعداد کل آثار کاتالوگ</span>
+                <strong class="stat-card-value">{{ auction.total_lots }}</strong>
+            </article>
+            <article class="stat-card stat-card-info">
+                <span class="stat-card-label">آثار وارد شده به سامانه</span>
+                <strong class="stat-card-value">{{ auction.entered_lots_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-success">
+                <span class="stat-card-label">🎯 موارد هدف خرید</span>
+                <strong class="stat-card-value">{{ auction.to_buy_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-primary">
+                <span class="stat-card-label">🔍 بازدید نهایی شده</span>
+                <strong class="stat-card-value">{{ auction.final_inspection_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-info">
+                <span class="stat-card-label">💰 تمام قیمت‌ها وارد شده</span>
+                <strong class="stat-card-value">{{ auction.all_prices_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-secondary">
+                <span class="stat-card-label">📋 اطلاعات اولیه وارد شده</span>
+                <strong class="stat-card-value">{{ auction.initial_info_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-warning">
+                <span class="stat-card-label">🔬 نیازمند کارشناسی</span>
+                <strong class="stat-card-value">{{ auction.expert_lots_count }}</strong>
+            </article>
+            <article class="stat-card stat-card-warning">
+                <span class="stat-card-label">🚫 آثار انصرافی</span>
+                <strong class="stat-card-value">{{ auction.cancelled_lots_count }}</strong>
+            </article>
+        </div>
+    </section>
+
+    {# Lots / Products Table #}
+    <section class="dashboard-section" aria-labelledby="auction-products-title">
+        <div class="section-header">
+            <h2 id="auction-products-title">آثار ثبت‌شده در این حراجی ({{ products|length }})</h2>
+            {% if can_add_product %}
+                <a class="button button-primary button-sm" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر جدید</a>
+            {% endif %}
+        </div>
+
+        {% if products %}
+            <div class="table-shell">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>تصویر</th>
+                            <th>عنوان اثر</th>
+                            <th>کد اثر</th>
+                            <th>هنرمند</th>
+                            <th>نشان‌های پیگیری</th>
+                            <th>قیمت پیشنهادی</th>
+                            <th>وضعیت بررسی</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td>
+                                    {% if product.images.all %}
+                                        <img class="thumbnail-table" src="{{ product.images.all.0.image.url }}" alt="{{ product.title }}">
+                                    {% else %}
+                                        <span class="thumbnail-placeholder">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong><a href="{% url 'products:detail' product.pk %}">{{ product.title }}</a></strong>
+                                </td>
+                                <td>{{ product.product_code|default:"-" }}</td>
+                                <td>{{ product.artist|default:"-" }}</td>
+                                <td>
+                                    <div class="table-badge-stack">
+                                        {% if product.to_buy %}
+                                            <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+                                        {% endif %}
+                                        {% if product.final_inspection_done %}
+                                            <span class="flag-badge flag-badge-inspect">🔍 بازدید شده</span>
+                                        {% endif %}
+                                        {% if product.has_all_prices %}
+                                            <span class="flag-badge flag-badge-prices">💰 قیمت‌ها کامل</span>
+                                        {% endif %}
+                                        {% if product.is_notable %}
+                                            <span class="flag-badge flag-badge-notable">⭐ شاخص</span>
+                                        {% endif %}
+                                        {% if product.needs_expert_review %}
+                                            <span class="flag-badge flag-badge-expert">🔬 کارشناسی</span>
+                                        {% endif %}
+                                        {% if product.is_cancelled %}
+                                            <span class="flag-badge flag-badge-warning">لغو شده</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if product.suggested_price %}
+                                        {{ product.suggested_price }} {{ auction.get_currency_display }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge status-badge-{{ product.status|lower }}">
+                                        {{ product.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a class="button button-secondary button-sm" href="{% url 'products:detail' product.pk %}">مشاهده</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <section class="empty-state" aria-live="polite">
+                <h3>هنوز اثری برای این حراجی ثبت نشده است.</h3>
+                <p class="muted-text">می‌توانید با دکمه زیر اولین اثر مربوط به این حراجی را اضافه کنید.</p>
+                {% if can_add_product %}
+                    <div class="actions-row">
+                        <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اولین اثر</a>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

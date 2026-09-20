@@ -20,18 +20,35 @@
         <span>کد اثر: {{ product.product_code|default:"-" }}</span>
         <span>خالق: {{ product.artist|default:"-" }}</span>
         <span>نوع هنر: {{ product.art_type|default:"-" }}</span>
-        <span>منبع: {{ product.get_source_type_display }}</span>
+        {% if product.auction %}
+            <span class="product-card-auction-meta">
+                🏛️ حراجی: <strong>{{ product.auction.name }}</strong> ({{ product.auction.get_source_house_display }})
+            </span>
+        {% else %}
+            <span>منبع: {{ product.get_source_type_display }}</span>
+        {% endif %}
         <span>تاریخ ثبت: {{ product.created_at|date:"Y/m/d" }}</span>
     </div>
 
     <div class="table-badge-stack">
         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+        {% if product.to_buy %}
+            <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+        {% endif %}
+        {% if product.final_inspection_done %}
+            <span class="flag-badge flag-badge-inspect">🔍 بازدید</span>
+        {% endif %}
         {% if product.is_cancelled %}
             <span class="flag-badge flag-badge-warning">لغو شده</span>
+        {% endif %}
+        {% if product.is_notable %}
+            <span class="flag-badge flag-badge-success">شاخص</span>
         {% endif %}
     </div>
 
     {% if product.suitable_price %}
-        <span class="product-card-price">{{ product.suitable_price }}</span>
+        <span class="product-card-price">
+            {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+        </span>
     {% endif %}
 </a>

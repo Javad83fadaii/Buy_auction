@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}حراجی‌های خارجی{% endblock %}
+
+{% block content %}
+<section class="card auction-list-card">
+    <div class="dashboard-header">
+        <div>
+            <h1>حراجی‌های بین‌المللی و خارجی</h1>
+            <p class="muted-text">مدیریت، رهگیری آمار و ثبت آثار حراجی‌های معتبر (کریستیز، ساتبیز، بونهامز و ...)</p>
+        </div>
+        <div class="header-actions">
+            <a class="button button-secondary" href="{% url 'products:dashboard' %}">بازگشت به داشبورد</a>
+            {% if can_manage_auctions %}
+                <a class="button button-primary" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# KPI Stats Overview #}
+    <div class="stats-grid auction-kpi-grid">
+        <article class="stat-card stat-card-primary">
+            <span class="stat-card-label">کل حراجی‌ها</span>
+            <strong class="stat-card-value">{{ total_auctions_count }}</strong>
+        </article>
+        <article class="stat-card stat-card-success">
+            <span class="stat-card-label">در حال برگزاری</span>
+            <strong class="stat-card-value">{{ ongoing_auctions_count }}</strong>
+        </article>
+        <article class="stat-card stat-card-info">
+            <span class="stat-card-label">به زودی</span>
+            <strong class="stat-card-value">{{ upcoming_auctions_count }}</strong>
+        </article>
+        <article class="stat-card stat-card-warning">
+            <span class="stat-card-label">هدف خرید (کل)</span>
+            <strong class="stat-card-value">🎯 {{ total_to_buy_count }}</strong>
+        </article>
+    </div>
+
+    {# Filter & Search Toolbar #}
+    <form method="get" class="filter-shell auction-filter-shell" role="search">
+        <div class="filter-row">
+            <div class="filter-field filter-search">
+                <label for="id_q" class="sr-only">جستجو</label>
+                {{ filter_form.q }}
+            </div>
+            <div class="filter-field">
+                <label for="id_source_house" class="filter-label">خانه حراجی:</label>
+                {{ filter_form.source_house }}
+            </div>
+            <div class="filter-field">
+                <label for="id_status" class="filter-label">وضعیت:</label>
+                {{ filter_form.status }}
+            </div>
+            <div class="filter-field">
+                <label for="id_date_from" class="filter-label">از تاریخ:</label>
+                {{ filter_form.date_from }}
+            </div>
+            <div class="filter-field">
+                <label for="id_date_to" class="filter-label">تا تاریخ:</label>
+                {{ filter_form.date_to }}
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="button button-primary">اعمال فیلتر</button>
+                {% if has_active_filters %}
+                    <a class="button button-secondary" href="{{ clear_filters_url }}">حذف فیلترها</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    {# Auction Cards Grid #}
+    {% if auctions %}
+        <div class="auction-grid">
+            {% for auction in auctions %}
+                <article class="auction-card">
+                    <header class="auction-card-header">
+                        <div class="auction-badge-stack">
+                            <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
+                                {{ auction.get_source_house_display }}
+                            </span>
+                            <span class="status-badge status-badge-{{ auction.status|lower }}">
+                                {{ auction.get_status_display }}
+                            </span>
+                        </div>
+                        <h2 class="auction-card-title">
+                            <a href="{% url 'products:auction_detail' auction.pk %}">{{ auction.name }}</a>
+                        </h2>
+                    </header>
+
+                    <div class="auction-card-body">
+                        <ul class="auction-meta-list">
+                            <li>
+                                <span class="meta-label">📅 تاریخ برگزاری:</span>
+                                <strong>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</strong>
+                            </li>
+                            <li>
+                                <span class="meta-label">📍 مکان:</span>
+                                <span>{{ auction.location|default:"مشخص نشده" }}</span>
+                            </li>
+                            <li>
+                                <span class="meta-label">💱 واحد پول و کمیسیون:</span>
+                                <span>{{ auction.get_currency_display }} ({{ auction.commission_rate }}٪ کمیسیون)</span>
+                            </li>
+                        </ul>
+
+                        {# Progress bar: entered lots vs total lots #}
+                        <div class="auction-progress-section">
+                            <div class="progress-labels">
+                                <span>آثار وارد شده به سیستم</span>
+                                <strong>{{ auction.entered_lots_count }} از {{ auction.total_lots }} اثر</strong>
+                            </div>
+                            <div class="progress-track" role="progressbar" aria-valuenow="{{ auction.entered_lots_count }}" aria-valuemin="0" aria-valuemax="{{ auction.total_lots }}">
+                                {% if auction.total_lots > 0 %}
+                                    {% widthratio auction.entered_lots_count auction.total_lots 100 as pct %}
+                                    <div class="progress-fill" style="width: {% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%;"></div>
+                                {% else %}
+                                    <div class="progress-fill" style="width: 0%;"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Key metrics chips #}
+                        <div class="auction-stat-chips">
+                            <span class="chip chip-buy" title="تعداد مواردی که باید خریداری شود">
+                                🎯 خرید: <strong>{{ auction.to_buy_count }}</strong>
+                            </span>
+                            <span class="chip chip-inspect" title="تعداد بازدیدهای نهایی شده">
+                                🔍 بازدید: <strong>{{ auction.final_inspection_count }}</strong>
+                            </span>
+                            <span class="chip chip-expert" title="نیازمند کارشناسی">
+                                🔬 کارشناسی: <strong>{{ auction.expert_lots_count }}</strong>
+                            </span>
+                            <span class="chip chip-notable" title="آثار قابل توجه">
+                                ⭐ شاخص: <strong>{{ auction.notable_lots_count }}</strong>
+                            </span>
+                            {% if auction.cancelled_lots_count > 0 %}
+                                <span class="chip chip-cancel" title="آثار انصرافی">
+                                    🚫 انصرافی: <strong>{{ auction.cancelled_lots_count }}</strong>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <footer class="auction-card-footer">
+                        <a class="button button-primary button-sm" href="{% url 'products:auction_detail' auction.pk %}">
+                            مشاهده جزئیات و آثار
+                        </a>
+                        <a class="button button-secondary button-sm" href="{% url 'products:create' %}?auction={{ auction.pk }}">
+                            + افزودن اثر
+                        </a>
+                        <a class="button button-secondary button-sm" href="{% url 'products:auction_edit' auction.pk %}">
+                            ویرایش
+                        </a>
+                    </footer>
+                </article>
+            {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% if is_paginated %}
+            <nav class="pagination" aria-label="صفحات">
+                {% if page_obj.has_previous %}
+                    <a class="button button-secondary" href="?page={{ page_obj.previous_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}">صفحه قبل</a>
+                {% endif %}
+                <span class="pagination-info">صفحه {{ page_obj.number }} از {{ paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="button button-secondary" href="?page={{ page_obj.next_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}">صفحه بعد</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <section class="empty-state" aria-live="polite">
+            <h2>هیچ حراجی‌ای با مشخصات درخواستی یافت نشد.</h2>
+            <p class="muted-text">می‌توانید فیلترها را حذف کنید یا حراجی جدید ثبت نمایید.</p>
+            {% if can_manage_auctions %}
+                <div class="actions-row">
+                    <a class="button button-primary" href="{% url 'products:auction_create' %}">+ ثبت اولین حراجی</a>
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
+</section>
+{% endblock %}

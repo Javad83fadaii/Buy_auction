@@ -6,6 +6,144 @@
     </div>
 {% endif %}
 
+{{ form.registration_mode }}
+
+{# Mode Switcher (پیشنهاد دستی vs حراجی خارجی) #}
+<div class="mode-switcher-container">
+    <span class="mode-switcher-label">منبع ثبت اثر:</span>
+    <div class="mode-switch-group" role="tablist" aria-label="حالت ثبت">
+        <button type="button" class="mode-switch-btn is-active" data-mode-btn="manual" role="tab" aria-selected="true">
+            <span class="mode-icon">📝</span>
+            <span class="mode-btn-text">
+                <strong>ثبت پیشنهاد دستی</strong>
+                <small>پیشنهاددهنده شخصی، تماس، پیام‌رسان‌ها</small>
+            </span>
+        </button>
+        <button type="button" class="mode-switch-btn" data-mode-btn="auction" role="tab" aria-selected="false">
+            <span class="mode-icon">🏛️</span>
+            <span class="mode-btn-text">
+                <strong>ثبت از حراجی‌های خارجی</strong>
+                <small>کریستیز، ساتبیز، بونهامز و سایر حراجی‌ها</small>
+            </span>
+        </button>
+    </div>
+</div>
+
+{# External Auction Section (نمایش در حالت حراجی) #}
+<section class="form-section form-section-auction" data-section="auction" style="display: none;">
+    <div class="form-section-heading">
+        <div class="section-heading-flex">
+            <div>
+                <h2>مشخصات حراجی خارجی</h2>
+                <p class="muted-text">حراجی بین‌المللی مرتبط با این اثر را انتخاب کنید.</p>
+            </div>
+            <a href="{% url 'products:auction_create' %}" target="_blank" class="button button-secondary button-sm">
+                + ثبت حراجی جدید
+            </a>
+        </div>
+    </div>
+
+    <div class="form-grid form-grid-2">
+        <div class="form-field">
+            <label for="{{ form.auction.id_for_label }}">
+                {{ form.auction.label }}
+                {% if show_required_markers %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.auction }}
+            {% if form.auction.help_text %}<small class="field-help">{{ form.auction.help_text }}</small>{% endif %}
+            {% if form.auction.errors %}<small class="field-error">{{ form.auction.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <div id="auction-info-preview" class="auction-preview-card">
+                <div class="preview-placeholder">
+                    <span>💡 با انتخاب حراجی، جزئیات خانه، واحد پول و درصد کمیسیون در اینجا نمایش داده می‌شود.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="checkbox-group auction-status-grid">
+        <div class="form-field form-field-checkbox">
+            <label class="checkbox-card highlight-target-card" for="{{ form.to_buy.id_for_label }}">
+                {{ form.to_buy }}
+                <span>🎯 {{ form.to_buy.label }}</span>
+            </label>
+            {% if form.to_buy.help_text %}<small class="field-help">{{ form.to_buy.help_text }}</small>{% endif %}
+            {% if form.to_buy.errors %}<small class="field-error">{{ form.to_buy.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label class="checkbox-card" for="{{ form.final_inspection_done.id_for_label }}">
+                {{ form.final_inspection_done }}
+                <span>🔍 {{ form.final_inspection_done.label }}</span>
+            </label>
+            {% if form.final_inspection_done.help_text %}<small class="field-help">{{ form.final_inspection_done.help_text }}</small>{% endif %}
+            {% if form.final_inspection_done.errors %}<small class="field-error">{{ form.final_inspection_done.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label class="checkbox-card" for="{{ form.has_initial_info.id_for_label }}">
+                {{ form.has_initial_info }}
+                <span>📋 {{ form.has_initial_info.label }}</span>
+            </label>
+            {% if form.has_initial_info.help_text %}<small class="field-help">{{ form.has_initial_info.help_text }}</small>{% endif %}
+            {% if form.has_initial_info.errors %}<small class="field-error">{{ form.has_initial_info.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label class="checkbox-card" for="{{ form.has_all_prices.id_for_label }}">
+                {{ form.has_all_prices }}
+                <span>💰 {{ form.has_all_prices.label }}</span>
+            </label>
+            {% if form.has_all_prices.help_text %}<small class="field-help">{{ form.has_all_prices.help_text }}</small>{% endif %}
+            {% if form.has_all_prices.errors %}<small class="field-error">{{ form.has_all_prices.errors|join:", " }}</small>{% endif %}
+        </div>
+    </div>
+</section>
+
+{# Submission and contact information (نمایش در حالت دستی) #}
+<section class="form-section form-section-manual" data-section="manual">
+    <div class="form-section-heading">
+        <div>
+            <h2>اطلاعات پیشنهاد دستی</h2>
+            <p class="muted-text">{{ suggestion_section_help }}</p>
+        </div>
+    </div>
+
+    <div class="form-grid form-grid-3">
+        <div class="form-field">
+            <label for="{{ form.suggested_by.id_for_label }}">
+                {{ form.suggested_by.label }}
+                {% if show_required_markers and form.suggested_by.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.suggested_by }}
+            {% if form.suggested_by.help_text %}<small class="field-help">{{ form.suggested_by.help_text }}</small>{% endif %}
+            {% if form.suggested_by.errors %}<small class="field-error">{{ form.suggested_by.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.contact_method.id_for_label }}">
+                {{ form.contact_method.label }}
+                {% if show_required_markers and form.contact_method.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.contact_method }}
+            {% if form.contact_method.help_text %}<small class="field-help">{{ form.contact_method.help_text }}</small>{% endif %}
+            {% if form.contact_method.errors %}<small class="field-error">{{ form.contact_method.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.suggestion_date.id_for_label }}">
+                {{ form.suggestion_date.label }}
+                {% if show_required_markers and form.suggestion_date.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.suggestion_date }}
+            {% if form.suggestion_date.help_text %}<small class="field-help">{{ form.suggestion_date.help_text }}</small>{% endif %}
+            {% if form.suggestion_date.errors %}<small class="field-error">{{ form.suggestion_date.errors|join:", " }}</small>{% endif %}
+        </div>
+    </div>
+</section>
+
 {# Core identity and descriptive fields. #}
 <section class="form-section">
     <div class="form-section-heading">
@@ -130,73 +268,22 @@
     </div>
 </section>
 
-{# Submission and contact information. #}
-<section class="form-section">
-    <div class="form-section-heading">
-        <div>
-            <h2>اطلاعات پیشنهاد</h2>
-            <p class="muted-text">{{ suggestion_section_help }}</p>
-        </div>
-    </div>
-
-    <div class="form-grid form-grid-3">
-        <div class="form-field">
-            <label for="{{ form.suggested_by.id_for_label }}">
-                {{ form.suggested_by.label }}
-                {% if show_required_markers and form.suggested_by.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
-            </label>
-            {{ form.suggested_by }}
-            {% if form.suggested_by.help_text %}<small class="field-help">{{ form.suggested_by.help_text }}</small>{% endif %}
-            {% if form.suggested_by.errors %}<small class="field-error">{{ form.suggested_by.errors|join:", " }}</small>{% endif %}
-        </div>
-
-        <div class="form-field">
-            <label for="{{ form.contact_method.id_for_label }}">
-                {{ form.contact_method.label }}
-                {% if show_required_markers and form.contact_method.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
-            </label>
-            {{ form.contact_method }}
-            {% if form.contact_method.help_text %}<small class="field-help">{{ form.contact_method.help_text }}</small>{% endif %}
-            {% if form.contact_method.errors %}<small class="field-error">{{ form.contact_method.errors|join:", " }}</small>{% endif %}
-        </div>
-
-        <div class="form-field">
-            <label for="{{ form.suggestion_date.id_for_label }}">
-                {{ form.suggestion_date.label }}
-                {% if show_required_markers and form.suggestion_date.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
-            </label>
-            {{ form.suggestion_date }}
-            {% if form.suggestion_date.help_text %}<small class="field-help">{{ form.suggestion_date.help_text }}</small>{% endif %}
-            {% if form.suggestion_date.errors %}<small class="field-error">{{ form.suggestion_date.errors|join:", " }}</small>{% endif %}
-        </div>
-    </div>
-</section>
-
 {% include "products/partials/_price_fields.html" with form=form show_required_markers=show_required_markers show_price_preview=show_price_preview only %}
 
-{# Boolean flags that affect downstream review and visibility. #}
+{# General Status & Review Flags. #}
 <section class="form-section">
     <div class="form-section-heading">
         <div>
-            <h2>وضعیت</h2>
+            <h2>وضعیت و کارشناسی</h2>
             <p class="muted-text">{{ status_section_help }}</p>
         </div>
     </div>
 
     <div class="checkbox-group">
         <div class="form-field form-field-checkbox">
-            <label class="checkbox-card" for="{{ form.is_cancelled.id_for_label }}">
-                {{ form.is_cancelled }}
-                <span>{{ form.is_cancelled.label }}</span>
-            </label>
-            {% if form.is_cancelled.help_text %}<small class="field-help">{{ form.is_cancelled.help_text }}</small>{% endif %}
-            {% if form.is_cancelled.errors %}<small class="field-error">{{ form.is_cancelled.errors|join:", " }}</small>{% endif %}
-        </div>
-
-        <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.is_notable.id_for_label }}">
                 {{ form.is_notable }}
-                <span>{{ form.is_notable.label }}</span>
+                <span>⭐ {{ form.is_notable.label }}</span>
             </label>
             {% if form.is_notable.help_text %}<small class="field-help">{{ form.is_notable.help_text }}</small>{% endif %}
             {% if form.is_notable.errors %}<small class="field-error">{{ form.is_notable.errors|join:", " }}</small>{% endif %}
@@ -205,10 +292,19 @@
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.needs_expert_review.id_for_label }}">
                 {{ form.needs_expert_review }}
-                <span>{{ form.needs_expert_review.label }}</span>
+                <span>🔬 {{ form.needs_expert_review.label }}</span>
             </label>
             {% if form.needs_expert_review.help_text %}<small class="field-help">{{ form.needs_expert_review.help_text }}</small>{% endif %}
             {% if form.needs_expert_review.errors %}<small class="field-error">{{ form.needs_expert_review.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label class="checkbox-card" for="{{ form.is_cancelled.id_for_label }}">
+                {{ form.is_cancelled }}
+                <span>🚫 {{ form.is_cancelled.label }}</span>
+            </label>
+            {% if form.is_cancelled.help_text %}<small class="field-help">{{ form.is_cancelled.help_text }}</small>{% endif %}
+            {% if form.is_cancelled.errors %}<small class="field-error">{{ form.is_cancelled.errors|join:", " }}</small>{% endif %}
         </div>
     </div>
 </section>

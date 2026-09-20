@@ -3033,3 +3033,158 @@ class AuctionModelAndSyncTestCase(TestCase):
         self.assertIsNone(p.auction)
         self.assertFalse(p.to_buy)
         self.assertFalse(p.final_inspection_done)
+
+
+class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.auction = Auction.objects.create(
+            name='حراج پاییزه لندن کریستیز ۲۰۲۶',
+            source_house=AuctionHouseChoices.CHRISTIES,
+            start_date=date.today() + timedelta(days=5),
+            location='لंदन - کینگ استریت',
+            currency=CurrencyChoices.GBP,
+            commission_rate=25.0,
+            status=AuctionStatusChoices.UPCOMING,
+            total_lots=120,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        self.product_with_auction = Product.objects.create(
+            title='نقاشی رنگ روغن کریستیز',
+            product_code='CHR-LOT-10',
+            auction=self.auction,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+            to_buy=True,
+            final_inspection_done=True,
+            has_all_prices=True,
+            has_initial_info=True,
+            is_notable=True,
+            suitable_price='45000',
+            created_by=self.operator_user,
+        )
+
+    def test_auction_list_view_renders_correctly(self):
+        self.client.force_login(self.operator_user)
+        url = reverse('products:auction_list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/auction_list.html')
+        self.assertContains(response, self.auction.name)
+        self.assertContains(response, self.auction.location)
+        self.assertContains(response, '25.00')
+
+    def test_auction_detail_view_renders_correctly(self):
+        self.client.force_login(self.operator_user)
+        url = reverse('products:auction_detail', args=[self.auction.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/auction_detail.html')
+        self.assertContains(response, self.auction.name)
+        self.assertContains(response, 'نقاشی رنگ روغن کریستیز')
+        self.assertContains(response, 'هدف خرید')
+
+    def test_auction_create_view_get_and_post(self):
+        self.client.force_login(self.operator_user)
+        create_url = reverse('products:auction_create')
+        # GET form
+        response = self.client.get(create_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/auction_form.html')
+
+        # POST form
+        payload = {
+            'name': 'حراج ساتبیز نیویورک',
+            'source_house': AuctionHouseChoices.SOTHEBYS,
+            'start_date': '2026-10-15',
+            'location': 'نیویورک، خیابان یورک',
+            'currency': CurrencyChoices.USD,
+            'commission_rate': '26.00',
+            'status': AuctionStatusChoices.UPCOMING,
+            'total_lots': 80,
+            'entered_lots_count': 0,
+            'cancelled_lots_count': 0,
+            'expert_lots_count': 0,
+            'notable_lots_count': 0,
+            'to_buy_count': 0,
+            'initial_info_count': 0,
+            'all_prices_count': 0,
+            'final_inspection_count': 0,
+        }
+        post_response = self.client.post(create_url, data=payload)
+        self.assertEqual(post_response.status_code, 302)
+        new_auction = Auction.objects.get(name='حراج ساتبیز نیویورک')
+        self.assertEqual(new_auction.source_house, AuctionHouseChoices.SOTHEBYS)
+        self.assertEqual(new_auction.created_by, self.operator_user)
+
+    def test_auction_edit_view(self):
+        self.client.force_login(self.operator_user)
+        edit_url = reverse('products:auction_edit', args=[self.auction.pk])
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/auction_form.html')
+
+        payload = {
+            'name': 'حراج پاییزه ویرایش شده کریستیز',
+            'source_house': self.auction.source_house,
+            'start_date': str(self.auction.start_date),
+            'location': 'لندن سنترال',
+            'currency': self.auction.currency,
+            'commission_rate': '24.50',
+            'status': AuctionStatusChoices.ONGOING,
+            'total_lots': 150,
+            'entered_lots_count': self.auction.entered_lots_count,
+            'cancelled_lots_count': 0,
+            'expert_lots_count': 0,
+            'notable_lots_count': 0,
+            'to_buy_count': 0,
+            'initial_info_count': 0,
+            'all_prices_count': 0,
+            'final_inspection_count': 0,
+        }
+        post_response = self.client.post(edit_url, data=payload)
+        self.assertEqual(post_response.status_code, 302)
+        self.auction.refresh_from_db()
+        self.assertEqual(self.auction.name, 'حراج پاییزه ویرایش شده کریستیز')
+        self.assertEqual(self.auction.status, AuctionStatusChoices.ONGOING)
+
+    def test_auction_sync_view(self):
+        self.client.force_login(self.operator_user)
+        sync_url = reverse('products:auction_sync', args=[self.auction.pk])
+        response = self.client.post(sync_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('products:auction_detail', args=[self.auction.pk]))
+
+    def test_product_detail_view_shows_auction_section_and_badges(self):
+        self.client.force_login(self.operator_user)
+        url = reverse('products:detail', args=[self.product_with_auction.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/product_detail.html')
+        self.assertContains(response, 'اطلاعات حراجی خارجی و چک‌لیست خرید')
+        self.assertContains(response, self.auction.name)
+        self.assertContains(response, 'هدف خرید')
+        self.assertContains(response, 'بازدید نهایی شده')
+
+    def test_product_list_filter_by_auction_and_to_buy(self):
+        self.client.force_login(self.operator_user)
+        # Filter by auction
+        url = f"{reverse('products:list')}?auction={self.auction.pk}&to_buy=1"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.product_with_auction.title)
+
+        # Filter by non-existent auction
+        empty_url = f"{reverse('products:list')}?auction=99999"
+        empty_response = self.client.get(empty_url)
+        self.assertEqual(empty_response.status_code, 200)
+        self.assertNotContains(empty_response, self.product_with_auction.title)
+
+    def test_product_dashboard_renders_auction_stats(self):
+        self.client.force_login(self.operator_user)
+        url = reverse('products:dashboard')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'حراجی‌های خارجی و بین‌المللی')
+        self.assertContains(response, 'کل حراجی‌های تعریف‌شده')
+

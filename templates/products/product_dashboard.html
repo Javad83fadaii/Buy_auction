@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}مدیریت محصولات{% endblock %}
+{% block title %}مدیریت محصولات و حراجی‌ها{% endblock %}
 
 {% block content %}
 <section class="card product-dashboard-card">
     <div class="dashboard-header">
         <div>
             <h1>{{ page_title }}</h1>
-            <p class="muted-text">مدیریت، مشاهده و ثبت محصولات</p>
+            <p class="muted-text">مدیریت جامع آثار، پیشنهادها و حراجی‌های بین‌المللی (کریستیز، ساتبیز و ...)</p>
         </div>
         <div class="header-actions">
             <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد اصلی</a>
+            <a class="button button-secondary" href="{% url 'products:auction_list' %}">🏛️ حراجی‌های خارجی</a>
             <a class="button button-primary" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
         </div>
     </div>
 
+    {# Products Stats #}
     <section class="dashboard-section" aria-labelledby="product-statistics-title">
         <div class="section-header">
             <h2 id="product-statistics-title">آمار محصولات</h2>
@@ -29,27 +31,60 @@
         </div>
     </section>
 
+    {# External Auctions Stats & Quick Access #}
+    <section class="dashboard-section" aria-labelledby="auction-section-title">
+        <div class="section-header">
+            <h2 id="auction-section-title">🏛️ حراجی‌های خارجی و بین‌المللی</h2>
+            <a class="button button-secondary button-sm" href="{% url 'products:auction_list' %}">مشاهده همه حراجی‌ها ←</a>
+        </div>
+        <div class="stats-grid">
+            <article class="stat-card stat-card-primary">
+                <span class="stat-card-label">کل حراجی‌های تعریف‌شده</span>
+                <strong class="stat-card-value">{{ total_auctions }}</strong>
+            </article>
+            <article class="stat-card stat-card-success">
+                <span class="stat-card-label">حراجی‌های در حال برگزاری</span>
+                <strong class="stat-card-value">{{ ongoing_auctions }}</strong>
+            </article>
+            <article class="stat-card stat-card-info">
+                <span class="stat-card-label">حراجی‌های به‌زودی</span>
+                <strong class="stat-card-value">{{ upcoming_auctions }}</strong>
+            </article>
+        </div>
+    </section>
+
     <section class="dashboard-section" aria-labelledby="product-quick-actions-title">
         <div class="section-header">
-            <h2 id="product-quick-actions-title">دسترسی سریع</h2>
+            <h2 id="product-quick-actions-title">دسترسی سریع و عملیات</h2>
         </div>
         <div class="dashboard-grid">
             <article class="info-panel">
                 <h2>مشاهده محصولات</h2>
-                <p>فهرست کامل محصولات ثبت‌شده را مشاهده و مدیریت کنید.</p>
+                <p>فهرست کامل محصولات ثبت‌شده را با فیلترهای پیشرفته مشاهده و مدیریت کنید.</p>
                 <a class="button button-primary" href="{% url 'products:list' %}">مشاهده محصولات</a>
             </article>
+
+            <article class="info-panel">
+                <h2>حراجی‌های بین‌المللی</h2>
+                <p>رهگیری آمار، کاتالوگ و آثار خانه‌های حراجی خارجی (ساتبیز، کریستیز و ...).</p>
+                <div class="inline-btn-group">
+                    <a class="button button-primary" href="{% url 'products:auction_list' %}">فهرست حراجی‌ها</a>
+                    <a class="button button-secondary" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
+                </div>
+            </article>
+
             {% if can_review_products %}
                 <article class="info-panel">
                     <h2>محصولات در انتظار بررسی</h2>
-                    <p>محصولات منتظر تصمیم نهایی را مستقیم با فیلتر وضعیت مشاهده کنید.</p>
+                    <p>محصولات منتظر تصمیم نهایی کارشناسی را مستقیم با فیلتر وضعیت مشاهده کنید.</p>
                     <a class="button button-primary" href="{{ pending_review_url }}">محصولات در انتظار بررسی</a>
                 </article>
             {% endif %}
+
             <article class="info-panel">
-                <h2>ثبت محصول جدید</h2>
-                <p>برای ثبت یک اثر جدید از فرم ایجاد محصول استفاده کنید.</p>
-                <a class="button button-primary" href="{% url 'products:create' %}">ثبت محصول جدید</a>
+                <h2>ثبت اثر یا محصول جدید</h2>
+                <p>برای ثبت یک اثر دستی یا اثر انتخاب‌شده از حراجی خارجی از فرم ثبت استفاده کنید.</p>
+                <a class="button button-primary" href="{% url 'products:create' %}">ثبت اثر جدید</a>
             </article>
         </div>
     </section>
@@ -81,6 +116,9 @@
                                 <td>
                                     <div class="table-badge-stack">
                                         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                        {% if product.to_buy %}
+                                            <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+                                        {% endif %}
                                         {% if product.is_cancelled %}
                                             <span class="flag-badge flag-badge-warning">لغو شده</span>
                                         {% endif %}

@@ -5,16 +5,31 @@ from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import Count, F, Prefetch, Q
 from django.db.models.functions import Trim
+import logging
+from urllib.parse import urlencode
+
+from django.contrib import messages
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.db.models import Count, F, Prefetch, Q
+from django.db.models.functions import Trim
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import DetailView, FormView, ListView, TemplateView, UpdateView, View
 
 from accounts.permissions import RolePermissionMixin
 
-from .choices import ProductSourceTypeChoices, ProductStatusChoices
+from .choices import (
+    AuctionHouseChoices,
+    AuctionStatusChoices,
+    CurrencyChoices,
+    ProductSourceTypeChoices,
+    ProductStatusChoices,
+)
 from .forms import (
     PRODUCT_LIST_DEFAULT_SORT,
     PRODUCT_LIST_SORT_CHOICES,
+    AuctionFilterForm,
+    AuctionForm,
     ProductCreateForm,
     ProductEditForm,
     ProductExpertReferralForm,
@@ -22,14 +37,16 @@ from .forms import (
     ProductImageUploadForm,
     ProductListFilterForm,
 )
-from .models import Product, ProductImage
+from .models import Auction, Product, ProductImage
 from .services import (
     add_product_image,
     create_manual_product,
+    create_product,
     delete_product_image,
     get_available_status_transitions,
     refer_product_to_expert,
     set_product_image_primary,
+    sync_auction_statistics,
     update_product_cancelled_state,
     update_product_image_sort_order,
     update_product_review_status,
@@ -57,6 +74,8 @@ class ProductDisplayLabelsMixin:
         return self.status_filter_labels.get(product.status, product.get_status_display())
 
     def get_source_label(self, product: Product) -> str:
+        if product.auction:
+            return f'{product.auction.name} ({product.get_source_type_display()})'
         return self.source_filter_labels.get(product.source_type, product.get_source_type_display())
 
 
@@ -81,11 +100,13 @@ class ProductDashboardView(RolePermissionMixin, TemplateView):
                 'id',
                 filter=Q(status=ProductStatusChoices.PUBLISHED),
             ),
+            to_buy_products=Count('id', filter=Q(to_buy=True)),
         )
         return [
             {'label': 'کل محصولات', 'count': stats['total_products'], 'accent': 'primary'},
             {'label': 'محصولات فعال', 'count': stats['active_products'], 'accent': 'success'},
             {'label': 'محصولات لغوشده', 'count': stats['cancelled_products'], 'accent': 'warning'},
+            {'label': 'هدف خرید', 'count': stats['to_buy_products'], 'accent': 'info'},
             {
                 'label': 'در انتظار بررسی',
                 'count': stats['pending_review_products'],
@@ -103,10 +124,14 @@ class ProductDashboardView(RolePermissionMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        all_auctions = Auction.objects.all()
         context['page_title'] = 'مدیریت محصولات'
         context['statistics'] = self.get_statistics()
         context['recent_products'] = list(self.get_recent_products())
         context['can_review_products'] = self.request.user.has_perm('products.review_product')
+        context['total_auctions'] = all_auctions.count()
+        context['upcoming_auctions'] = all_auctions.filter(status=AuctionStatusChoices.UPCOMING).count()
+        context['ongoing_auctions'] = all_auctions.filter(status=AuctionStatusChoices.ONGOING).count()
         context['pending_review_url'] = (
             f"{reverse('products:list')}?{urlencode({'status': ProductStatusChoices.PENDING_REVIEW})}"
         )
@@ -125,7 +150,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'is_primary',
             'sort_order',
         ).order_by('sort_order', 'id')
-        return Product.objects.select_related('created_by', 'updated_by', 'assigned_expert').prefetch_related(
+        return Product.objects.select_related('created_by', 'updated_by', 'assigned_expert', 'auction').prefetch_related(
             Prefetch('images', queryset=image_queryset)
         )
 
@@ -237,9 +262,21 @@ class ProductCreateView(RolePermissionMixin, FormView):
     form_class = ProductCreateForm
     permission_required = 'products.add_product'
 
+    def get_initial(self):
+        initial = super().get_initial()
+        auction_id = self.request.GET.get('auction')
+        if auction_id:
+            try:
+                auction = Auction.objects.get(pk=auction_id)
+                initial['auction'] = auction
+                initial['registration_mode'] = 'auction'
+            except (Auction.DoesNotExist, ValueError):
+                pass
+        return initial
+
     def form_valid(self, form):
         try:
-            self.object = create_manual_product(
+            self.object = create_product(
                 cleaned_data=form.cleaned_data,
                 images=form.cleaned_data.get('images', []),
                 user=self.request.user,
@@ -264,6 +301,7 @@ class ProductCreateView(RolePermissionMixin, FormView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'ثبت محصول'
         context['cancel_url'] = reverse('products:list')
+        context['auctions'] = Auction.objects.all().order_by('-start_date', 'name')
         return context
 
     def _apply_validation_errors(self, form, exc: ValidationError) -> None:
@@ -310,6 +348,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         )
         queryset = (
             Product.objects.all()
+            .select_related('auction')
             .prefetch_related(
                 Prefetch(
                     'images',
@@ -348,6 +387,19 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         date_to_filter = self.get_date_to_filter()
         if date_to_filter:
             queryset = queryset.filter(suggestion_date__lte=date_to_filter)
+        auction_filter = self.get_auction_filter()
+        if auction_filter:
+            queryset = queryset.filter(auction_id=auction_filter)
+        to_buy_filter = self.get_to_buy_filter()
+        if to_buy_filter == '1':
+            queryset = queryset.filter(to_buy=True)
+        elif to_buy_filter == '0':
+            queryset = queryset.filter(to_buy=False)
+        final_inspection_filter = self.get_final_inspection_filter()
+        if final_inspection_filter == '1':
+            queryset = queryset.filter(final_inspection_done=True)
+        elif final_inspection_filter == '0':
+            queryset = queryset.filter(final_inspection_done=False)
         queryset = queryset.order_by(*self.allowed_sorts[self.get_selected_sort()])
         return queryset
 
@@ -379,6 +431,24 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         cancelled_filter = self.request.GET.get('cancelled', 'all').strip()
         if cancelled_filter in {'all', '0', '1'}:
             return cancelled_filter
+        return 'all'
+
+    def get_auction_filter(self):
+        auction_val = self.request.GET.get('auction', '').strip()
+        if auction_val.isdigit():
+            return int(auction_val)
+        return None
+
+    def get_to_buy_filter(self):
+        val = self.request.GET.get('to_buy', 'all').strip()
+        if val in {'all', '0', '1'}:
+            return val
+        return 'all'
+
+    def get_final_inspection_filter(self):
+        val = self.request.GET.get('final_inspection', 'all').strip()
+        if val in {'all', '0', '1'}:
+            return val
         return 'all'
 
     def get_date_from_filter(self):
@@ -455,6 +525,10 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         context['art_type_options'] = self.get_art_type_options()
         context['sort_options'] = self.get_sort_options()
         context['cancelled_filter_options'] = self.get_cancelled_filter_options()
+        context['auctions'] = Auction.objects.all().order_by('-start_date', 'name')
+        context['selected_auction'] = self.get_auction_filter()
+        context['selected_to_buy'] = self.get_to_buy_filter()
+        context['selected_final_inspection'] = self.get_final_inspection_filter()
         context['has_art_type_options'] = bool(context['art_type_options'])
         context['pagination_query'] = self.get_pagination_query()
         context['clear_filters_url'] = self.get_clear_filters_url()
@@ -463,6 +537,9 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
             or selected_source
             or selected_art_type
             or selected_cancelled != 'all'
+            or self.get_auction_filter()
+            or self.get_to_buy_filter() != 'all'
+            or self.get_final_inspection_filter() != 'all'
             or filter_form['date_from'].value()
             or filter_form['date_to'].value()
             or selected_sort != self.default_sort
@@ -725,3 +802,146 @@ class ProductPublishView(ProductReviewActionView):
 class ProductReReviewView(ProductReviewActionView):
     target_status = ProductStatusChoices.PENDING_REVIEW
     success_message = 'محصول با موفقیت برای بررسی مجدد ارسال شد.'
+
+
+class AuctionListView(RolePermissionMixin, ListView):
+    template_name = 'products/auction_list.html'
+    permission_required = 'products.view_product'
+    model = Auction
+    context_object_name = 'auctions'
+    paginate_by = 12
+
+    def get_filter_form(self):
+        if not hasattr(self, '_filter_form'):
+            self._filter_form = AuctionFilterForm(self.request.GET)
+            self._filter_form.is_valid()
+        return self._filter_form
+
+    def get_queryset(self):
+        queryset = Auction.objects.all().order_by('-start_date', '-created_at')
+        form = self.get_filter_form()
+        q = (form.cleaned_data.get('q') or '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) | Q(location__icontains=q)
+            )
+        source_house = form.cleaned_data.get('source_house')
+        if source_house:
+            queryset = queryset.filter(source_house=source_house)
+        status = form.cleaned_data.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        date_from = form.cleaned_data.get('date_from')
+        if date_from:
+            queryset = queryset.filter(start_date__gte=date_from)
+        date_to = form.cleaned_data.get('date_to')
+        if date_to:
+            queryset = queryset.filter(start_date__lte=date_to)
+        return queryset
+
+    def get_pagination_query(self):
+        query_data = self.request.GET.copy()
+        query_data.pop('page', None)
+        return query_data.urlencode()
+
+    def get_clear_filters_url(self):
+        return reverse('products:auction_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = self.get_filter_form()
+        all_auctions = Auction.objects.all()
+        context['page_title'] = 'حراجی‌های خارجی'
+        context['filter_form'] = form
+        context['pagination_query'] = self.get_pagination_query()
+        context['clear_filters_url'] = self.get_clear_filters_url()
+        context['total_auctions_count'] = all_auctions.count()
+        context['upcoming_auctions_count'] = all_auctions.filter(status=AuctionStatusChoices.UPCOMING).count()
+        context['ongoing_auctions_count'] = all_auctions.filter(status=AuctionStatusChoices.ONGOING).count()
+        context['ended_auctions_count'] = all_auctions.filter(status=AuctionStatusChoices.ENDED).count()
+        context['total_lots_count'] = sum(a.total_lots for a in all_auctions)
+        context['total_to_buy_count'] = sum(a.to_buy_count for a in all_auctions)
+        context['can_manage_auctions'] = self.request.user.has_perm('products.add_product')
+        context['has_active_filters'] = bool(
+            form.cleaned_data.get('q')
+            or form.cleaned_data.get('source_house')
+            or form.cleaned_data.get('status')
+            or form.cleaned_data.get('date_from')
+            or form.cleaned_data.get('date_to')
+        )
+        return context
+
+
+class AuctionDetailView(RolePermissionMixin, DetailView):
+    template_name = 'products/auction_detail.html'
+    permission_required = 'products.view_product'
+    model = Auction
+    context_object_name = 'auction'
+    pk_url_kwarg = 'id'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        auction = self.object
+        products = (
+            auction.products.all()
+            .select_related('created_by')
+            .prefetch_related('images')
+            .order_by('-created_at')
+        )
+        context['page_title'] = auction.name
+        context['products'] = products
+        context['can_manage_auctions'] = self.request.user.has_perm('products.change_product')
+        context['can_add_product'] = self.request.user.has_perm('products.add_product')
+        return context
+
+
+class AuctionCreateView(RolePermissionMixin, FormView):
+    template_name = 'products/auction_form.html'
+    form_class = AuctionForm
+    permission_required = 'products.add_product'
+
+    def form_valid(self, form):
+        auction = form.save(commit=False)
+        auction.created_by = self.request.user
+        auction.updated_by = self.request.user
+        auction.save()
+        messages.success(self.request, f'حراجی «{auction.name}» با موفقیت ثبت شد.')
+        return redirect('products:auction_detail', id=auction.pk)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'ثبت حراجی جدید'
+        context['cancel_url'] = reverse('products:auction_list')
+        return context
+
+
+class AuctionEditView(RolePermissionMixin, UpdateView):
+    template_name = 'products/auction_form.html'
+    form_class = AuctionForm
+    model = Auction
+    pk_url_kwarg = 'id'
+    permission_required = 'products.change_product'
+
+    def form_valid(self, form):
+        auction = form.save(commit=False)
+        auction.updated_by = self.request.user
+        auction.save()
+        messages.success(self.request, f'حراجی «{auction.name}» با موفقیت ویرایش شد.')
+        return redirect('products:auction_detail', id=auction.pk)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'ویرایش {self.object.name}'
+        context['cancel_url'] = reverse('products:auction_detail', args=[self.object.pk])
+        return context
+
+
+class AuctionSyncView(RolePermissionMixin, View):
+    permission_required = 'products.change_product'
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        auction = get_object_or_404(Auction, pk=self.kwargs['id'])
+        sync_auction_statistics(auction=auction)
+        messages.success(request, f'آمار حراجی «{auction.name}» با موفقیت به‌روزرسانی شد.')
+        return redirect('products:auction_detail', id=auction.pk)

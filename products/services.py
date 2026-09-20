@@ -71,10 +71,59 @@ def get_available_status_transitions(*, product: Product) -> set[str]:
     return set(WORKFLOW_STATUS_TRANSITIONS.get(product.status, set()))
 
 
-def create_manual_product(*, cleaned_data: dict, images: list, user) -> Product:
+PRODUCT_CREATE_FIELDS = (
+    'suggested_by',
+    'contact_method',
+    'suggestion_date',
+    'title',
+    'product_code',
+    'description',
+    'artist',
+    'production_date',
+    'production_location',
+    'material',
+    'subject',
+    'usage',
+    'art_type',
+    'suggested_price',
+    'suitable_price',
+    'is_cancelled',
+    'is_notable',
+    'needs_expert_review',
+    'assigned_expert',
+    'auction',
+    'to_buy',
+    'has_initial_info',
+    'has_all_prices',
+    'final_inspection_done',
+)
+
+
+def create_product(*, cleaned_data: dict, images: list, user) -> Product:
+    field_data = {
+        field: cleaned_data.get(field)
+        for field in PRODUCT_CREATE_FIELDS
+        if field in cleaned_data
+    }
+    source_type = cleaned_data.get('source_type')
+    auction = cleaned_data.get('auction')
+    if not source_type:
+        if auction:
+            if auction.source_house == 'CHRISTIES':
+                source_type = ProductSourceTypeChoices.CHRISTIES
+            elif auction.source_house == 'SOTHEBYS':
+                source_type = ProductSourceTypeChoices.SOTHEBYS
+            else:
+                source_type = ProductSourceTypeChoices.OTHER_AUCTION
+        else:
+            source_type = ProductSourceTypeChoices.MANUAL
+
+    source_name = cleaned_data.get('source_name') or (auction.name if auction else '')
+
     product = Product(
-        **{field: cleaned_data.get(field) for field in MANUAL_PRODUCT_FORM_FIELDS},
-        source_type=ProductSourceTypeChoices.MANUAL,
+        **field_data,
+        source_type=source_type,
+        source_name=source_name,
         status=ProductStatusChoices.PENDING_REVIEW,
         created_by=user,
         updated_by=user,
@@ -94,6 +143,12 @@ def create_manual_product(*, cleaned_data: dict, images: list, user) -> Product:
         raise _normalize_integrity_error(exc, product=product) from exc
 
     return product
+
+
+def create_manual_product(*, cleaned_data: dict, images: list, user) -> Product:
+    data = dict(cleaned_data)
+    data['source_type'] = ProductSourceTypeChoices.MANUAL
+    return create_product(cleaned_data=data, images=images, user=user)
 
 
 def _build_product_images(*, product: Product, images: list) -> list[ProductImage]:

@@ -10,6 +10,7 @@
             <p class="muted-text">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p>
         </div>
         <div class="header-actions">
+            <a class="button button-secondary" href="{% url 'products:auction_list' %}">🏛️ حراجی‌های خارجی</a>
             {% if perms.products.add_product %}
                 <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
             {% endif %}
@@ -52,6 +53,18 @@
                 </div>
 
                 <div class="form-field filter-field">
+                    <label for="id_auction">حراجی خارجی</label>
+                    <select id="id_auction" name="auction">
+                        <option value="">همه حراجی‌ها</option>
+                        {% for a in auctions %}
+                            <option value="{{ a.pk }}" {% if selected_auction == a.pk %}selected{% endif %}>
+                                {{ a.name }} ({{ a.get_source_house_display }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-field filter-field">
                     <label for="id_cancelled">وضعیت لغو</label>
                     <select id="id_cancelled" name="cancelled">
                         {% for option in cancelled_filter_options %}
@@ -65,8 +78,26 @@
         </div>
 
         <div class="filter-group">
-            <h3 class="filter-group-title">دسته‌بندی اثر</h3>
+            <h3 class="filter-group-title">🎯 اهداف خرید و نظارت حراجی</h3>
             <div class="filter-group-grid">
+                <div class="form-field filter-field">
+                    <label for="id_to_buy">اولویت خرید</label>
+                    <select id="id_to_buy" name="to_buy">
+                        <option value="all" {% if selected_to_buy == 'all' %}selected{% endif %}>همه آثار</option>
+                        <option value="1" {% if selected_to_buy == '1' %}selected{% endif %}>🎯 فقط موارد هدف خرید</option>
+                        <option value="0" {% if selected_to_buy == '0' %}selected{% endif %}>سایر آثار</option>
+                    </select>
+                </div>
+
+                <div class="form-field filter-field">
+                    <label for="id_final_inspection">بازدید نهایی فیزیکی</label>
+                    <select id="id_final_inspection" name="final_inspection">
+                        <option value="all" {% if selected_final_inspection == 'all' %}selected{% endif %}>همه وضعیت‌ها</option>
+                        <option value="1" {% if selected_final_inspection == '1' %}selected{% endif %}>🔍 بازدید شده</option>
+                        <option value="0" {% if selected_final_inspection == '0' %}selected{% endif %}>بازدید نشده</option>
+                    </select>
+                </div>
+
                 <div class="form-field filter-field">
                     <label for="id_art_type">نوع هنر</label>
                     <select
@@ -146,6 +177,15 @@
         {% if selected_source %}
             <input type="hidden" name="source" value="{{ selected_source }}">
         {% endif %}
+        {% if selected_auction %}
+            <input type="hidden" name="auction" value="{{ selected_auction }}">
+        {% endif %}
+        {% if selected_to_buy != 'all' %}
+            <input type="hidden" name="to_buy" value="{{ selected_to_buy }}">
+        {% endif %}
+        {% if selected_final_inspection != 'all' %}
+            <input type="hidden" name="final_inspection" value="{{ selected_final_inspection }}">
+        {% endif %}
         {% if selected_cancelled != 'all' %}
             <input type="hidden" name="cancelled" value="{{ selected_cancelled }}">
         {% endif %}
@@ -187,8 +227,8 @@
                         <th>خالق</th>
                         <th>نوع هنر</th>
                         <th>قیمت مناسب</th>
-                        <th>وضعیت</th>
-                        <th>منبع</th>
+                        <th>وضعیت و نشان‌ها</th>
+                        <th>منبع / حراجی</th>
                         <th>تاریخ ثبت</th>
                     </tr>
                 </thead>
@@ -211,20 +251,46 @@
                                     <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
                                 {% endif %}
                             </td>
-                            <td>{{ product.title }}</td>
+                            <td>
+                                <strong>{{ product.title }}</strong>
+                            </td>
                             <td>{{ product.product_code|default:"-" }}</td>
                             <td>{{ product.artist|default:"-" }}</td>
                             <td>{{ product.art_type|default:"-" }}</td>
-                            <td>{{ product.suitable_price|default:"-" }}</td>
+                            <td>
+                                {% if product.suitable_price %}
+                                    {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="table-badge-stack">
                                     <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                    {% if product.to_buy %}
+                                        <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+                                    {% endif %}
+                                    {% if product.final_inspection_done %}
+                                        <span class="flag-badge flag-badge-inspect">🔍 بازدید</span>
+                                    {% endif %}
                                     {% if product.is_cancelled %}
                                         <span class="flag-badge flag-badge-warning">لغو شده</span>
                                     {% endif %}
+                                    {% if product.is_notable %}
+                                        <span class="flag-badge flag-badge-success">شاخص</span>
+                                    {% endif %}
                                 </div>
                             </td>
-                            <td>{{ product.get_source_type_display }}</td>
+                            <td>
+                                {% if product.auction %}
+                                    <div class="table-auction-cell">
+                                        <span class="badge badge-house badge-house-{{ product.auction.source_house|lower }}">{{ product.auction.get_source_house_display }}</span>
+                                        <span class="table-auction-name">{{ product.auction.name }}</span>
+                                    </div>
+                                {% else %}
+                                    {{ product.get_source_type_display }}
+                                {% endif %}
+                            </td>
                             <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
                         </tr>
                     {% endfor %}

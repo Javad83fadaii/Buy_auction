@@ -7,12 +7,12 @@
     <div class="dashboard-header">
         <div>
             <h1>{{ page_title }}</h1>
-            <p class="muted-text">اطلاعات فعلی محصول را ویرایش کنید. تصاویر، منبع و وضعیت در این فرم قابل تغییر نیستند.</p>
+            <p class="muted-text">اطلاعات فعلی محصول را ویرایش کنید. تصاویر و وضعیت workflow در فرم جداگانه مدیریت می‌شوند.</p>
         </div>
         <a class="button button-secondary" href="{{ cancel_url }}">بازگشت به جزئیات</a>
     </div>
 
-    <form method="post" novalidate>
+    <form method="post" novalidate data-product-edit-form>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -22,7 +22,7 @@
                 {% endfor %}
             </div>
         {% endif %}
-        {% include "products/partials/_product_form.html" with form=form show_required_note=False show_required_markers=False primary_section_help="اطلاعات فعلی اثر را با حفظ ساختار ثبت‌شده به‌روزرسانی کنید." specifications_section_help="ویژگی‌های هنری و مشخصات تولید اثر را در صورت نیاز اصلاح کنید." suggestion_section_help="اطلاعات پیشنهاددهنده و نحوه ثبت پیشنهاد را در این بخش ویرایش کنید." status_section_help="تصاویر، منبع و وضعیت workflow از این فرم تغییر نمی‌کنند؛ فقط پرچم‌های داخلی قابل ویرایش هستند." show_price_preview=False show_images_section=False only %}
+        {% include "products/partials/_product_form.html" with form=form show_required_note=False show_required_markers=False primary_section_help="اطلاعات فعلی اثر را با حفظ ساختار ثبت‌شده به‌روزرسانی کنید." specifications_section_help="ویژگی‌های هنری و مشخصات تولید اثر را در صورت نیاز اصلاح کنید." suggestion_section_help="اطلاعات پیشنهاددهنده و نحوه ثبت پیشنهاد را در این بخش ویرایش کنید." status_section_help="فقط پرچم‌های داخلی و نشان‌ها از این فرم قابل تغییر هستند." show_price_preview=False show_images_section=False only %}
 
         <div class="actions-row">
             <button type="submit" class="button button-primary">ذخیره تغییرات</button>
@@ -30,4 +30,42 @@
         </div>
     </form>
 </section>
+
+<script>
+    (function () {
+        const modeInput = document.getElementById('{{ form.registration_mode.id_for_label }}');
+        const modeButtons = document.querySelectorAll('[data-mode-btn]');
+        const manualSection = document.querySelector('[data-section="manual"]');
+        const auctionSection = document.querySelector('[data-section="auction"]');
+        const auctionSelect = document.getElementById('{{ form.auction.id_for_label }}');
+
+        function setRegistrationMode(mode) {
+            if (modeInput) {
+                modeInput.value = mode;
+            }
+            modeButtons.forEach(function (btn) {
+                const isActive = btn.getAttribute('data-mode-btn') === mode;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            if (mode === 'auction') {
+                if (manualSection) manualSection.style.display = 'none';
+                if (auctionSection) auctionSection.style.display = 'block';
+            } else {
+                if (manualSection) manualSection.style.display = 'block';
+                if (auctionSection) auctionSection.style.display = 'none';
+            }
+        }
+
+        modeButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setRegistrationMode(btn.getAttribute('data-mode-btn'));
+            });
+        });
+
+        const initialMode = (modeInput && modeInput.value === 'auction') || (auctionSelect && auctionSelect.value) ? 'auction' : 'manual';
+        setRegistrationMode(initialMode);
+    }());
+</script>
 {% endblock %}

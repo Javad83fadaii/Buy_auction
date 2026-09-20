@@ -288,12 +288,6 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         self._normalize_blank_fields()
-        if self.artist:
-            try:
-                from expertise.models import get_or_create_artist_or_scribe
-                get_or_create_artist_or_scribe(self.artist)
-            except Exception:
-                pass
         res = super().save(*args, **kwargs)
         if self.auction_id:
             try:

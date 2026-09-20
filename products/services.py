@@ -269,15 +269,6 @@ def update_product_review_status(*, product: Product, status: str, user) -> Prod
 
 
 def refer_product_to_expert(*, product: Product, expert, user):
-    from expertise.choices import ExpertAppraisalStatusChoices
-    from expertise.models import ExpertAppraisal
-
-    active_referral_statuses = (
-        ExpertAppraisalStatusChoices.REFERRED,
-        ExpertAppraisalStatusChoices.IN_PROGRESS,
-        ExpertAppraisalStatusChoices.PENDING_MANAGER_APPROVAL,
-    )
-
     with transaction.atomic():
         managed_product = Product.objects.select_for_update().get(pk=product.pk)
 
@@ -290,28 +281,15 @@ def refer_product_to_expert(*, product: Product, expert, user):
         if expert is None:
             raise ValidationError('ابتدا کارشناس را انتخاب کنید.')
 
-        duplicate_referral_exists = ExpertAppraisal.objects.select_for_update().filter(
-            product=managed_product,
-            expert=expert,
-            status__in=active_referral_statuses,
-        ).exists()
-        if duplicate_referral_exists:
+        expert_id = getattr(expert, 'pk', expert)
+        if managed_product.assigned_expert_id == expert_id:
             raise ValidationError('برای این محصول قبلاً یک ارجاع فعال به این کارشناس ثبت شده است.')
 
         managed_product.assigned_expert = expert
         managed_product.updated_by = user
         managed_product.save(update_fields=['assigned_expert', 'updated_by', 'updated_at'])
 
-        appraisal = ExpertAppraisal.objects.create(
-            product=managed_product,
-            expert=expert,
-            referred_by=user,
-            status=ExpertAppraisalStatusChoices.REFERRED,
-            created_by=user,
-            updated_by=user,
-        )
-
-    return appraisal
+    return managed_product
 
 
 def _normalize_validation_error(exc: ValidationError, *, product: Product) -> ValidationError:

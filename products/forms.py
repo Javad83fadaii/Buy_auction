@@ -4,7 +4,6 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
 
 from accounts.constants import OPERATOR_ROLE
-from expertise.forms import ArtistOrScribeDatalistWidget
 
 from .choices import (
     AuctionHouseChoices,
@@ -109,7 +108,7 @@ class ProductBaseForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'placeholder': 'عنوان اثر'}),
             'product_code': forms.TextInput(attrs={'placeholder': 'کد اثر'}),
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'توضیحات'}),
-            'artist': ArtistOrScribeDatalistWidget(attrs={'placeholder': 'خالق اثر'}),
+            'artist': forms.TextInput(attrs={'placeholder': 'خالق اثر'}),
             'production_date': forms.DateInput(attrs={'type': 'date'}),
             'production_location': forms.TextInput(attrs={'placeholder': 'مکان تولید'}),
             'material': forms.TextInput(attrs={'placeholder': 'متریال'}),

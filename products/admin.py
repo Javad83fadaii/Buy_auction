@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib import admin
 
-from expertise.forms import ArtistOrScribeDatalistWidget
-
 from .models import Auction, Product, ProductImage
 
 
@@ -11,7 +9,7 @@ class ProductAdminForm(forms.ModelForm):
         model = Product
         fields = '__all__'
         widgets = {
-            'artist': ArtistOrScribeDatalistWidget(
+            'artist': forms.TextInput(
                 attrs={'placeholder': 'خالق اثر / هنرمند', 'style': 'width: 100%; max-width: 25rem;'}
             ),
         }

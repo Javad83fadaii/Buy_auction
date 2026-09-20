@@ -17,7 +17,6 @@ from django.utils import timezone
 
 from accounts.constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
 from accounts.services import ensure_default_roles
-from expertise.models import ExpertAppraisal
 from .choices import (
     AuctionHouseChoices,
     AuctionStatusChoices,
@@ -2419,11 +2418,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product))
         self.assertEqual(product.assigned_expert, self.operator_user)
 
-        appraisal = ExpertAppraisal.objects.get(product=product)
-        self.assertEqual(appraisal.expert, self.operator_user)
-        self.assertEqual(appraisal.referred_by, self.admin_user)
-        self.assertEqual(appraisal.created_by, self.admin_user)
-
     def test_admin_cannot_refer_without_expert_selection(self):
         product = self.create_review_product(
             product_code='ART-REVIEW-EXPERT-2',
@@ -2437,7 +2431,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         product.refresh_from_db()
         self.assertRedirects(response, self.detail_url(product))
         self.assertIsNone(product.assigned_expert)
-        self.assertFalse(ExpertAppraisal.objects.filter(product=product).exists())
         self.assertContains(response, 'انتخاب کارشناس الزامی است.')
 
     def test_admin_cannot_refer_product_without_expert_review_flag(self):
@@ -2457,7 +2450,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         product.refresh_from_db()
         self.assertRedirects(response, self.detail_url(product))
         self.assertIsNone(product.assigned_expert)
-        self.assertFalse(ExpertAppraisal.objects.filter(product=product).exists())
         self.assertContains(response, 'این محصول به عنوان نیازمند کارشناسی ثبت نشده است.')
 
     def test_admin_cannot_create_duplicate_active_referral(self):
@@ -2466,13 +2458,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
             needs_expert_review=True,
             assigned_expert=self.operator_user,
             status=ProductStatusChoices.DRAFT,
-        )
-        ExpertAppraisal.objects.create(
-            product=product,
-            expert=self.operator_user,
-            referred_by=self.admin_user,
-            created_by=self.admin_user,
-            updated_by=self.admin_user,
         )
         self.client.force_login(self.admin_user)
 
@@ -2483,7 +2468,7 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         )
 
         self.assertRedirects(response, self.detail_url(product))
-        self.assertEqual(ExpertAppraisal.objects.filter(product=product, expert=self.operator_user).count(), 1)
+        self.assertEqual(product.assigned_expert, self.operator_user)
         self.assertContains(response, 'برای این محصول قبلاً یک ارجاع فعال به این کارشناس ثبت شده است.')
 
     def test_admin_reject(self):
@@ -2556,7 +2541,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(ExpertAppraisal.objects.filter(product=product).exists())
 
     def test_viewer_cannot_review(self):
         product = self.create_review_product(product_code='ART-REVIEW-6')
@@ -2625,7 +2609,6 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
         response = self.client.get(self.refer_to_expert_url(product))
 
         self.assertEqual(response.status_code, 405)
-        self.assertFalse(ExpertAppraisal.objects.filter(product=product).exists())
 
     def test_admin_can_see_rereview_action_for_rejected_product(self):
         product = self.create_review_product(

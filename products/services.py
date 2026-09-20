@@ -3,7 +3,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
-from .models import Product, ProductImage
+from .models import Auction, Product, ProductImage
 
 MANUAL_PRODUCT_FORM_FIELDS = (
     'suggested_by',
@@ -291,3 +291,8 @@ def _normalize_integrity_error(exc: IntegrityError, *, product: Product) -> Vali
         return ValidationError({'product_code': 'این کد اثر قبلاً برای پیشنهاد دستی ثبت شده است.'})
 
     return ValidationError('ثبت اثر با خطا مواجه شد. لطفاً دوباره تلاش کنید.')
+
+
+def sync_auction_statistics(*, auction: Auction) -> dict[str, int]:
+    """همگام‌سازی و بازشماری آمارهای حراجی بر اساس آثار ثبت‌شده در سیستم"""
+    return auction.sync_statistics()

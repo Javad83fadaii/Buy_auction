@@ -24,3 +24,25 @@ class ProductStatusChoices(models.TextChoices):
     APPROVED = 'APPROVED', 'تأیید شده'
     PUBLISHED = 'PUBLISHED', 'منتشر شده'
     REJECTED = 'REJECTED', 'رد شده'
+
+
+class AuctionHouseChoices(models.TextChoices):
+    CHRISTIES = 'CHRISTIES', "Christie's"
+    SOTHEBYS = 'SOTHEBYS', "Sotheby's"
+    BONHAMS = 'BONHAMS', "Bonhams"
+    OTHER = 'OTHER', 'سایر حراجی‌ها'
+
+
+class AuctionStatusChoices(models.TextChoices):
+    UPCOMING = 'UPCOMING', 'به زودی'
+    ONGOING = 'ONGOING', 'در حال برگزاری'
+    ENDED = 'ENDED', 'پایان یافته'
+
+
+class CurrencyChoices(models.TextChoices):
+    USD = 'USD', 'دلار آمریکا (USD)'
+    EUR = 'EUR', 'یورو (EUR)'
+    GBP = 'GBP', 'پوند انگلیس (GBP)'
+    AED = 'AED', 'درهم امارات (AED)'
+    IRR = 'IRR', 'ریال ایران (IRR)'
+    OTHER = 'OTHER', 'سایر'

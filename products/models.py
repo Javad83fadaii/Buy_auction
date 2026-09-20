@@ -7,7 +7,14 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from .choices import ContactMethodChoices, ProductSourceTypeChoices, ProductStatusChoices
+from .choices import (
+    AuctionHouseChoices,
+    AuctionStatusChoices,
+    ContactMethodChoices,
+    CurrencyChoices,
+    ProductSourceTypeChoices,
+    ProductStatusChoices,
+)
 from .validators import validate_product_image
 
 
@@ -16,6 +23,136 @@ def product_image_upload_to(instance, filename: str) -> str:
     product_id = instance.product_id or 'unassigned'
     image_name = instance.pk or uuid.uuid4().hex
     return f'products/{product_id}/{image_name}{extension}'
+
+
+class Auction(models.Model):
+    name = models.CharField('نام حراجی', max_length=255, db_index=True)
+    source_house = models.CharField(
+        'خانه حراجی',
+        max_length=32,
+        choices=AuctionHouseChoices.choices,
+        default=AuctionHouseChoices.OTHER,
+        db_index=True,
+    )
+    start_date = models.DateField('تاریخ شروع', db_index=True)
+    end_date = models.DateField('تاریخ پایان', blank=True, null=True)
+    location = models.CharField('مکان برگزاری', max_length=255, blank=True)
+    currency = models.CharField(
+        'واحد پول',
+        max_length=16,
+        choices=CurrencyChoices.choices,
+        default=CurrencyChoices.USD,
+    )
+    commission_rate = models.DecimalField(
+        'درصد کمیسیون',
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='درصد کمیسیون یا Buyer Premium حراجی (مثلاً 25 برای 25%)',
+    )
+    status = models.CharField(
+        'وضعیت برگزاری',
+        max_length=32,
+        choices=AuctionStatusChoices.choices,
+        default=AuctionStatusChoices.UPCOMING,
+        db_index=True,
+    )
+    total_lots = models.PositiveIntegerField(
+        'تعداد کل آثار',
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='تعداد کل آثار ثبت‌شده در کاتالوگ حراجی',
+    )
+    # آمارهای تجمیعی (امکان ورود دستی یا همگام‌سازی خودکار)
+    entered_lots_count = models.PositiveIntegerField(
+        'تعداد آثار وارد شده',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    cancelled_lots_count = models.PositiveIntegerField(
+        'تعداد انصرافی',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    expert_lots_count = models.PositiveIntegerField(
+        'تعداد کارشناسی',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    notable_lots_count = models.PositiveIntegerField(
+        'تعداد قابل توجه',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    to_buy_count = models.PositiveIntegerField(
+        'تعداد مواردی که باید خریداری شود',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    initial_info_count = models.PositiveIntegerField(
+        'مواردی که اطلاعات اولیه آن وارد شده است',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    all_prices_count = models.PositiveIntegerField(
+        'مواردی که تمام قیمت‌های آن وارد شده است',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    final_inspection_count = models.PositiveIntegerField(
+        'مواردی که بازدید نهایی شده‌اند',
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='created_auctions',
+        blank=True,
+        null=True,
+        verbose_name='ایجاد شده توسط',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='updated_auctions',
+        blank=True,
+        null=True,
+        verbose_name='آخرین ویرایش توسط',
+    )
+    created_at = models.DateTimeField('زمان ایجاد', auto_now_add=True)
+    updated_at = models.DateTimeField('زمان ویرایش', auto_now=True)
+
+    class Meta:
+        verbose_name = 'حراجی'
+        verbose_name_plural = 'حراجی‌ها'
+        ordering = ('-start_date', '-created_at')
+        indexes = [
+            models.Index(fields=['status', 'start_date'], name='auction_status_date_idx'),
+            models.Index(fields=['source_house', 'status'], name='auction_house_status_idx'),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.get_source_house_display()})'
+
+    def sync_statistics(self, commit: bool = True) -> dict[str, int]:
+        related_products = self.products.all()
+        stats = {
+            'entered_lots_count': related_products.count(),
+            'cancelled_lots_count': related_products.filter(is_cancelled=True).count(),
+            'expert_lots_count': related_products.filter(needs_expert_review=True).count(),
+            'notable_lots_count': related_products.filter(is_notable=True).count(),
+            'to_buy_count': related_products.filter(to_buy=True).count(),
+            'initial_info_count': related_products.filter(has_initial_info=True).count(),
+            'all_prices_count': related_products.filter(has_all_prices=True).count(),
+            'final_inspection_count': related_products.filter(final_inspection_done=True).count(),
+        }
+        for key, value in stats.items():
+            setattr(self, key, value)
+        if commit:
+            self.save(update_fields=list(stats.keys()) + ['updated_at'])
+        return stats
 
 
 class Product(models.Model):
@@ -71,6 +208,18 @@ class Product(models.Model):
         null=True,
         verbose_name='کارشناس ارجاعی',
     )
+    auction = models.ForeignKey(
+        Auction,
+        on_delete=models.SET_NULL,
+        related_name='products',
+        blank=True,
+        null=True,
+        verbose_name='حراجی مرتبط',
+    )
+    to_buy = models.BooleanField('خریداری شود', default=False, db_index=True)
+    has_initial_info = models.BooleanField('اطلاعات اولیه وارد شده', default=False)
+    has_all_prices = models.BooleanField('تمام قیمت‌ها وارد شده', default=False)
+    final_inspection_done = models.BooleanField('بازدید نهایی شده', default=False, db_index=True)
     source_type = models.CharField(
         'نوع منبع',
         max_length=32,
@@ -145,7 +294,23 @@ class Product(models.Model):
                 get_or_create_artist_or_scribe(self.artist)
             except Exception:
                 pass
-        return super().save(*args, **kwargs)
+        res = super().save(*args, **kwargs)
+        if self.auction_id:
+            try:
+                self.auction.sync_statistics()
+            except Exception:
+                pass
+        return res
+
+    def delete(self, *args, **kwargs):
+        auction = self.auction
+        res = super().delete(*args, **kwargs)
+        if auction:
+            try:
+                auction.sync_statistics()
+            except Exception:
+                pass
+        return res
 
     def _normalize_blank_fields(self) -> None:
         if self.product_code is not None:

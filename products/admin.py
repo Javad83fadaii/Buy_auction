@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from expertise.forms import ArtistOrScribeDatalistWidget
 
-from .models import Product, ProductImage
+from .models import Auction, Product, ProductImage
 
 
 class ProductAdminForm(forms.ModelForm):
@@ -15,6 +15,58 @@ class ProductAdminForm(forms.ModelForm):
                 attrs={'placeholder': 'خالق اثر / هنرمند', 'style': 'width: 100%; max-width: 25rem;'}
             ),
         }
+
+
+class ProductInline(admin.TabularInline):
+    model = Product
+    extra = 0
+    fields = (
+        'title',
+        'product_code',
+        'to_buy',
+        'has_initial_info',
+        'has_all_prices',
+        'final_inspection_done',
+        'status',
+    )
+    show_change_link = True
+
+
+@admin.register(Auction)
+class AuctionAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'source_house',
+        'start_date',
+        'location',
+        'currency',
+        'commission_rate',
+        'status',
+        'total_lots',
+        'entered_lots_count',
+        'to_buy_count',
+        'final_inspection_count',
+        'created_at',
+    )
+    list_filter = (
+        'status',
+        'source_house',
+        'currency',
+        'start_date',
+        'created_at',
+    )
+    search_fields = ('name', 'location')
+    ordering = ('-start_date', '-created_at')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('created_by', 'updated_by')
+    inlines = (ProductInline,)
+    actions = ('sync_statistics_action',)
+
+    @admin.action(description='به‌روزرسانی خودکار آمار حراجی بر اساس آثار')
+    def sync_statistics_action(self, request, queryset):
+        for auction in queryset:
+            auction.sync_statistics()
+        self.message_user(request, 'آمار حراجی‌های انتخاب‌شده با موفقیت به‌روزرسانی شد.')
 
 
 class ProductImageInline(admin.TabularInline):
@@ -30,8 +82,11 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'title',
         'product_code',
+        'auction',
         'source_type',
         'status',
+        'to_buy',
+        'final_inspection_done',
         'suggested_by',
         'suggestion_date',
         'created_by',
@@ -43,6 +98,11 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = (
         'source_type',
         'status',
+        'to_buy',
+        'final_inspection_done',
+        'has_initial_info',
+        'has_all_prices',
+        'auction',
         'contact_method',
         'is_notable',
         'needs_expert_review',
@@ -53,7 +113,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('title', 'product_code', 'artist', 'suggested_by', 'source_name')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('created_by', 'updated_by')
+    raw_id_fields = ('created_by', 'updated_by', 'auction')
     inlines = (ProductImageInline,)
 
 

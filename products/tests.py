@@ -18,9 +18,16 @@ from django.utils import timezone
 from accounts.constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
 from accounts.services import ensure_default_roles
 from expertise.models import ExpertAppraisal
-from .choices import ContactMethodChoices, ProductSourceTypeChoices, ProductStatusChoices
+from .choices import (
+    AuctionHouseChoices,
+    AuctionStatusChoices,
+    ContactMethodChoices,
+    CurrencyChoices,
+    ProductSourceTypeChoices,
+    ProductStatusChoices,
+)
 from .forms import ProductCreateForm
-from .models import Product, ProductImage
+from .models import Auction, Product, ProductImage
 from .validators import MAX_PRODUCT_IMAGE_SIZE
 
 User = get_user_model()
@@ -2861,3 +2868,168 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
             f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
             html=False,
         )
+
+
+class AuctionModelAndSyncTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        ensure_default_roles()
+        cls.user = User.objects.create_user(
+            username='auction_tester',
+            password='Password123!',
+            email='auction_tester@example.com',
+        )
+
+    def test_auction_creation_and_defaults(self):
+        auction = Auction.objects.create(
+            name="Sotheby's Islamic and Middle Eastern Art",
+            source_house=AuctionHouseChoices.SOTHEBYS,
+            start_date=date(2026, 10, 25),
+            location='London, New Bond Street',
+            currency=CurrencyChoices.GBP,
+            commission_rate=25.00,
+            status=AuctionStatusChoices.UPCOMING,
+            total_lots=240,
+            created_by=self.user,
+        )
+        self.assertEqual(auction.name, "Sotheby's Islamic and Middle Eastern Art")
+        self.assertEqual(auction.source_house, AuctionHouseChoices.SOTHEBYS)
+        self.assertEqual(auction.currency, CurrencyChoices.GBP)
+        self.assertEqual(auction.commission_rate, 25.00)
+        self.assertEqual(auction.status, AuctionStatusChoices.UPCOMING)
+        self.assertEqual(auction.total_lots, 240)
+        self.assertEqual(auction.entered_lots_count, 0)
+        self.assertIn("Sotheby's", str(auction))
+
+    def test_auction_search_and_filters(self):
+        a1 = Auction.objects.create(
+            name="Christie's Art of Islamic World",
+            source_house=AuctionHouseChoices.CHRISTIES,
+            start_date=date(2026, 11, 1),
+            location='London',
+            currency=CurrencyChoices.GBP,
+            status=AuctionStatusChoices.UPCOMING,
+        )
+        a2 = Auction.objects.create(
+            name="Sotheby's Modern Masters",
+            source_house=AuctionHouseChoices.SOTHEBYS,
+            start_date=date(2026, 9, 20),
+            location='New York',
+            currency=CurrencyChoices.USD,
+            status=AuctionStatusChoices.ONGOING,
+        )
+        a3 = Auction.objects.create(
+            name="Tehran Auction Autumn",
+            source_house=AuctionHouseChoices.OTHER,
+            start_date=date(2026, 8, 15),
+            location='Tehran',
+            currency=CurrencyChoices.IRR,
+            status=AuctionStatusChoices.ENDED,
+        )
+
+        # Search by name
+        results = Auction.objects.filter(name__icontains="Christie's")
+        self.assertEqual(list(results), [a1])
+
+        # Filter by source house
+        sothebys_auctions = Auction.objects.filter(source_house=AuctionHouseChoices.SOTHEBYS)
+        self.assertEqual(list(sothebys_auctions), [a2])
+
+        # Filter by status
+        upcoming_auctions = Auction.objects.filter(status=AuctionStatusChoices.UPCOMING)
+        self.assertEqual(list(upcoming_auctions), [a1])
+
+        ongoing_auctions = Auction.objects.filter(status=AuctionStatusChoices.ONGOING)
+        self.assertEqual(list(ongoing_auctions), [a2])
+
+        ended_auctions = Auction.objects.filter(status=AuctionStatusChoices.ENDED)
+        self.assertEqual(list(ended_auctions), [a3])
+
+        # Filter by date range
+        date_filtered = Auction.objects.filter(start_date__gte=date(2026, 9, 1))
+        self.assertEqual(set(date_filtered), {a1, a2})
+
+    def test_auction_sync_statistics_and_product_integration(self):
+        from .services import sync_auction_statistics
+
+        auction = Auction.objects.create(
+            name="Bonhams Contemporary & Islamic Art",
+            source_house=AuctionHouseChoices.BONHAMS,
+            start_date=date(2026, 12, 1),
+            location='Dubai',
+            currency=CurrencyChoices.AED,
+            commission_rate=20.00,
+            total_lots=50,
+            created_by=self.user,
+        )
+
+        p1 = Product.objects.create(
+            title='اثر خطی شماره ۱',
+            auction=auction,
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+            to_buy=True,
+            has_initial_info=True,
+            has_all_prices=True,
+            final_inspection_done=True,
+            is_notable=True,
+            needs_expert_review=True,
+            is_cancelled=False,
+            created_by=self.user,
+        )
+        p2 = Product.objects.create(
+            title='قالیچه تاریخی شماره ۲',
+            auction=auction,
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+            to_buy=False,
+            has_initial_info=True,
+            has_all_prices=False,
+            final_inspection_done=False,
+            is_notable=False,
+            needs_expert_review=False,
+            is_cancelled=True,
+            created_by=self.user,
+        )
+        p3 = Product.objects.create(
+            title='نگارگری شماره ۳',
+            auction=auction,
+            source_type=ProductSourceTypeChoices.OTHER_AUCTION,
+            to_buy=True,
+            has_initial_info=False,
+            has_all_prices=False,
+            final_inspection_done=False,
+            is_notable=True,
+            needs_expert_review=False,
+            is_cancelled=False,
+            created_by=self.user,
+        )
+
+        auction.refresh_from_db()
+        self.assertEqual(auction.entered_lots_count, 3)
+        self.assertEqual(auction.cancelled_lots_count, 1)
+        self.assertEqual(auction.expert_lots_count, 1)
+        self.assertEqual(auction.notable_lots_count, 2)
+        self.assertEqual(auction.to_buy_count, 2)
+        self.assertEqual(auction.initial_info_count, 2)
+        self.assertEqual(auction.all_prices_count, 1)
+        self.assertEqual(auction.final_inspection_count, 1)
+
+        # Test service function
+        stats = sync_auction_statistics(auction=auction)
+        self.assertEqual(stats['entered_lots_count'], 3)
+        self.assertEqual(stats['to_buy_count'], 2)
+
+        # Test deleting a product refreshes statistics automatically
+        p3.delete()
+        auction.refresh_from_db()
+        self.assertEqual(auction.entered_lots_count, 2)
+        self.assertEqual(auction.to_buy_count, 1)
+
+    def test_product_without_auction_saves_without_error(self):
+        p = Product.objects.create(
+            title='پیشنهاد عادی بدون حراجی',
+            source_type=ProductSourceTypeChoices.MANUAL,
+            created_by=self.user,
+        )
+        self.assertIsNone(p.auction)
+        self.assertFalse(p.to_buy)
+        self.assertFalse(p.final_inspection_done)

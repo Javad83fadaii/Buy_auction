@@ -309,7 +309,7 @@
         </section>
 
         {% if can_manage_images %}
-            {% include "products/partials/_product_images.html" with image_mode="manage" product=product image_upload_form=image_upload_form managed_images=managed_images only %}
+            {% include "products/partials/_product_images.html" with image_mode="manage" %}
         {% endif %}
 
         <section class="detail-section accent-copper">
@@ -323,7 +323,7 @@
         </section>
     </div>
 
-    {% include "products/partials/_status_actions.html" with product=product back_url=back_url show_submit_review_action=show_submit_review_action show_approve_action=show_approve_action show_reject_action=show_reject_action show_publish_action=show_publish_action show_rereview_action=show_rereview_action can_refer_to_expert=can_refer_to_expert expert_referral_form=expert_referral_form perms=perms only %}
+    {% include "products/partials/_status_actions.html" %}
 </section>
 
 {% if gallery_images %}

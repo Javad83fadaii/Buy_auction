@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .admin import GroupAdmin, SystemRoleListFilter
-from .constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
+from .constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, VIEWER_ROLE
 from .services import ensure_default_roles
 
 User = get_user_model()
@@ -18,11 +18,13 @@ class AccountsTestCase(TestCase):
         ensure_default_roles()
         cls.password = 'StrongPass123!'
         cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
+        cls.manager_group = Group.objects.get(name=MANAGER_ROLE)
         cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
         cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
 
         cls.admin_user = cls.create_user('admin_user', cls.admin_group, is_staff=True, is_superuser=True)
         cls.staff_admin_user = cls.create_user('staff_admin_user', cls.admin_group)
+        cls.manager_user = cls.create_user('manager_user', cls.manager_group)
         cls.operator_user = cls.create_user('operator_user', cls.operator_group)
         cls.viewer_user = cls.create_user('viewer_user', cls.viewer_group)
         cls.inactive_user = cls.create_user('inactive_user', cls.operator_group, is_active=False)
@@ -179,6 +181,27 @@ class AccountsTestCase(TestCase):
         self.assertFalse(self.viewer_user.has_perm('accounts.view_dashboard'))
         self.assertFalse(self.viewer_user.has_perm('accounts.view_viewer_dashboard'))
 
+    def test_manager_role_has_review_add_change_permissions(self):
+        self.assertTrue(self.manager_user.has_perm('products.review_product'))
+        self.assertTrue(self.manager_user.has_perm('products.add_product'))
+        self.assertTrue(self.manager_user.has_perm('products.change_product'))
+        self.assertTrue(self.manager_user.has_perm('products.view_product'))
+        self.assertTrue(self.manager_user.has_perm('accounts.view_dashboard'))
+        self.assertFalse(self.manager_user.is_staff)
+
+    def test_operator_role_cannot_review_product(self):
+        self.assertTrue(self.operator_user.has_perm('products.add_product'))
+        self.assertTrue(self.operator_user.has_perm('products.change_product'))
+        self.assertTrue(self.operator_user.has_perm('products.view_product'))
+        self.assertFalse(self.operator_user.has_perm('products.review_product'))
+        self.assertTrue(self.operator_user.has_perm('accounts.view_dashboard'))
+
+    def test_manager_login_redirects_to_dashboard(self):
+        self.client.force_login(self.manager_user)
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مدیریت محصولات')
+
     def test_viewer_password_change_done_links_to_product_list(self):
         self.client.force_login(self.viewer_user)
 
@@ -217,9 +240,9 @@ class AccountsAdminBehaviorTestCase(TestCase):
         self.assertEqual(
             dict(role_filter.lookups(request, self.group_admin)),
             {
-                ADMIN_ROLE: 'مدیر سیستم',
+                ADMIN_ROLE: 'ادمین',
+                MANAGER_ROLE: 'مدیر',
                 OPERATOR_ROLE: 'اپراتور',
-                VIEWER_ROLE: 'مشاهده‌کننده',
             },
         )
 
@@ -229,6 +252,9 @@ class AccountsAdminBehaviorTestCase(TestCase):
 
         with self.assertRaises(PermissionDenied):
             self.group_admin.delete_queryset(request, Group.objects.filter(name=ADMIN_ROLE))
+
+        with self.assertRaises(PermissionDenied):
+            self.group_admin.delete_queryset(request, Group.objects.filter(name=MANAGER_ROLE))
 
     def test_non_system_group_can_be_deleted_in_bulk(self):
         request = self.client.request().wsgi_request

@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
 from django.utils import timezone
 
-from accounts.constants import ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE
+from accounts.constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, VIEWER_ROLE
 from accounts.services import ensure_default_roles
 from .choices import (
     AuctionHouseChoices,
@@ -51,10 +51,12 @@ class ProductCreateBaseTestCase(TestCase):
         ensure_default_roles()
         cls.password = 'StrongPass123!'
         cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
+        cls.manager_group = Group.objects.get(name=MANAGER_ROLE)
         cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
         cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
 
         cls.admin_user = cls.create_user('product_admin', cls.admin_group)
+        cls.manager_user = cls.create_user('product_manager', cls.manager_group)
         cls.operator_user = cls.create_user('product_operator', cls.operator_group)
         cls.viewer_user = cls.create_user('product_viewer', cls.viewer_group)
 
@@ -3170,4 +3172,62 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'حراجی‌های خارجی و بین‌المللی')
         self.assertContains(response, 'کل حراجی‌های تعریف‌شده')
+
+
+class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.product = Product.objects.create(
+            title='اثر تستی دسترسی',
+            status=ProductStatusChoices.PENDING_REVIEW,
+            created_by=cls.operator_user,
+        )
+
+    def test_manager_can_approve_product(self):
+        self.client.force_login(self.manager_user)
+        response = self.client.post(reverse('products:approve', args=[self.product.pk]), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatusChoices.APPROVED)
+
+    def test_operator_cannot_approve_product(self):
+        self.client.force_login(self.operator_user)
+        response = self.client.post(reverse('products:approve', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 403)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatusChoices.PENDING_REVIEW)
+
+    def test_operator_cannot_reject_product(self):
+        self.client.force_login(self.operator_user)
+        response = self.client.post(reverse('products:reject', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_can_edit_product(self):
+        self.client.force_login(self.operator_user)
+        payload = self.get_valid_payload(title='عنوان ویرایش شده توسط اپراتور')
+        response = self.client.post(
+            reverse('products:edit', args=[self.product.pk]),
+            data=payload,
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.title, 'عنوان ویرایش شده توسط اپراتور')
+
+    def test_operator_detail_page_hides_approve_and_reject_buttons(self):
+        self.client.force_login(self.operator_user)
+        response = self.client.get(reverse('products:detail', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'تأیید محصول')
+        self.assertNotContains(response, 'رد محصول')
+        self.assertContains(response, 'ویرایش محصول')
+
+    def test_manager_detail_page_shows_approve_and_reject_buttons(self):
+        self.client.force_login(self.manager_user)
+        response = self.client.get(reverse('products:detail', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'تأیید محصول')
+        self.assertContains(response, 'رد محصول')
+        self.assertContains(response, 'ویرایش محصول')
 

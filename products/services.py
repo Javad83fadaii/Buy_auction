@@ -30,6 +30,8 @@ MANUAL_PRODUCT_FORM_FIELDS = (
 WORKFLOW_STATUS_TRANSITIONS = {
     ProductStatusChoices.DRAFT: {
         ProductStatusChoices.PENDING_REVIEW,
+        ProductStatusChoices.APPROVED,
+        ProductStatusChoices.REJECTED,
     },
     ProductStatusChoices.PENDING_REVIEW: {
         ProductStatusChoices.APPROVED,
@@ -37,10 +39,16 @@ WORKFLOW_STATUS_TRANSITIONS = {
     },
     ProductStatusChoices.APPROVED: {
         ProductStatusChoices.PUBLISHED,
+        ProductStatusChoices.PENDING_REVIEW,
+        ProductStatusChoices.REJECTED,
     },
-    ProductStatusChoices.PUBLISHED: set(),
+    ProductStatusChoices.PUBLISHED: {
+        ProductStatusChoices.PENDING_REVIEW,
+        ProductStatusChoices.REJECTED,
+    },
     ProductStatusChoices.REJECTED: {
         ProductStatusChoices.PENDING_REVIEW,
+        ProductStatusChoices.APPROVED,
     },
 }
 

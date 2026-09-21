@@ -26,11 +26,14 @@ class User(AbstractUser):
 
     @property
     def roles(self) -> list[str]:
-        return list(
+        roles = list(
             self.groups.filter(name__in=ROLE_NAME_SET)
             .order_by('name')
             .values_list('name', flat=True)
         )
+        if not roles and self.is_superuser:
+            return [ADMIN_ROLE]
+        return roles
 
     @property
     def primary_role(self) -> str:
@@ -45,6 +48,8 @@ class User(AbstractUser):
         return ', '.join(get_role_title(role_name) for role_name in self.roles) or '-'
 
     def has_role(self, role_name: str) -> bool:
+        if role_name == ADMIN_ROLE and self.is_superuser:
+            return True
         return self.groups.filter(name=role_name).exists()
 
     def set_role(self, group: Group | None) -> None:

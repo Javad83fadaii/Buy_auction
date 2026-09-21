@@ -5,7 +5,9 @@ from django.contrib.admin.sites import NotRegistered
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
 
-from .constants import ROLE_NAME_SET, ROLE_TITLE_MAP, get_role_title
+from django.db.models import Q
+
+from .constants import ADMIN_ROLE, ROLE_DEFINITIONS, ROLE_NAME_SET, ROLE_TITLE_MAP, get_role_title
 from .forms import UserAdminChangeForm, UserAdminCreationForm
 from .models import User
 
@@ -15,12 +17,14 @@ class SystemRoleListFilter(admin.SimpleListFilter):
     parameter_name = 'role'
 
     def lookups(self, request, model_admin):
-        return [(role_name, role_title) for role_name, role_title in ROLE_TITLE_MAP.items()]
+        return [(role.name, role.title) for role in ROLE_DEFINITIONS]
 
     def queryset(self, request, queryset):
         selected_role = self.value()
         if not selected_role:
             return queryset
+        if selected_role == ADMIN_ROLE:
+            return queryset.filter(Q(groups__name=selected_role) | Q(is_superuser=True)).distinct()
         return queryset.filter(groups__name=selected_role)
 
 

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import Group, Permission
 from django.db import transaction
 
-from .constants import ADMIN_ROLE, OPERATOR_ROLE, ROLE_DEFINITIONS, VIEWER_ROLE
+from .constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, ROLE_DEFINITIONS, VIEWER_ROLE
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,24 @@ ROLE_PERMISSION_BLUEPRINTS = {
         PermissionBlueprint(app_label='accounts'),
         PermissionBlueprint(app_label='products'),
         PermissionBlueprint(app_label='auth', model='group'),
+    ),
+    MANAGER_ROLE: (
+        PermissionBlueprint(
+            app_label='accounts',
+            codenames=('view_dashboard',),
+        ),
+        PermissionBlueprint(
+            app_label='products',
+            codenames=(
+                'add_product',
+                'change_product',
+                'view_product',
+                'review_product',
+                'add_auction',
+                'change_auction',
+                'view_auction',
+            ),
+        ),
     ),
     OPERATOR_ROLE: (
         PermissionBlueprint(
@@ -64,7 +82,7 @@ def resolve_role_permissions(role_name: str) -> list[Permission]:
 
 @transaction.atomic
 def ensure_default_roles() -> None:
-    for role in ROLE_DEFINITIONS:
-        group, _ = Group.objects.get_or_create(name=role.name)
-        permissions = resolve_role_permissions(role.name)
+    for role_name in ROLE_PERMISSION_BLUEPRINTS:
+        group, _ = Group.objects.get_or_create(name=role_name)
+        permissions = resolve_role_permissions(role_name)
         group.permissions.set(permissions)

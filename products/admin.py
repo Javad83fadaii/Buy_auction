@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin
 
+from .choices import ProductStatusChoices
 from .models import Auction, Product, ProductImage
 
 
@@ -113,6 +114,32 @@ class ProductAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     raw_id_fields = ('created_by', 'updated_by', 'auction')
     inlines = (ProductImageInline,)
+    actions = (
+        'approve_products_action',
+        'reject_products_action',
+        'publish_products_action',
+        'submit_review_products_action',
+    )
+
+    @admin.action(description='تأیید محصولات انتخاب‌شده')
+    def approve_products_action(self, request, queryset):
+        count = queryset.update(status=ProductStatusChoices.APPROVED)
+        self.message_user(request, f'{count} اثر با موفقیت تأیید شد.')
+
+    @admin.action(description='رد محصولات انتخاب‌شده')
+    def reject_products_action(self, request, queryset):
+        count = queryset.update(status=ProductStatusChoices.REJECTED)
+        self.message_user(request, f'{count} اثر رد شد.')
+
+    @admin.action(description='انتشار محصولات انتخاب‌شده')
+    def publish_products_action(self, request, queryset):
+        count = queryset.update(status=ProductStatusChoices.PUBLISHED)
+        self.message_user(request, f'{count} اثر منتشر شد.')
+
+    @admin.action(description='ارسال محصولات انتخاب‌شده برای بررسی')
+    def submit_review_products_action(self, request, queryset):
+        count = queryset.update(status=ProductStatusChoices.PENDING_REVIEW)
+        self.message_user(request, f'{count} اثر برای بررسی ارسال شد.')
 
 
 @admin.register(ProductImage)

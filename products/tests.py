@@ -3231,3 +3231,115 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.assertContains(response, 'رد محصول')
         self.assertContains(response, 'ویرایش محصول')
 
+    def test_operator_cannot_edit_published_product(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.save(update_fields=['status'])
+
+        self.client.force_login(self.operator_user)
+        get_response = self.client.get(reverse('products:edit', args=[self.product.pk]))
+        self.assertEqual(get_response.status_code, 403)
+
+        payload = self.get_valid_payload(title='تلاش برای ویرایش محصول منتشرشده')
+        post_response = self.client.post(reverse('products:edit', args=[self.product.pk]), data=payload)
+        self.assertEqual(post_response.status_code, 403)
+
+        self.product.refresh_from_db()
+        self.assertNotEqual(self.product.title, 'تلاش برای ویرایش محصول منتشرشده')
+
+    def test_operator_cannot_cancel_published_product(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.is_cancelled = False
+        self.product.save(update_fields=['status', 'is_cancelled'])
+
+        self.client.force_login(self.operator_user)
+        response = self.client.post(
+            reverse('products:cancel_toggle', args=[self.product.pk]),
+            data={'action': 'cancel'},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.product.refresh_from_db()
+        self.assertFalse(self.product.is_cancelled)
+
+    def test_operator_cannot_upload_image_to_published_product(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.save(update_fields=['status'])
+
+        self.client.force_login(self.operator_user)
+        test_image = self.create_test_image(name='denied.jpg')
+        response = self.client.post(
+            reverse('products:image_upload', args=[self.product.pk]),
+            data={'image': test_image},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_detail_page_hides_edit_and_cancel_when_published(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.save(update_fields=['status'])
+
+        self.client.force_login(self.operator_user)
+        response = self.client.get(reverse('products:detail', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'ویرایش محصول')
+        self.assertNotContains(response, 'لغو محصول')
+        self.assertContains(response, 'قفل انتشار')
+
+    def test_manager_can_edit_and_cancel_published_product(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.is_cancelled = False
+        self.product.save(update_fields=['status', 'is_cancelled'])
+
+        self.client.force_login(self.manager_user)
+        response = self.client.get(reverse('products:detail', args=[self.product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ویرایش محصول')
+        self.assertContains(response, 'لغو محصول')
+
+        cancel_response = self.client.post(
+            reverse('products:cancel_toggle', args=[self.product.pk]),
+            data={'action': 'cancel'},
+            follow=True,
+        )
+        self.assertEqual(cancel_response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.is_cancelled)
+
+    def test_operator_access_restored_when_manager_resubmits_for_review(self):
+        self.product.status = ProductStatusChoices.PUBLISHED
+        self.product.is_cancelled = False
+        self.product.save(update_fields=['status', 'is_cancelled'])
+
+        # مدیر محصول را برای بررسی مجدد ارسال می‌کند
+        self.client.force_login(self.manager_user)
+        rereview_response = self.client.post(reverse('products:re_review', args=[self.product.pk]), follow=True)
+        self.assertEqual(rereview_response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatusChoices.PENDING_REVIEW)
+
+        # حالا اپراتور باید مجدداً دسترسی ویرایش و لغو داشته باشد
+        self.client.force_login(self.operator_user)
+        detail_response = self.client.get(reverse('products:detail', args=[self.product.pk]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, 'ویرایش محصول')
+        self.assertContains(detail_response, 'لغو محصول')
+
+        # اپراتور می‌تواند ویرایش کند
+        payload = self.get_valid_payload(title='عنوان ویرایش شده پس از ارسال مجدد')
+        edit_response = self.client.post(
+            reverse('products:edit', args=[self.product.pk]),
+            data=payload,
+            follow=True,
+        )
+        self.assertEqual(edit_response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.title, 'عنوان ویرایش شده پس از ارسال مجدد')
+
+        # اپراتور می‌تواند لغو کند
+        cancel_response = self.client.post(
+            reverse('products:cancel_toggle', args=[self.product.pk]),
+            data={'action': 'cancel'},
+            follow=True,
+        )
+        self.assertEqual(cancel_response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.is_cancelled)
+

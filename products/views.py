@@ -40,6 +40,7 @@ from .forms import (
 from .models import Auction, Product, ProductImage
 from .services import (
     add_product_image,
+    can_user_modify_product,
     create_manual_product,
     create_product,
     delete_product_image,
@@ -200,6 +201,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
         gallery_images = list(product.images.all())
         primary_image = self.get_primary_image(gallery_images)
         can_review_product = self.request.user.has_perm('products.review_product')
+        can_manage_product = can_user_modify_product(product=product, user=self.request.user)
         available_status_transitions = get_available_status_transitions(product=product)
         expert_referral_form = self.get_expert_referral_form(product=product)
 
@@ -210,7 +212,13 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'gallery_images': gallery_images,
             'managed_images': self.build_managed_images(gallery_images, image_sort_forms=image_sort_forms),
             'image_upload_form': image_upload_form or self.get_image_upload_form(),
-            'can_manage_images': self.request.user.has_perm('products.change_product'),
+            'can_manage_product': can_manage_product,
+            'can_manage_images': can_manage_product,
+            'is_locked_for_operator': (
+                product.status == ProductStatusChoices.PUBLISHED
+                and not can_review_product
+                and self.request.user.has_perm('products.change_product')
+            ),
             'can_review_product': can_review_product,
             'show_submit_review_action': (
                 can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
@@ -573,6 +581,12 @@ class ProductEditView(RolePermissionMixin, UpdateView):
     def get_queryset(self):
         return Product.objects.select_related('created_by', 'updated_by')
 
+    def dispatch(self, request, *args, **kwargs):
+        product = self.get_object()
+        if not can_user_modify_product(product=product, user=request.user):
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
         messages.success(self.request, 'محصول با موفقیت ویرایش شد.')
@@ -590,6 +604,11 @@ class ProductEditView(RolePermissionMixin, UpdateView):
 
 class ProductImageManagementMixin(ProductDetailContextMixin, RolePermissionMixin):
     permission_required = 'products.change_product'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_user_modify_product(product=self.get_product(), user=request.user):
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse('products:detail', args=[self.get_product().pk])
@@ -683,6 +702,11 @@ class ProductImageDeleteView(ProductImageManagementMixin, View):
 class ProductCancelToggleView(RolePermissionMixin, View):
     permission_required = 'products.change_product'
     http_method_names = ['post']
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_user_modify_product(product=self.get_product(), user=request.user):
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
 
     def get_product(self):
         if not hasattr(self, '_product'):

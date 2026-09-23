@@ -43,7 +43,7 @@
         </form>
     {% endif %}
 
-    {% if perms.products.change_product %}
+    {% if can_manage_product %}
         <form
             method="post"
             action="{% url 'products:cancel_toggle' product.pk %}"
@@ -60,6 +60,10 @@
         </form>
 
         <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
+    {% elif is_locked_for_operator %}
+        <span class="badge badge-warning" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال مجدد برای بررسی توسط مدیر امکان‌پذیر است.">
+            🔒 قفل انتشار (ویرایش و لغو تنها پس از ارسال مجدد برای بررسی امکان‌پذیر است)
+        </span>
     {% endif %}
 
     <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>

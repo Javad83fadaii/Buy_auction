@@ -79,6 +79,27 @@ def get_available_status_transitions(*, product: Product) -> set[str]:
     return set(WORKFLOW_STATUS_TRANSITIONS.get(product.status, set()))
 
 
+def can_user_modify_product(*, product: Product, user) -> bool:
+    """
+    بررسی دسترسی کاربر برای تغییر، ویرایش یا لغو محصول.
+    اگر محصول در وضعیت PUBLISHED باشد، اپراتورها (کاربرانی که فاقد پرمیشن review_product هستند)
+    امکان ویرایش، لغو یا مدیریت تصاویر را ندارند تا زمانی که مدیر محصول را مجدداً برای بررسی ارسال کند.
+    """
+    if not user or not user.is_authenticated or not user.is_active:
+        return False
+
+    if user.is_superuser or user.has_perm('products.review_product'):
+        return True
+
+    if not user.has_perm('products.change_product'):
+        return False
+
+    if product.status == ProductStatusChoices.PUBLISHED:
+        return False
+
+    return True
+
+
 PRODUCT_CREATE_FIELDS = (
     'suggested_by',
     'contact_method',
@@ -238,8 +259,14 @@ def delete_product_image(*, product: Product, image: ProductImage) -> None:
 
 
 def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user=None) -> Product:
+    if user is not None and not can_user_modify_product(product=product, user=user):
+        raise ValidationError('محصول منتشرشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
+
     with transaction.atomic():
         managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        if user is not None and not can_user_modify_product(product=managed_product, user=user):
+            raise ValidationError('محصول منتشرشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
+
         managed_product.is_cancelled = is_cancelled
 
         update_fields = ['is_cancelled', 'updated_at']

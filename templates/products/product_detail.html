@@ -88,6 +88,9 @@
             {% if product.is_cancelled %}
                 <div class="detail-alert detail-alert-warning">این محصول لغو شده است.</div>
             {% endif %}
+            {% if is_locked_for_operator %}
+                <div class="detail-alert detail-alert-warning">این اثر منتشر شده است؛ ویرایش یا لغو آن برای اپراتور قفل است و تنها پس از ارسال مجدد برای بررسی توسط مدیر امکان‌پذیر خواهد بود.</div>
+            {% endif %}
 
             {% if product.auction %}
                 <div class="auction-summary-chip">

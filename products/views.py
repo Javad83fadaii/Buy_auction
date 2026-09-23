@@ -215,7 +215,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'can_manage_product': can_manage_product,
             'can_manage_images': can_manage_product,
             'is_locked_for_operator': (
-                product.status == ProductStatusChoices.PUBLISHED
+                (product.status == ProductStatusChoices.PUBLISHED or product.is_cancelled)
                 and not can_review_product
                 and self.request.user.has_perm('products.change_product')
             ),

@@ -1502,7 +1502,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
         self.assertContains(response, 'product-gallery')
 
     def test_operator_sees_image_management_controls(self):
-        product = self.create_detail_product()
+        product = self.create_detail_product(is_cancelled=False)
         ProductImage.objects.create(
             product=product,
             image=self.create_test_image('operator-gallery.jpg'),
@@ -2214,14 +2214,14 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
         self.assertFalse(product.is_cancelled)
 
-    def test_operator_can_restore(self):
+    def test_operator_cannot_restore(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-9', is_cancelled=True)
 
         response = self.post_cancel(product, user=self.operator_user, action='restore')
 
         product.refresh_from_db()
-        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
-        self.assertFalse(product.is_cancelled)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(product.is_cancelled)
 
     def test_viewer_cannot_restore(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-10', is_cancelled=True)
@@ -2236,7 +2236,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
     def test_restore_changes_is_cancelled_to_false(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-11', is_cancelled=True)
 
-        self.post_cancel(product, action='restore')
+        self.post_cancel(product, user=self.admin_user, action='restore')
 
         product.refresh_from_db()
         self.assertFalse(product.is_cancelled)

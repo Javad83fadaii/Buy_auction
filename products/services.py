@@ -82,8 +82,10 @@ def get_available_status_transitions(*, product: Product) -> set[str]:
 def can_user_modify_product(*, product: Product, user) -> bool:
     """
     بررسی دسترسی کاربر برای تغییر، ویرایش یا لغو محصول.
-    اگر محصول در وضعیت PUBLISHED باشد، اپراتورها (کاربرانی که فاقد پرمیشن review_product هستند)
-    امکان ویرایش، لغو یا مدیریت تصاویر را ندارند تا زمانی که مدیر محصول را مجدداً برای بررسی ارسال کند.
+    اگر محصول در وضعیت PUBLISHED یا لغوشده (is_cancelled) باشد، اپراتورها
+    (کاربرانی که فاقد پرمیشن review_product هستند) امکان ویرایش، لغو،
+    فعال‌سازی مجدد یا مدیریت تصاویر را ندارند تا زمانی که مدیر محصول را
+    مجدداً برای بررسی ارسال یا فعال‌سازی مجدد کند.
     """
     if not user or not user.is_authenticated or not user.is_active:
         return False
@@ -95,6 +97,9 @@ def can_user_modify_product(*, product: Product, user) -> bool:
         return False
 
     if product.status == ProductStatusChoices.PUBLISHED:
+        return False
+
+    if product.is_cancelled:
         return False
 
     return True
@@ -260,12 +265,12 @@ def delete_product_image(*, product: Product, image: ProductImage) -> None:
 
 def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user=None) -> Product:
     if user is not None and not can_user_modify_product(product=product, user=user):
-        raise ValidationError('محصول منتشرشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
+        raise ValidationError('محصول منتشرشده یا لغوشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
 
     with transaction.atomic():
         managed_product = Product.objects.select_for_update().get(pk=product.pk)
         if user is not None and not can_user_modify_product(product=managed_product, user=user):
-            raise ValidationError('محصول منتشرشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
+            raise ValidationError('محصول منتشرشده یا لغوشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
 
         managed_product.is_cancelled = is_cancelled
 

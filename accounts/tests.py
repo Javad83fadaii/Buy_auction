@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .admin import GroupAdmin, SystemRoleListFilter
-from .constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, VIEWER_ROLE
+from .constants import ADMIN_ROLE, EXPERT_ROLE, MANAGER_ROLE, OPERATOR_ROLE
 from .services import ensure_default_roles
 
 User = get_user_model()
@@ -20,13 +20,13 @@ class AccountsTestCase(TestCase):
         cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
         cls.manager_group = Group.objects.get(name=MANAGER_ROLE)
         cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
-        cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
+        cls.expert_group = Group.objects.get(name=EXPERT_ROLE)
 
         cls.admin_user = cls.create_user('admin_user', cls.admin_group, is_staff=True, is_superuser=True)
         cls.staff_admin_user = cls.create_user('staff_admin_user', cls.admin_group)
         cls.manager_user = cls.create_user('manager_user', cls.manager_group)
         cls.operator_user = cls.create_user('operator_user', cls.operator_group)
-        cls.viewer_user = cls.create_user('viewer_user', cls.viewer_group)
+        cls.expert_user = cls.create_user('expert_user', cls.expert_group)
         cls.inactive_user = cls.create_user('inactive_user', cls.operator_group, is_active=False)
 
     @classmethod
@@ -51,20 +51,20 @@ class AccountsTestCase(TestCase):
         self.assertRedirects(response, reverse('dashboard'))
         self.assertTrue(response.context['user'].is_authenticated)
 
-    def test_viewer_login_redirects_to_product_list(self):
+    def test_expert_login_redirects_to_product_list(self):
         response = self.client.post(
             reverse('accounts:login'),
-            {'username': self.viewer_user.username, 'password': self.password},
+            {'username': self.expert_user.username, 'password': self.password},
             follow=True,
         )
 
         self.assertRedirects(response, reverse('products:list'))
         self.assertTrue(response.context['user'].is_authenticated)
 
-    def test_viewer_login_ignores_disallowed_next_url(self):
+    def test_expert_login_ignores_disallowed_next_url(self):
         response = self.client.post(
             f"{reverse('accounts:login')}?next={reverse('dashboard')}",
-            {'username': self.viewer_user.username, 'password': self.password},
+            {'username': self.expert_user.username, 'password': self.password},
             follow=True,
         )
 
@@ -131,14 +131,14 @@ class AccountsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'داشبورد اپراتور')
 
-    def test_viewer_cannot_access_operator_dashboard(self):
-        self.client.force_login(self.viewer_user)
+    def test_expert_cannot_access_operator_dashboard(self):
+        self.client.force_login(self.expert_user)
         response = self.client.get(reverse('operator_dashboard'))
 
         self.assertEqual(response.status_code, 403)
 
-    def test_viewer_cannot_access_general_dashboard(self):
-        self.client.force_login(self.viewer_user)
+    def test_expert_cannot_access_general_dashboard(self):
+        self.client.force_login(self.expert_user)
         response = self.client.get(reverse('dashboard'))
 
         self.assertEqual(response.status_code, 403)
@@ -169,17 +169,19 @@ class AccountsTestCase(TestCase):
             html=False,
         )
 
-    def test_viewer_dashboard_hides_product_management_button(self):
-        self.client.force_login(self.viewer_user)
+    def test_expert_dashboard_hides_product_management_button(self):
+        self.client.force_login(self.expert_user)
 
         response = self.client.get(reverse('dashboard'))
 
         self.assertEqual(response.status_code, 403)
 
-    def test_viewer_role_only_has_product_view_permission(self):
-        self.assertTrue(self.viewer_user.has_perm('products.view_product'))
-        self.assertFalse(self.viewer_user.has_perm('accounts.view_dashboard'))
-        self.assertFalse(self.viewer_user.has_perm('accounts.view_viewer_dashboard'))
+    def test_expert_role_only_has_product_view_permission(self):
+        self.assertTrue(self.expert_user.has_perm('products.view_product'))
+        self.assertFalse(self.expert_user.has_perm('products.add_product'))
+        self.assertFalse(self.expert_user.has_perm('products.change_product'))
+        self.assertFalse(self.expert_user.has_perm('products.review_product'))
+        self.assertFalse(self.expert_user.has_perm('accounts.view_dashboard'))
 
     def test_manager_role_has_review_add_change_permissions(self):
         self.assertTrue(self.manager_user.has_perm('products.review_product'))
@@ -202,8 +204,8 @@ class AccountsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'مدیریت محصولات')
 
-    def test_viewer_password_change_done_links_to_product_list(self):
-        self.client.force_login(self.viewer_user)
+    def test_expert_password_change_done_links_to_product_list(self):
+        self.client.force_login(self.expert_user)
 
         response = self.client.get(reverse('accounts:change_password_done'))
 
@@ -221,7 +223,7 @@ class AccountsAdminBehaviorTestCase(TestCase):
         ensure_default_roles()
         cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
         cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
-        cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
+        cls.expert_group = Group.objects.get(name=EXPERT_ROLE)
 
         cls.superuser = User.objects.create_superuser(
             username='root_admin',
@@ -243,6 +245,7 @@ class AccountsAdminBehaviorTestCase(TestCase):
                 ADMIN_ROLE: 'ادمین',
                 MANAGER_ROLE: 'مدیر',
                 OPERATOR_ROLE: 'اپراتور',
+                EXPERT_ROLE: 'کارشناس',
             },
         )
 

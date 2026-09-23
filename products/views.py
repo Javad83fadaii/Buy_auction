@@ -45,11 +45,14 @@ from .services import (
     create_product,
     delete_product_image,
     get_available_status_transitions,
+    is_expert_restricted_user,
     refer_product_to_expert,
     set_product_image_primary,
     sync_auction_statistics,
     update_product_cancelled_state,
+    update_product_expert_flag_state,
     update_product_image_sort_order,
+    update_product_notable_state,
     update_product_review_status,
 )
 
@@ -102,12 +105,14 @@ class ProductDashboardView(RolePermissionMixin, TemplateView):
                 filter=Q(status=ProductStatusChoices.PUBLISHED),
             ),
             to_buy_products=Count('id', filter=Q(to_buy=True)),
+            expert_referred_products=Count('id', filter=Q(assigned_expert__isnull=False)),
         )
         return [
             {'label': 'کل محصولات', 'count': stats['total_products'], 'accent': 'primary'},
             {'label': 'محصولات فعال', 'count': stats['active_products'], 'accent': 'success'},
             {'label': 'محصولات لغوشده', 'count': stats['cancelled_products'], 'accent': 'warning'},
             {'label': 'هدف خرید', 'count': stats['to_buy_products'], 'accent': 'info'},
+            {'label': 'فرستاده شده برای کارشناسی', 'count': stats['expert_referred_products'], 'accent': 'info'},
             {
                 'label': 'در انتظار بررسی',
                 'count': stats['pending_review_products'],
@@ -151,9 +156,12 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'is_primary',
             'sort_order',
         ).order_by('sort_order', 'id')
-        return Product.objects.select_related('created_by', 'updated_by', 'assigned_expert', 'auction').prefetch_related(
+        queryset = Product.objects.select_related('created_by', 'updated_by', 'assigned_expert', 'auction').prefetch_related(
             Prefetch('images', queryset=image_queryset)
         )
+        if is_expert_restricted_user(getattr(getattr(self, 'request', None), 'user', None)):
+            queryset = queryset.filter(assigned_expert=self.request.user)
+        return queryset
 
     def get_product(self):
         if not hasattr(self, '_product'):
@@ -282,7 +290,15 @@ class ProductCreateView(RolePermissionMixin, FormView):
                 pass
         return initial
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if not self.request.user.has_perm('products.review_product'):
+            form.fields.pop('assigned_expert', None)
+        return form
+
     def form_valid(self, form):
+        if not self.request.user.has_perm('products.review_product'):
+            form.cleaned_data['assigned_expert'] = None
         try:
             self.object = create_product(
                 cleaned_data=form.cleaned_data,
@@ -365,6 +381,8 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
                 )
             )
         )
+        if is_expert_restricted_user(getattr(getattr(self, 'request', None), 'user', None)):
+            queryset = queryset.filter(assigned_expert=self.request.user)
         search_query = self.get_search_query()
         if search_query:
             queryset = queryset.filter(
@@ -587,7 +605,15 @@ class ProductEditView(RolePermissionMixin, UpdateView):
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if not self.request.user.has_perm('products.review_product'):
+            form.fields.pop('assigned_expert', None)
+        return form
+
     def form_valid(self, form):
+        if not self.request.user.has_perm('products.review_product'):
+            form.instance.assigned_expert = self.get_object().assigned_expert
         form.instance.updated_by = self.request.user
         messages.success(self.request, 'محصول با موفقیت ویرایش شد.')
         return super().form_valid(form)
@@ -700,13 +726,8 @@ class ProductImageDeleteView(ProductImageManagementMixin, View):
 
 
 class ProductCancelToggleView(RolePermissionMixin, View):
-    permission_required = 'products.change_product'
+    permission_required = 'products.review_product'
     http_method_names = ['post']
-
-    def dispatch(self, request, *args, **kwargs):
-        if not can_user_modify_product(product=self.get_product(), user=request.user):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
 
     def get_product(self):
         if not hasattr(self, '_product'):
@@ -729,6 +750,62 @@ class ProductCancelToggleView(RolePermissionMixin, View):
         else:
             messages.success(request, 'محصول با موفقیت فعال‌سازی مجدد شد.')
         return redirect(self.get_success_url())
+
+
+class ProductFlagToggleBaseView(RolePermissionMixin, View):
+    permission_required = 'products.review_product'
+    http_method_names = ['post']
+    flag_name = ''
+    enable_message = ''
+    disable_message = ''
+
+    def get_product(self):
+        if not hasattr(self, '_product'):
+            self._product = get_object_or_404(Product, pk=self.kwargs['id'])
+        return self._product
+
+    def get_success_url(self):
+        return reverse('products:detail', args=[self.get_product().pk])
+
+    def get_desired_state(self, product) -> bool:
+        action = (self.request.POST.get('action') or '').strip()
+        if action in {'on', 'off'}:
+            return action == 'on'
+        return not getattr(product, self.flag_name)
+
+    def apply_state(self, *, product, state: bool):
+        raise NotImplementedError
+
+    def post(self, request, *args, **kwargs):
+        product = self.get_product()
+        state = self.get_desired_state(product)
+        try:
+            self.apply_state(product=product, state=state)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0] if exc.messages else 'تغییر وضعیت ممکن نیست.')
+            return redirect(self.get_success_url())
+        messages.success(request, self.enable_message if state else self.disable_message)
+        return redirect(self.get_success_url())
+
+
+class ProductNotableToggleView(ProductFlagToggleBaseView):
+    flag_name = 'is_notable'
+    enable_message = 'محصول به‌عنوان قابل توجه علامت‌گذاری شد.'
+    disable_message = 'علامت قابل توجه از محصول برداشته شد.'
+
+    def apply_state(self, *, product, state: bool):
+        return update_product_notable_state(product=product, is_notable=state, user=self.request.user)
+
+
+class ProductExpertFlagToggleView(ProductFlagToggleBaseView):
+    flag_name = 'needs_expert_review'
+    enable_message = 'محصول به‌عنوان نیازمند کارشناسی علامت‌گذاری شد.'
+    disable_message = 'علامت نیازمند کارشناسی از محصول برداشته شد.'
+
+    def apply_state(self, *, product, state: bool):
+        return update_product_expert_flag_state(
+            product=product, needs_expert_review=state, user=self.request.user
+        )
 
 
 class ProductReviewActionView(RolePermissionMixin, View):
@@ -843,6 +920,8 @@ class AuctionListView(RolePermissionMixin, ListView):
 
     def get_queryset(self):
         queryset = Auction.objects.all().order_by('-start_date', '-created_at')
+        if is_expert_restricted_user(getattr(getattr(self, 'request', None), 'user', None)):
+            queryset = queryset.filter(products__assigned_expert=self.request.user).distinct()
         form = self.get_filter_form()
         q = (form.cleaned_data.get('q') or '').strip()
         if q:
@@ -874,7 +953,10 @@ class AuctionListView(RolePermissionMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form = self.get_filter_form()
-        all_auctions = Auction.objects.all()
+        if is_expert_restricted_user(self.request.user):
+            all_auctions = Auction.objects.filter(products__assigned_expert=self.request.user).distinct()
+        else:
+            all_auctions = Auction.objects.all()
         context['page_title'] = 'حراجی‌های خارجی'
         context['filter_form'] = form
         context['pagination_query'] = self.get_pagination_query()
@@ -912,6 +994,8 @@ class AuctionDetailView(RolePermissionMixin, DetailView):
             .prefetch_related('images')
             .order_by('-created_at')
         )
+        if is_expert_restricted_user(self.request.user):
+            products = products.filter(assigned_expert=self.request.user)
         context['page_title'] = auction.name
         context['products'] = products
         context['can_manage_auctions'] = self.request.user.has_perm('products.change_product')

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import Group, Permission
 from django.db import transaction
 
-from .constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, ROLE_DEFINITIONS, VIEWER_ROLE
+from .constants import ADMIN_ROLE, EXPERT_ROLE, MANAGER_ROLE, OPERATOR_ROLE, ROLE_DEFINITIONS
 
 
 @dataclass(frozen=True)
@@ -54,7 +54,7 @@ ROLE_PERMISSION_BLUEPRINTS = {
             ),
         ),
     ),
-    VIEWER_ROLE: (
+    EXPERT_ROLE: (
         PermissionBlueprint(
             app_label='products',
             codenames=('view_product', 'view_auction'),
@@ -86,3 +86,4 @@ def ensure_default_roles() -> None:
         group, _ = Group.objects.get_or_create(name=role_name)
         permissions = resolve_role_permissions(role_name)
         group.permissions.set(permissions)
+    Group.objects.filter(name='VIEWER').delete()

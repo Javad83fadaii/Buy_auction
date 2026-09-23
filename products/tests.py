@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
 from django.utils import timezone
 
-from accounts.constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, VIEWER_ROLE
+from accounts.constants import ADMIN_ROLE, EXPERT_ROLE, MANAGER_ROLE, OPERATOR_ROLE
 from accounts.services import ensure_default_roles
 from .choices import (
     AuctionHouseChoices,
@@ -53,12 +53,12 @@ class ProductCreateBaseTestCase(TestCase):
         cls.admin_group = Group.objects.get(name=ADMIN_ROLE)
         cls.manager_group = Group.objects.get(name=MANAGER_ROLE)
         cls.operator_group = Group.objects.get(name=OPERATOR_ROLE)
-        cls.viewer_group = Group.objects.get(name=VIEWER_ROLE)
+        cls.expert_group = Group.objects.get(name=EXPERT_ROLE)
 
         cls.admin_user = cls.create_user('product_admin', cls.admin_group)
         cls.manager_user = cls.create_user('product_manager', cls.manager_group)
         cls.operator_user = cls.create_user('product_operator', cls.operator_group)
-        cls.viewer_user = cls.create_user('product_viewer', cls.viewer_group)
+        cls.expert_user = cls.create_user('product_expert', cls.expert_group)
 
     @classmethod
     def create_user(cls, username, group):
@@ -130,8 +130,8 @@ class ProductCreatePermissionTests(ProductCreateBaseTestCase):
             f"{reverse('accounts:login')}?next={reverse('products:create')}",
         )
 
-    def test_viewer_cannot_access_create_page(self):
-        self.client.force_login(self.viewer_user)
+    def test_expert_cannot_access_create_page(self):
+        self.client.force_login(self.expert_user)
 
         response = self.client.get(reverse('products:create'))
 
@@ -162,10 +162,12 @@ class ProductCreatePermissionTests(ProductCreateBaseTestCase):
         self.assertContains(response, 'مشخصات اثر')
         self.assertContains(response, 'اطلاعات پیشنهاد')
         self.assertContains(response, 'قیمت')
-        self.assertContains(response, 'وضعیت')
         self.assertContains(response, 'تصاویر اثر')
         self.assertContains(response, 'ثبت محصول')
         self.assertContains(response, 'href="/products/"', html=False)
+        self.assertNotContains(response, 'name="is_notable"')
+        self.assertNotContains(response, 'name="needs_expert_review"')
+        self.assertNotContains(response, 'name="is_cancelled"')
 
     def test_persian_labels_exist(self):
         self.client.force_login(self.operator_user)
@@ -414,7 +416,11 @@ class ProductListViewTests(ProductCreateBaseTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.view_product_permission = Permission.objects.get(codename='view_product')
-        cls.authorized_user = cls.create_user('product_list_user', cls.viewer_group)
+        cls.authorized_user = User.objects.create_user(
+            username='product_list_user',
+            password=cls.password,
+            email='product_list_user@example.com',
+        )
         cls.authorized_user.user_permissions.add(cls.view_product_permission)
 
     def get_list(
@@ -497,8 +503,8 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             html=False,
         )
 
-    def test_viewer_does_not_see_add_product_button(self):
-        response = self.get_list(user=self.viewer_user)
+    def test_expert_does_not_see_add_product_button(self):
+        response = self.get_list(user=self.expert_user)
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'افزودن محصول')
@@ -508,8 +514,8 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             html=False,
         )
 
-    def test_viewer_does_not_see_dashboard_back_button(self):
-        response = self.get_list(user=self.viewer_user)
+    def test_expert_does_not_see_dashboard_back_button(self):
+        response = self.get_list(user=self.expert_user)
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(
@@ -517,6 +523,20 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             f'href="{reverse("dashboard")}"',
             html=False,
         )
+
+    def test_expert_sees_only_assigned_products(self):
+        assigned_product = self.create_product(
+            title='اثر ارجاعی کارشناس',
+            product_code='ART-EXPERT-ASSIGNED',
+            assigned_expert=self.expert_user,
+        )
+        self.create_product(title='اثر دیگران', product_code='ART-EXPERT-OTHER')
+
+        response = self.get_list(user=self.expert_user)
+
+        self.assertEqual(list(response.context['products']), [assigned_product])
+        self.assertContains(response, assigned_product.title)
+        self.assertNotContains(response, 'اثر دیگران')
 
     def test_products_are_displayed(self):
         product = self.create_product(title='اثر نمایشی', product_code='ART-DISPLAY')
@@ -1297,13 +1317,20 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             f"{reverse('accounts:login')}?next={reverse('products:detail', args=[product.pk])}",
         )
 
-    def test_viewer_can_access(self):
-        product = self.create_detail_product()
+    def test_expert_can_access_assigned_product(self):
+        product = self.create_detail_product(assigned_expert=self.expert_user)
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.expert_user)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, product.title)
+
+    def test_expert_cannot_access_unassigned_product(self):
+        product = self.create_detail_product()
+
+        response = self.get_detail(product, user=self.expert_user)
+
+        self.assertEqual(response.status_code, 404)
 
     def test_operator_can_access(self):
         product = self.create_detail_product()
@@ -1324,13 +1351,13 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
     def test_product_detail_works(self):
         product = self.create_detail_product()
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['product'].pk, product.pk)
 
     def test_invalid_product_id_returns_404(self):
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.get(reverse('products:detail', args=[999999]))
 
@@ -1339,7 +1366,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
     def test_product_information_displayed(self):
         product = self.create_detail_product()
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertContains(response, 'تابلوی قاجاری')
         self.assertContains(response, 'ART-DETAIL-1')
@@ -1372,7 +1399,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             sort_order=1,
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertEqual(response.context['primary_image'].pk, primary_image.pk)
         self.assertContains(response, 'id="product-main-image"', html=False)
@@ -1393,7 +1420,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             sort_order=1,
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertContains(response, first_image.image.url)
         self.assertContains(response, second_image.image.url)
@@ -1420,7 +1447,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             sort_order=2,
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertEqual(
             [image.pk for image in response.context['gallery_images']],
@@ -1430,7 +1457,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
     def test_product_without_image_works(self):
         product = self.create_detail_product()
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertIsNone(response.context['primary_image'])
         self.assertContains(response, 'بدون تصویر')
@@ -1438,7 +1465,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
     def test_status_displayed(self):
         product = self.create_detail_product(status=ProductStatusChoices.REJECTED)
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertContains(response, 'رد شده')
         self.assertContains(response, 'status-badge-rejected')
@@ -1450,7 +1477,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             needs_expert_review=True,
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertContains(response, 'انصراف داده شده')
         self.assertContains(response, 'قابل توجه')
@@ -1463,7 +1490,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             source_url='https://example.com/auction/product-1',
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.operator_user)
 
         self.assertContains(response, 'سایر مزایده‌ها')
         self.assertContains(response, 'حراج تهران')
@@ -1474,7 +1501,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
 
         response = self.get_detail(
             product,
-            user=self.viewer_user,
+            user=self.operator_user,
             next_url='/products/?q=%D9%85%D8%AD%D9%85%D8%AF&status=DRAFT',
         )
 
@@ -1485,8 +1512,8 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             html=False,
         )
 
-    def test_viewer_does_not_see_image_management_controls(self):
-        product = self.create_detail_product()
+    def test_expert_does_not_see_image_management_controls(self):
+        product = self.create_detail_product(assigned_expert=self.expert_user)
         ProductImage.objects.create(
             product=product,
             image=self.create_test_image('viewer-gallery.jpg'),
@@ -1494,7 +1521,7 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             sort_order=0,
         )
 
-        response = self.get_detail(product, user=self.viewer_user)
+        response = self.get_detail(product, user=self.expert_user)
 
         self.assertNotContains(response, 'مدیریت تصاویر')
         self.assertNotContains(response, 'Upload Image')
@@ -1675,9 +1702,6 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
             'art_type': 'تابلو',
             'suggested_price': '2500000',
             'suitable_price': '2300000',
-            'is_cancelled': 'on',
-            'is_notable': '',
-            'needs_expert_review': 'on',
         }
         payload.update(overrides)
         return payload
@@ -1692,10 +1716,10 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
             f"{reverse('accounts:login')}?next={reverse('products:edit', args=[product.pk])}",
         )
 
-    def test_viewer_cannot_edit(self):
+    def test_expert_cannot_edit(self):
         product = self.create_edit_product()
 
-        response = self.get_edit(product.pk, user=self.viewer_user)
+        response = self.get_edit(product.pk, user=self.expert_user)
 
         self.assertEqual(response.status_code, 403)
 
@@ -1746,9 +1770,24 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
         self.assertEqual(product.product_code, 'ART-EDIT-UPDATED-1')
         self.assertEqual(product.description, 'توضیحات به‌روزشده')
         self.assertEqual(product.artist, 'هنرمند جدید')
-        self.assertTrue(product.is_cancelled)
+        self.assertFalse(product.is_cancelled)
+        self.assertTrue(product.is_notable)
+        self.assertFalse(product.needs_expert_review)
+
+    def test_edit_ignores_flag_fields_tampering(self):
+        product = self.create_edit_product(is_cancelled=False, is_notable=False, needs_expert_review=False)
+
+        data = self.get_edit_payload(
+            is_cancelled='on',
+            is_notable='on',
+            needs_expert_review='on',
+        )
+        self.post_edit(product.pk, user=self.operator_user, data=data, follow=True)
+
+        product.refresh_from_db()
+        self.assertFalse(product.is_cancelled)
         self.assertFalse(product.is_notable)
-        self.assertTrue(product.needs_expert_review)
+        self.assertFalse(product.needs_expert_review)
 
     def test_updated_by_updated_correctly(self):
         product = self.create_edit_product(updated_by=self.admin_user)
@@ -1914,9 +1953,9 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
         self.assertEqual(ProductImage.objects.filter(product=product).count(), 1)
 
-    def test_viewer_cannot_upload(self):
-        product = self.create_management_product()
-        self.client.force_login(self.viewer_user)
+    def test_expert_cannot_upload(self):
+        product = self.create_management_product(assigned_expert=self.expert_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.post(
             self.upload_url(product),
@@ -2001,10 +2040,10 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
         self.assertFalse(ProductImage.objects.filter(pk=image.pk).exists())
 
-    def test_viewer_cannot_delete(self):
-        product = self.create_management_product()
+    def test_expert_cannot_delete(self):
+        product = self.create_management_product(assigned_expert=self.expert_user)
         image = self.create_product_image(product, name='delete-viewer.jpg', is_primary=True, sort_order=0)
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.post(self.delete_url(product, image))
 
@@ -2050,7 +2089,7 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         third_image = self.create_product_image(product, name='sort-third.jpg', is_primary=False, sort_order=3)
         first_image = self.create_product_image(product, name='sort-first.jpg', is_primary=True, sort_order=1)
         second_image = self.create_product_image(product, name='sort-second.jpg', is_primary=False, sort_order=2)
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.operator_user)
 
         response = self.client.get(self.detail_url(product))
 
@@ -2134,7 +2173,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         return self.client.get(url)
 
     def post_cancel(self, product, *, user=None, action='cancel', follow=False):
-        self.client.force_login(user or self.operator_user)
+        self.client.force_login(user or self.admin_user)
         return self.client.post(
             self.cancel_toggle_url(product),
             data={'action': action},
@@ -2150,18 +2189,18 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
         self.assertTrue(product.is_cancelled)
 
-    def test_operator_can_cancel(self):
+    def test_operator_cannot_cancel(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-2')
 
         response = self.post_cancel(product, user=self.operator_user)
 
         product.refresh_from_db()
-        self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
-        self.assertTrue(product.is_cancelled)
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.is_cancelled)
 
-    def test_viewer_cannot_cancel(self):
+    def test_expert_cannot_cancel(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-3')
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.post(self.cancel_toggle_url(product), data={'action': 'cancel'})
 
@@ -2182,7 +2221,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
     def test_cancel_changes_is_cancelled_to_true(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-5', is_cancelled=False)
 
-        self.post_cancel(product)
+        self.post_cancel(product, user=self.admin_user)
 
         product.refresh_from_db()
         self.assertTrue(product.is_cancelled)
@@ -2190,7 +2229,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
     def test_cancel_does_not_delete_product(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-6')
 
-        self.post_cancel(product)
+        self.post_cancel(product, user=self.admin_user)
 
         self.assertTrue(Product.objects.filter(pk=product.pk).exists())
 
@@ -2200,7 +2239,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             status=ProductStatusChoices.APPROVED,
         )
 
-        self.post_cancel(product)
+        self.post_cancel(product, user=self.admin_user)
 
         product.refresh_from_db()
         self.assertEqual(product.status, ProductStatusChoices.APPROVED)
@@ -2223,9 +2262,9 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertTrue(product.is_cancelled)
 
-    def test_viewer_cannot_restore(self):
+    def test_expert_cannot_restore(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-10', is_cancelled=True)
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.post(self.cancel_toggle_url(product), data={'action': 'restore'})
 
@@ -2249,7 +2288,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             is_cancelled=True,
         )
 
-        response = self.get_list(user=self.viewer_user)
+        response = self.get_list(user=self.operator_user)
 
         self.assertContains(response, active_product.title)
         self.assertContains(response, cancelled_product.title)
@@ -2267,7 +2306,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             is_cancelled=False,
         )
 
-        response = self.get_list(user=self.viewer_user, cancelled='1')
+        response = self.get_list(user=self.operator_user, cancelled='1')
 
         self.assertEqual(list(response.context['products']), [cancelled_product])
 
@@ -2283,7 +2322,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             is_cancelled=True,
         )
 
-        response = self.get_list(user=self.viewer_user, cancelled='0')
+        response = self.get_list(user=self.operator_user, cancelled='0')
 
         self.assertEqual(list(response.context['products']), [active_product])
 
@@ -2299,7 +2338,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             is_cancelled=False,
         )
 
-        response = self.get_list(user=self.viewer_user, cancelled='1', q='محمد')
+        response = self.get_list(user=self.operator_user, cancelled='1', q='محمد')
 
         self.assertEqual(list(response.context['products']), [cancelled_product])
 
@@ -2316,7 +2355,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
             is_cancelled=False,
         )
 
-        response = self.get_list(user=self.viewer_user, cancelled='1', q='محمد')
+        response = self.get_list(user=self.operator_user, cancelled='1', q='محمد')
 
         self.assertTrue(response.context['is_paginated'])
         self.assertContains(
@@ -2326,7 +2365,7 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         )
 
     def test_invalid_product_id_returns_404(self):
-        self.client.force_login(self.operator_user)
+        self.client.force_login(self.admin_user)
 
         response = self.client.post(reverse('products:cancel_toggle', args=[999999]), data={'action': 'cancel'})
 
@@ -2334,13 +2373,97 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
 
     def test_get_cannot_cancel_product(self):
         product = self.create_cancel_product(product_code='ART-CANCEL-20')
-        self.client.force_login(self.operator_user)
+        self.client.force_login(self.admin_user)
 
         response = self.client.get(self.cancel_toggle_url(product))
 
         product.refresh_from_db()
         self.assertEqual(response.status_code, 405)
         self.assertFalse(product.is_cancelled)
+
+    def test_manager_can_toggle_notable_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-NOTABLE-1', is_notable=False)
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('products:toggle_notable', args=[product.pk]),
+            data={'action': 'on'},
+            follow=True,
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(product.is_notable)
+
+        response = self.client.post(
+            reverse('products:toggle_notable', args=[product.pk]),
+            data={'action': 'off'},
+            follow=True,
+        )
+
+        product.refresh_from_db()
+        self.assertFalse(product.is_notable)
+
+    def test_operator_cannot_toggle_notable_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-NOTABLE-2', is_notable=False)
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(
+            reverse('products:toggle_notable', args=[product.pk]),
+            data={'action': 'on'},
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.is_notable)
+
+    def test_manager_can_toggle_expert_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-EXPERT-1', needs_expert_review=False)
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('products:toggle_expert_flag', args=[product.pk]),
+            data={'action': 'on'},
+            follow=True,
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(product.needs_expert_review)
+
+    def test_operator_cannot_toggle_expert_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-EXPERT-2', needs_expert_review=False)
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(
+            reverse('products:toggle_expert_flag', args=[product.pk]),
+            data={'action': 'on'},
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.needs_expert_review)
+
+    def test_manager_detail_shows_flag_toggle_buttons(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BTN-1')
+        self.client.force_login(self.manager_user)
+
+        response = self.client.get(reverse('products:detail', args=[product.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'قابل توجه')
+        self.assertContains(response, 'نیازمند کارشناسی')
+        self.assertContains(response, 'لغو محصول')
+
+    def test_operator_detail_hides_flag_toggle_buttons(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BTN-2')
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:detail', args=[product.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'نیازمند کارشناسی')
+        self.assertNotContains(response, 'لغو محصول')
 
 
 class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
@@ -2544,9 +2667,9 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    def test_viewer_cannot_review(self):
+    def test_expert_cannot_review(self):
         product = self.create_review_product(product_code='ART-REVIEW-6')
-        self.client.force_login(self.viewer_user)
+        self.client.force_login(self.expert_user)
 
         response = self.client.post(self.approve_url(product))
 
@@ -2666,8 +2789,8 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
             f"{reverse('accounts:login')}?next={self.dashboard_url()}",
         )
 
-    def test_viewer_cannot_access_dashboard(self):
-        response = self.get_dashboard(user=self.viewer_user)
+    def test_expert_cannot_access_dashboard(self):
+        response = self.get_dashboard(user=self.expert_user)
 
         self.assertEqual(response.status_code, 403)
 
@@ -3315,12 +3438,12 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.status, ProductStatusChoices.PENDING_REVIEW)
 
-        # حالا اپراتور باید مجدداً دسترسی ویرایش و لغو داشته باشد
+        # حالا اپراتور باید مجدداً دسترسی ویرایش داشته باشد (لغو فقط مدیر)
         self.client.force_login(self.operator_user)
         detail_response = self.client.get(reverse('products:detail', args=[self.product.pk]))
         self.assertEqual(detail_response.status_code, 200)
         self.assertContains(detail_response, 'ویرایش محصول')
-        self.assertContains(detail_response, 'لغو محصول')
+        self.assertNotContains(detail_response, 'لغو محصول')
 
         # اپراتور می‌تواند ویرایش کند
         payload = self.get_valid_payload(title='عنوان ویرایش شده پس از ارسال مجدد')
@@ -3333,13 +3456,23 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.title, 'عنوان ویرایش شده پس از ارسال مجدد')
 
-        # اپراتور می‌تواند لغو کند
+        # اپراتور نمی‌تواند لغو کند (403)؛ مدیر لغو می‌کند
         cancel_response = self.client.post(
             reverse('products:cancel_toggle', args=[self.product.pk]),
             data={'action': 'cancel'},
             follow=True,
         )
-        self.assertEqual(cancel_response.status_code, 200)
+        self.assertEqual(cancel_response.status_code, 403)
+        self.product.refresh_from_db()
+        self.assertFalse(self.product.is_cancelled)
+
+        self.client.force_login(self.manager_user)
+        manager_cancel_response = self.client.post(
+            reverse('products:cancel_toggle', args=[self.product.pk]),
+            data={'action': 'cancel'},
+            follow=True,
+        )
+        self.assertEqual(manager_cancel_response.status_code, 200)
         self.product.refresh_from_db()
         self.assertTrue(self.product.is_cancelled)
 

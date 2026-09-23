@@ -270,45 +270,6 @@
 
 {% include "products/partials/_price_fields.html" with form=form show_required_markers=show_required_markers show_price_preview=show_price_preview only %}
 
-{# General Status & Review Flags. #}
-<section class="form-section">
-    <div class="form-section-heading">
-        <div>
-            <h2>وضعیت و کارشناسی</h2>
-            <p class="muted-text">{{ status_section_help }}</p>
-        </div>
-    </div>
-
-    <div class="checkbox-group">
-        <div class="form-field form-field-checkbox">
-            <label class="checkbox-card" for="{{ form.is_notable.id_for_label }}">
-                {{ form.is_notable }}
-                <span>⭐ {{ form.is_notable.label }}</span>
-            </label>
-            {% if form.is_notable.help_text %}<small class="field-help">{{ form.is_notable.help_text }}</small>{% endif %}
-            {% if form.is_notable.errors %}<small class="field-error">{{ form.is_notable.errors|join:", " }}</small>{% endif %}
-        </div>
-
-        <div class="form-field form-field-checkbox">
-            <label class="checkbox-card" for="{{ form.needs_expert_review.id_for_label }}">
-                {{ form.needs_expert_review }}
-                <span>🔬 {{ form.needs_expert_review.label }}</span>
-            </label>
-            {% if form.needs_expert_review.help_text %}<small class="field-help">{{ form.needs_expert_review.help_text }}</small>{% endif %}
-            {% if form.needs_expert_review.errors %}<small class="field-error">{{ form.needs_expert_review.errors|join:", " }}</small>{% endif %}
-        </div>
-
-        <div class="form-field form-field-checkbox">
-            <label class="checkbox-card" for="{{ form.is_cancelled.id_for_label }}">
-                {{ form.is_cancelled }}
-                <span>🚫 {{ form.is_cancelled.label }}</span>
-            </label>
-            {% if form.is_cancelled.help_text %}<small class="field-help">{{ form.is_cancelled.help_text }}</small>{% endif %}
-            {% if form.is_cancelled.errors %}<small class="field-error">{{ form.is_cancelled.errors|join:", " }}</small>{% endif %}
-        </div>
-    </div>
-</section>
-
 {% if show_images_section %}
     {% include "products/partials/_product_images.html" with form=form image_mode="create" show_required_markers=show_required_markers only %}
 {% endif %}

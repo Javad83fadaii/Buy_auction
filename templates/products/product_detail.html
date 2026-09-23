@@ -411,7 +411,7 @@
     </script>
 {% endif %}
 
-{% if perms.products.change_product and not product.is_cancelled %}
+{% if perms.products.review_product and not product.is_cancelled %}
     <script>
         (function () {
             const cancelForm = document.querySelector('[data-product-cancel-form]');

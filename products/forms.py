@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import timezone
 
-from accounts.constants import ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE
+from accounts.constants import ADMIN_ROLE, EXPERT_ROLE, MANAGER_ROLE, OPERATOR_ROLE
 
 from .choices import (
     AuctionHouseChoices,
@@ -68,9 +68,6 @@ PRODUCT_EDIT_FIELDS = (
     'art_type',
     'suggested_price',
     'suitable_price',
-    'is_cancelled',
-    'is_notable',
-    'needs_expert_review',
     'assigned_expert',
     'to_buy',
     'has_initial_info',
@@ -82,7 +79,7 @@ PRODUCT_EDIT_FIELDS = (
 def get_expert_queryset():
     return User.objects.filter(
         is_active=True,
-        groups__name__in=[ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE],
+        groups__name__in=[ADMIN_ROLE, MANAGER_ROLE, OPERATOR_ROLE, EXPERT_ROLE],
     ).order_by('first_name', 'last_name', 'username').distinct()
 
 

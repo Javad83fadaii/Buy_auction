@@ -4,12 +4,12 @@ from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeDoneV
 from django.urls import Resolver404, resolve, reverse, reverse_lazy
 from django.views.generic import TemplateView
 
-from .constants import VIEWER_ROLE
+from .constants import EXPERT_ROLE
 from .forms import LoginForm
 from .permissions import RolePermissionMixin
 
 
-VIEWER_ALLOWED_REDIRECTS = {
+EXPERT_ALLOWED_REDIRECTS = {
     'products:list',
     'products:detail',
     'accounts:change_password',
@@ -19,7 +19,7 @@ VIEWER_ALLOWED_REDIRECTS = {
 
 
 def get_user_default_url(user) -> str:
-    if user.has_role(VIEWER_ROLE) and user.has_perm('products.view_product'):
+    if user.has_role(EXPERT_ROLE) and user.has_perm('products.view_product'):
         return reverse('products:list')
     return reverse('dashboard')
 
@@ -40,8 +40,8 @@ class UserLoginView(LoginView):
         user = self.request.user
         redirect_url = self.get_redirect_url()
 
-        if user.has_role(VIEWER_ROLE):
-            if redirect_url and resolve_redirect_view_name(redirect_url) in VIEWER_ALLOWED_REDIRECTS:
+        if user.has_role(EXPERT_ROLE):
+            if redirect_url and resolve_redirect_view_name(redirect_url) in EXPERT_ALLOWED_REDIRECTS:
                 return redirect_url
             return reverse('products:list')
 
@@ -68,7 +68,7 @@ class UserPasswordChangeDoneView(PasswordChangeDoneView):
         context['back_url'] = get_user_default_url(self.request.user)
         context['back_label'] = (
             'بازگشت به لیست محصولات'
-            if self.request.user.has_role(VIEWER_ROLE)
+            if self.request.user.has_role(EXPERT_ROLE)
             else 'بازگشت به داشبورد'
         )
         return context
@@ -82,9 +82,6 @@ class DashboardView(RolePermissionMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['can_view_operator_dashboard'] = self.request.user.has_perm(
             'accounts.view_operator_dashboard'
-        )
-        context['can_view_viewer_dashboard'] = self.request.user.has_perm(
-            'accounts.view_viewer_dashboard'
         )
         context['can_manage_products'] = self.request.user.has_perm('products.add_product')
         return context

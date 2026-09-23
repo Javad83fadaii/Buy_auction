@@ -5,6 +5,29 @@ from django.db.models import Max
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
 from .models import Auction, Product, ProductImage
 
+
+def is_expert_restricted_user(user) -> bool:
+    if not user or not getattr(user, 'is_authenticated', False) or not getattr(user, 'is_active', False):
+        return False
+    if getattr(user, 'is_superuser', False):
+        return False
+    has_role = getattr(user, 'has_role', None)
+    if not callable(has_role):
+        return False
+    try:
+        from accounts.constants import EXPERT_ROLE
+    except Exception:
+        return False
+    if not has_role(EXPERT_ROLE):
+        return False
+    if user.has_perm('products.review_product'):
+        return False
+    if user.has_perm('products.change_product'):
+        return False
+    if user.has_perm('products.add_product'):
+        return False
+    return True
+
 MANUAL_PRODUCT_FORM_FIELDS = (
     'suggested_by',
     'contact_method',
@@ -21,9 +44,6 @@ MANUAL_PRODUCT_FORM_FIELDS = (
     'art_type',
     'suggested_price',
     'suitable_price',
-    'is_cancelled',
-    'is_notable',
-    'needs_expert_review',
     'assigned_expert',
 )
 
@@ -121,9 +141,6 @@ PRODUCT_CREATE_FIELDS = (
     'art_type',
     'suggested_price',
     'suitable_price',
-    'is_cancelled',
-    'is_notable',
-    'needs_expert_review',
     'assigned_expert',
     'auction',
     'to_buy',
@@ -139,6 +156,14 @@ def create_product(*, cleaned_data: dict, images: list, user) -> Product:
         for field in PRODUCT_CREATE_FIELDS
         if field in cleaned_data
     }
+    if user is None or not getattr(user, 'is_superuser', False):
+        has_review_perm = False
+        try:
+            has_review_perm = bool(user and user.has_perm('products.review_product'))
+        except Exception:
+            has_review_perm = False
+        if not has_review_perm:
+            field_data.pop('assigned_expert', None)
     source_type = cleaned_data.get('source_type')
     auction = cleaned_data.get('auction')
     if not source_type:
@@ -263,18 +288,58 @@ def delete_product_image(*, product: Product, image: ProductImage) -> None:
             replacement_image.save(update_fields=['is_primary'])
 
 
+def _require_review_permission(user) -> None:
+    if user is None:
+        return
+    if getattr(user, 'is_superuser', False):
+        return
+    if not user.has_perm('products.review_product'):
+        raise ValidationError('این عملیات فقط توسط مدیر امکان‌پذیر است.')
+
+
 def update_product_cancelled_state(*, product: Product, is_cancelled: bool, user=None) -> Product:
-    if user is not None and not can_user_modify_product(product=product, user=user):
-        raise ValidationError('محصول منتشرشده یا لغوشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
+    _require_review_permission(user)
 
     with transaction.atomic():
         managed_product = Product.objects.select_for_update().get(pk=product.pk)
-        if user is not None and not can_user_modify_product(product=managed_product, user=user):
-            raise ValidationError('محصول منتشرشده یا لغوشده توسط اپراتور قابل لغو یا فعال‌سازی مجدد نیست.')
 
         managed_product.is_cancelled = is_cancelled
 
         update_fields = ['is_cancelled', 'updated_at']
+        if user is not None:
+            managed_product.updated_by = user
+            update_fields.append('updated_by')
+
+        managed_product.save(update_fields=update_fields)
+
+    return managed_product
+
+
+def update_product_notable_state(*, product: Product, is_notable: bool, user=None) -> Product:
+    _require_review_permission(user)
+
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        managed_product.is_notable = is_notable
+
+        update_fields = ['is_notable', 'updated_at']
+        if user is not None:
+            managed_product.updated_by = user
+            update_fields.append('updated_by')
+
+        managed_product.save(update_fields=update_fields)
+
+    return managed_product
+
+
+def update_product_expert_flag_state(*, product: Product, needs_expert_review: bool, user=None) -> Product:
+    _require_review_permission(user)
+
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        managed_product.needs_expert_review = needs_expert_review
+
+        update_fields = ['needs_expert_review', 'updated_at']
         if user is not None:
             managed_product.updated_by = user
             update_fields.append('updated_by')

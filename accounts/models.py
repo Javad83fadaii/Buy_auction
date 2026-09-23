@@ -18,7 +18,6 @@ class User(AbstractUser):
         permissions = [
             ('view_dashboard', 'Can view dashboard'),
             ('view_operator_dashboard', 'Can view operator dashboard'),
-            ('view_viewer_dashboard', 'Can view viewer dashboard'),
         ]
 
     def __str__(self) -> str:

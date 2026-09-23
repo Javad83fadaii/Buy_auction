@@ -43,7 +43,23 @@
         </form>
     {% endif %}
 
-    {% if can_manage_product %}
+    {% if can_review_product %}
+        <form method="post" action="{% url 'products:toggle_notable' product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{% if product.is_notable %}off{% else %}on{% endif %}">
+            <button type="submit" class="button button-secondary">
+                {% if product.is_notable %}⭐ حذف قابل توجه{% else %}⭐ قابل توجه{% endif %}
+            </button>
+        </form>
+
+        <form method="post" action="{% url 'products:toggle_expert_flag' product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{% if product.needs_expert_review %}off{% else %}on{% endif %}">
+            <button type="submit" class="button button-secondary">
+                {% if product.needs_expert_review %}🔬 حذف نیاز کارشناسی{% else %}🔬 نیازمند کارشناسی{% endif %}
+            </button>
+        </form>
+
         <form
             method="post"
             action="{% url 'products:cancel_toggle' product.pk %}"
@@ -58,7 +74,9 @@
                 {% if product.is_cancelled %}فعال‌سازی مجدد{% else %}لغو محصول{% endif %}
             </button>
         </form>
+    {% endif %}
 
+    {% if can_manage_product %}
         <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
     {% elif is_locked_for_operator %}
         {% if product.is_cancelled %}

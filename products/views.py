@@ -240,9 +240,6 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'show_publish_action': (
                 can_review_product and ProductStatusChoices.PUBLISHED in available_status_transitions
             ),
-            'show_rereview_action': (
-                can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
-            ),
             'can_refer_to_expert': can_review_product and product.needs_expert_review and not product.is_cancelled,
             'expert_referral_form': expert_referral_form,
             'status_label': self.get_status_label(product),
@@ -900,9 +897,8 @@ class ProductPublishView(ProductReviewActionView):
     success_message = 'محصول با موفقیت منتشر شد.'
 
 
-class ProductReReviewView(ProductReviewActionView):
-    target_status = ProductStatusChoices.PENDING_REVIEW
-    success_message = 'محصول با موفقیت برای بررسی مجدد ارسال شد.'
+class ProductReReviewView(ProductSubmitReviewView):
+    pass
 
 
 class AuctionListView(RolePermissionMixin, ListView):

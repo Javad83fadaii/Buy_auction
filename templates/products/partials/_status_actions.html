@@ -8,24 +8,10 @@
         </form>
     {% endif %}
 
-    {% if show_submit_review_action %}
-        <form method="post" action="{% url 'products:submit_review' product.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="button button-primary">ارسال برای بررسی</button>
-        </form>
-    {% endif %}
-
     {% if show_approve_action %}
         <form method="post" action="{% url 'products:approve' product.pk %}">
             {% csrf_token %}
             <button type="submit" class="button button-primary">تأیید محصول</button>
-        </form>
-    {% endif %}
-
-    {% if show_reject_action %}
-        <form method="post" action="{% url 'products:reject' product.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="button button-secondary">رد محصول</button>
         </form>
     {% endif %}
 
@@ -36,10 +22,17 @@
         </form>
     {% endif %}
 
-    {% if show_rereview_action %}
-        <form method="post" action="{% url 'products:re_review' product.pk %}">
+    {% if show_submit_review_action %}
+        <form method="post" action="{% url 'products:submit_review' product.pk %}">
             {% csrf_token %}
-            <button type="submit" class="button button-secondary">ارسال مجدد برای بررسی</button>
+            <button type="submit" class="button {% if show_publish_action %}button-secondary{% else %}button-primary{% endif %}">ارسال برای بررسی</button>
+        </form>
+    {% endif %}
+
+    {% if show_reject_action %}
+        <form method="post" action="{% url 'products:reject' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-secondary">رد محصول</button>
         </form>
     {% endif %}
 
@@ -84,8 +77,8 @@
                 🔒 قفل لغو (ویرایش و فعال‌سازی مجدد تنها توسط مدیر امکان‌پذیر است)
             </span>
         {% else %}
-            <span class="badge badge-warning" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال مجدد برای بررسی توسط مدیر امکان‌پذیر است.">
-                🔒 قفل انتشار (ویرایش و لغو تنها پس از ارسال مجدد برای بررسی امکان‌پذیر است)
+            <span class="badge badge-warning" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال برای بررسی توسط مدیر امکان‌پذیر است.">
+                🔒 قفل انتشار (ویرایش و لغو تنها پس از ارسال برای بررسی امکان‌پذیر است)
             </span>
         {% endif %}
     {% endif %}

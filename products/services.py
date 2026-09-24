@@ -105,7 +105,7 @@ def can_user_modify_product(*, product: Product, user) -> bool:
     اگر محصول در وضعیت PUBLISHED یا لغوشده (is_cancelled) باشد، اپراتورها
     (کاربرانی که فاقد پرمیشن review_product هستند) امکان ویرایش، لغو،
     فعال‌سازی مجدد یا مدیریت تصاویر را ندارند تا زمانی که مدیر محصول را
-    مجدداً برای بررسی ارسال یا فعال‌سازی مجدد کند.
+    برای بررسی ارسال یا فعال‌سازی مجدد کند.
     """
     if not user or not user.is_authenticated or not user.is_active:
         return False

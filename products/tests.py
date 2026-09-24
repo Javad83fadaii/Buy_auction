@@ -2735,7 +2735,7 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         self.assertEqual(response.status_code, 405)
 
-    def test_admin_can_see_rereview_action_for_rejected_product(self):
+    def test_admin_can_see_submit_review_action_for_rejected_product(self):
         product = self.create_review_product(
             product_code='ART-REVIEW-10',
             status=ProductStatusChoices.REJECTED,
@@ -2744,12 +2744,42 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         response = self.client.get(self.detail_url(product))
 
-        self.assertContains(response, 'ارسال مجدد برای بررسی')
+        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'ارسال مجدد برای بررسی')
         self.assertContains(
             response,
-            f'action="{self.rereview_url(product)}"',
+            f'action="{self.submit_review_url(product)}"',
             html=False,
         )
+
+    def test_admin_can_see_submit_review_action_for_published_product(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-PUB-1',
+            status=ProductStatusChoices.PUBLISHED,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(self.detail_url(product))
+
+        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'ارسال مجدد برای بررسی')
+        self.assertContains(
+            response,
+            f'action="{self.submit_review_url(product)}"',
+            html=False,
+        )
+
+    def test_admin_does_not_see_submit_review_action_when_already_in_pending_review(self):
+        product = self.create_review_product(
+            product_code='ART-REVIEW-PENDING-1',
+            status=ProductStatusChoices.PENDING_REVIEW,
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(self.detail_url(product))
+
+        self.assertNotContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'ارسال مجدد برای بررسی')
 
 
 class ProductDashboardViewTests(ProductCreateBaseTestCase):
@@ -3431,10 +3461,13 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.product.is_cancelled = False
         self.product.save(update_fields=['status', 'is_cancelled'])
 
-        # مدیر محصول را برای بررسی مجدد ارسال می‌کند
+        # مدیر محصول را برای بررسی ارسال می‌کند
         self.client.force_login(self.manager_user)
-        rereview_response = self.client.post(reverse('products:re_review', args=[self.product.pk]), follow=True)
-        self.assertEqual(rereview_response.status_code, 200)
+        submit_review_response = self.client.post(
+            reverse('products:submit_review', args=[self.product.pk]),
+            follow=True,
+        )
+        self.assertEqual(submit_review_response.status_code, 200)
         self.product.refresh_from_db()
         self.assertEqual(self.product.status, ProductStatusChoices.PENDING_REVIEW)
 

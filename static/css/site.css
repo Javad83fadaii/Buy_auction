@@ -1,6 +1,6 @@
 @import url('./partials/_foundations.css');
 @import url('./products/auctions.css');
-
+@import url('./dashboard/dashboard.css');
 .product-create-card,
 .product-list-card,
 .product-detail-card,

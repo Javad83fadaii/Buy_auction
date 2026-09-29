@@ -1,0 +1,655 @@
+/* ==========================================================================
+   Dashboard — minimal monochrome
+   Scoped under .dash so it never leaks into other pages.
+   ========================================================================== */
+
+.dash {
+    --d-ink: #000000;
+    --d-text: #171717;
+    --d-text-2: #525252;
+    --d-text-3: #8a8a8a;
+    --d-line: #e5e5e5;
+    --d-line-strong: #cfcfcf;
+    --d-paper: #ffffff;
+    --d-wash: #f5f5f5;
+    --d-wash-2: #ececec;
+
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+    color: var(--d-text);
+}
+
+.dash a {
+    color: inherit;
+}
+
+.dash a:hover {
+    text-decoration: none;
+}
+
+.dash h1,
+.dash h2 {
+    color: var(--d-ink);
+}
+
+/* ---------- Sidebar ---------- */
+.dash-side {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-height: calc(100vh - 96px);
+}
+
+.dash-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+}
+
+.dash-brand-mark {
+    width: 18px;
+    height: 18px;
+    background: var(--d-ink);
+    border-radius: 50%;
+    box-shadow: inset -6px 0 0 var(--d-paper);
+    border: 1.5px solid var(--d-ink);
+}
+
+.dash-brand-name {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+}
+
+.dash-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dash-nav-link {
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--d-text-2) !important;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.dash-nav-link:hover {
+    background: var(--d-wash);
+    color: var(--d-ink) !important;
+}
+
+.dash-nav-link.is-strong {
+    color: var(--d-ink) !important;
+    font-weight: 600;
+}
+
+.dash-user {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 12px;
+    align-items: center;
+    padding-top: 18px;
+    border-top: 1px solid var(--d-line);
+}
+
+.dash-user-avatar {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--d-ink);
+    color: var(--d-paper);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.dash-user-info {
+    display: grid;
+    min-width: 0;
+    line-height: 1.4;
+}
+
+.dash-user-info strong {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dash-user-info span {
+    font-size: 12px;
+    color: var(--d-text-3);
+}
+
+.dash-user form {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.dash-link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--d-text-2);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dash-link-btn:hover {
+    color: var(--d-ink);
+}
+
+/* ---------- Main ---------- */
+.dash-main {
+    display: grid;
+    gap: 28px;
+    min-width: 0;
+}
+
+.dash-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--d-line);
+}
+
+.dash-head h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.dash-sub {
+    margin: 4px 0 0;
+    color: var(--d-text-3);
+    font-size: 14px;
+}
+
+.dash-head-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ---------- Buttons ---------- */
+.dash-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background: var(--d-paper);
+    color: var(--d-ink) !important;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.dash-btn:hover {
+    background: var(--d-wash);
+    border-color: var(--d-ink);
+}
+
+.dash-btn-solid {
+    background: var(--d-ink);
+    border-color: var(--d-ink);
+    color: var(--d-paper) !important;
+}
+
+.dash-btn-solid:hover {
+    background: #262626;
+    border-color: #262626;
+}
+
+.dash-btn-invert {
+    background: var(--d-paper);
+    border-color: var(--d-paper);
+    color: var(--d-ink) !important;
+}
+
+.dash-btn-invert:hover {
+    background: var(--d-wash-2);
+    border-color: var(--d-wash-2);
+}
+
+.dash a:focus-visible,
+.dash button:focus-visible {
+    outline: 2px solid var(--d-ink);
+    outline-offset: 2px;
+}
+
+/* ---------- Attention (the one bold element) ---------- */
+.dash-attention {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 28px 32px;
+    border-radius: 16px;
+    background: var(--d-ink);
+    color: var(--d-paper);
+}
+
+.dash-attention-label {
+    margin: 0;
+    font-size: 14px;
+    color: #a3a3a3;
+}
+
+.dash-attention-value {
+    margin: 0;
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- KPI strip: one bordered block, divided cells ---------- */
+.dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--d-line);
+    border-radius: 14px;
+    background: var(--d-paper);
+    overflow: hidden;
+}
+
+.dash-kpi {
+    display: grid;
+    gap: 6px;
+    padding: 22px 24px;
+}
+
+.dash-kpi + .dash-kpi {
+    border-inline-start: 1px solid var(--d-line);
+}
+
+.dash-kpi span {
+    font-size: 13px;
+    color: var(--d-text-3);
+}
+
+.dash-kpi strong {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Panels ---------- */
+.dash-split {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+}
+
+.dash-panel {
+    padding: 24px;
+    border: 1px solid var(--d-line);
+    border-radius: 14px;
+    background: var(--d-paper);
+}
+
+.dash-panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.dash-panel-head h2 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.dash-panel-head a {
+    font-size: 13px;
+    color: var(--d-text-2);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dash-panel-head a:hover {
+    color: var(--d-ink);
+    text-decoration: underline;
+}
+
+/* Source split bar */
+.dash-bar {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--d-wash-2);
+    overflow: hidden;
+}
+
+.dash-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--d-ink);
+    border-radius: 999px;
+}
+
+.dash-legend,
+.dash-rows {
+    margin: 0;
+}
+
+.dash-legend {
+    display: flex;
+    gap: 32px;
+    margin-top: 18px;
+}
+
+.dash-legend div {
+    display: grid;
+    gap: 2px;
+}
+
+.dash-legend dt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--d-text-2);
+}
+
+.dash-legend dd {
+    margin: 0;
+    padding-inline-start: 18px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-ink {
+    background: var(--d-ink);
+}
+
+.dot-soft {
+    background: var(--d-wash-2);
+    border: 1px solid var(--d-line-strong);
+}
+
+/* Auction status rows */
+.dash-rows div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--d-line);
+}
+
+.dash-rows div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.dash-rows dt {
+    font-size: 14px;
+    color: var(--d-text-2);
+}
+
+.dash-rows dd {
+    margin: 0;
+    font-weight: 700;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tabs (underline style) ---------- */
+.dash-lists {
+    padding: 0;
+    overflow: hidden;
+}
+
+.dash-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--d-line);
+}
+
+.dash-tab {
+    position: relative;
+    padding: 16px 14px;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--d-text-3);
+    cursor: pointer;
+}
+
+.dash-tab:hover {
+    color: var(--d-ink);
+}
+
+.dash-tab.is-active {
+    color: var(--d-ink);
+}
+
+.dash-tab.is-active::after {
+    content: '';
+    position: absolute;
+    inset-inline: 10px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--d-ink);
+}
+
+[data-dashboard-panel][hidden] {
+    display: none !important;
+}
+
+/* ---------- Tables ---------- */
+.dash-table-wrap {
+    overflow-x: auto;
+}
+
+.dash-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+}
+
+.dash-table th {
+    padding: 12px 24px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--d-text-3);
+    background: var(--d-wash);
+    white-space: nowrap;
+}
+
+.dash-table td {
+    padding: 14px 24px;
+    text-align: right;
+    vertical-align: middle;
+    font-size: 14px;
+    color: var(--d-text-2);
+    border-bottom: 1px solid var(--d-line);
+}
+
+.dash-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.dash-cell-title {
+    display: block;
+    font-weight: 600;
+    color: var(--d-ink) !important;
+}
+
+.dash-cell-title:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dash-cell-meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--d-text-3);
+}
+
+.dash-num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dash-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--d-text);
+    white-space: nowrap;
+}
+
+.dash-cell-actions {
+    text-align: left !important;
+    white-space: nowrap;
+}
+
+.dash-cell-actions a {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--d-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dash-more {
+    display: block;
+    padding: 16px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--d-text-2) !important;
+    text-align: center;
+}
+
+.dash-more:hover {
+    color: var(--d-ink) !important;
+    background: var(--d-wash);
+}
+
+.dash-empty {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    padding: 56px 24px;
+    text-align: center;
+    color: var(--d-text-3);
+}
+
+.dash-empty p {
+    margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 960px) {
+    .dash {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .dash-side {
+        position: static;
+        min-height: 0;
+        gap: 16px;
+    }
+
+    .dash-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .dash-nav-link {
+        border: 1px solid var(--d-line);
+    }
+
+    .dash-user {
+        margin-top: 0;
+    }
+
+    .dash-split {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .dash-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dash-kpi:nth-child(3) {
+        border-inline-start: 0;
+    }
+
+    .dash-kpi:nth-child(n + 3) {
+        border-top: 1px solid var(--d-line);
+    }
+
+    .dash-attention {
+        padding: 22px;
+    }
+
+    .dash-attention-value {
+        font-size: 44px;
+    }
+
+    .dash-head h1 {
+        font-size: 24px;
+    }
+
+    .dash-head-actions {
+        width: 100%;
+    }
+
+    .dash-head-actions .dash-btn {
+        flex: 1;
+    }
+
+    .dash-table th,
+    .dash-table td {
+        padding-inline: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash * {
+        transition: none !important;
+    }
+}

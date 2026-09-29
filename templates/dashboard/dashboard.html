@@ -3,305 +3,259 @@
 {% block title %}داشبورد{% endblock %}
 
 {% block content %}
-<section class="card manager-dashboard-card">
-    <div class="manager-dashboard-topbar">
-        <div>
-            <p class="manager-eyebrow">پنل مدیریت</p>
-            <h1>همه چیز در یک صفحه</h1>
-            <p class="muted-text">خوش آمدید، {{ request.user.username }} | نقش فعلی: {{ request.user.role_display }}</p>
+<div class="dash">
+
+    {# ───────── Sidebar ───────── #}
+    <aside class="dash-side" aria-label="منوی اصلی">
+        <div class="dash-brand">
+            <span class="dash-brand-mark" aria-hidden="true"></span>
+            <span class="dash-brand-name">Buy Auction</span>
         </div>
-        <form method="post" action="{% url 'accounts:logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="button button-secondary manager-logout-button">خروج</button>
-        </form>
-    </div>
 
-    <div class="manager-dashboard-layout">
-        <aside class="manager-dashboard-sidebar">
-            <article class="manager-sidebar-card">
-                <div class="manager-sidebar-heading">
-                    <h2>حساب کاربری</h2>
-                </div>
-                <div class="manager-account-meta">
-                    <div>
-                        <span>نام کاربری</span>
-                        <strong>{{ request.user.username }}</strong>
-                    </div>
-                    <div>
-                        <span>ایمیل</span>
-                        <strong>{{ request.user.email|default:"-" }}</strong>
-                    </div>
-                    <div>
-                        <span>آخرین ورود</span>
-                        <strong>{{ request.user.last_login|date:"Y/m/d H:i"|default:"-" }}</strong>
-                    </div>
-                </div>
-            </article>
+        <nav class="dash-nav">
+            {% for link in quick_links %}
+                <a class="dash-nav-link{% if link.variant == 'primary' %} is-strong{% endif %}" href="{{ link.url }}">{{ link.label }}</a>
+            {% endfor %}
+        </nav>
 
-            <article class="manager-sidebar-card">
-                <div class="manager-sidebar-heading">
-                    <h2>دسترسی سریع</h2>
-                </div>
-                <div class="manager-quick-links">
-                    {% for link in quick_links %}
-                        <a class="manager-quick-link manager-quick-link-{{ link.variant }}" href="{{ link.url }}">{{ link.label }}</a>
-                    {% endfor %}
-                </div>
-            </article>
+        <div class="dash-user">
+            <div class="dash-user-avatar" aria-hidden="true">{{ request.user.username|slice:":1"|upper }}</div>
+            <div class="dash-user-info">
+                <strong>{{ request.user.username }}</strong>
+                <span>{{ request.user.role_display }}</span>
+            </div>
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dash-link-btn">خروج</button>
+            </form>
+        </div>
+    </aside>
 
-            {% if can_review_products %}
-                <article class="manager-sidebar-card manager-sidebar-highlight">
-                    <div class="manager-sidebar-heading">
-                        <h2>نیاز به رسیدگی</h2>
-                    </div>
-                    <p class="manager-highlight-value">{{ product_stats.pending_review_products }}</p>
-                    <p class="muted-text">محصول در انتظار بررسی</p>
-                    <a class="button button-primary button-block" href="{{ pending_review_url }}">مشاهده فوری</a>
-                </article>
-            {% endif %}
-        </aside>
-
-        <div class="manager-dashboard-main">
+    {# ───────── Main ───────── #}
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>داشبورد</h1>
+                <p class="dash-sub">آخرین وضعیت آثار و حراجی‌ها در یک نگاه.</p>
+            </div>
             {% if can_manage_products %}
-                <div class="manager-tabbar" data-dashboard-tabs>
-                    <button type="button" class="manager-tab-button is-active" data-dashboard-tab="overview">
-                        نمای کلی
-                        <span>{{ product_stats.total_products }}</span>
-                    </button>
-                    <button type="button" class="manager-tab-button" data-dashboard-tab="auctions">
-                        حراجی‌ها
-                        <span>{{ auction_stats.total_auctions }}</span>
-                    </button>
-                    <button type="button" class="manager-tab-button" data-dashboard-tab="manual">
-                        ثبت دستی
-                        <span>{{ product_stats.manual_products }}</span>
-                    </button>
-                    <button type="button" class="manager-tab-button" data-dashboard-tab="all-products">
-                        همه محصولات
-                        <span>{{ product_stats.total_products }}</span>
-                    </button>
+                <div class="dash-head-actions">
+                    <a class="dash-btn" href="{% url 'products:dashboard' %}">مدیریت محصولات</a>
+                    <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a>
                 </div>
+            {% endif %}
+        </header>
 
-                <section class="manager-tab-panel" data-dashboard-panel="overview">
-                    <div class="manager-panel-grid">
-                        <article class="manager-panel-card">
-                            <div class="manager-section-head">
-                                <h2>خلاصه محصولات</h2>
-                                <a href="{{ all_products_url }}">باز کردن لیست</a>
-                            </div>
-                            <div class="manager-metric-grid">
-                                <div class="manager-metric-card">
-                                    <span>کل محصولات</span>
-                                    <strong>{{ product_stats.total_products }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>ثبت دستی</span>
-                                    <strong>{{ product_stats.manual_products }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>محصولات حراجی</span>
-                                    <strong>{{ product_stats.auction_products }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>در انتظار بررسی</span>
-                                    <strong>{{ product_stats.pending_review_products }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>هدف خرید</span>
-                                    <strong>{{ product_stats.to_buy_products }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>لغو شده</span>
-                                    <strong>{{ product_stats.cancelled_products }}</strong>
-                                </div>
-                            </div>
-                        </article>
+        {% if can_manage_products %}
 
-                        <article class="manager-panel-card">
-                            <div class="manager-section-head">
-                                <h2>خلاصه حراجی‌ها</h2>
-                                <a href="{{ auction_products_url }}">باز کردن لیست</a>
-                            </div>
-                            <div class="manager-metric-grid manager-metric-grid-compact">
-                                <div class="manager-metric-card">
-                                    <span>کل حراجی‌ها</span>
-                                    <strong>{{ auction_stats.total_auctions }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>در حال برگزاری</span>
-                                    <strong>{{ auction_stats.ongoing_auctions }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>به زودی</span>
-                                    <strong>{{ auction_stats.upcoming_auctions }}</strong>
-                                </div>
-                                <div class="manager-metric-card">
-                                    <span>پایان یافته</span>
-                                    <strong>{{ auction_stats.ended_auctions }}</strong>
-                                </div>
-                            </div>
-                        </article>
+            {# Attention block (reviewers only) #}
+            {% if can_review_products %}
+                <section class="dash-attention" aria-label="نیازمند رسیدگی">
+                    <div>
+                        <p class="dash-attention-label">در انتظار بررسی</p>
+                        <p class="dash-attention-value">{{ product_stats.pending_review_products }}</p>
                     </div>
-                </section>
-
-                <section class="manager-tab-panel" data-dashboard-panel="auctions" hidden>
-                    <div class="manager-section-head">
-                        <h2>لیست حراجی‌ها</h2>
-                        <a href="{{ auction_products_url }}">مشاهده همه</a>
-                    </div>
-                    {% if auction_items %}
-                        <div class="manager-compact-grid manager-compact-grid-3">
-                            {% for auction in auction_items %}
-                                <article class="manager-list-card">
-                                    <div class="manager-list-card-top">
-                                        <span class="manager-chip">{{ auction.get_status_display }}</span>
-                                        <strong>{{ auction.name }}</strong>
-                                    </div>
-                                    <p class="manager-list-meta">{{ auction.get_source_house_display }} | {{ auction.start_date|date:"Y/m/d" }}</p>
-                                    <div class="manager-inline-metrics">
-                                        <span>ثبت شده: {{ auction.entered_lots_count }}</span>
-                                        <span>هدف خرید: {{ auction.to_buy_count }}</span>
-                                    </div>
-                                    <div class="manager-list-actions">
-                                        <a class="button button-secondary" href="{% url 'products:auction_detail' auction.pk %}">جزئیات</a>
-                                        <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">افزودن اثر</a>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <section class="empty-state">
-                            <h2>هنوز حراجی‌ای ثبت نشده است.</h2>
-                        </section>
-                    {% endif %}
-                </section>
-
-                <section class="manager-tab-panel" data-dashboard-panel="manual" hidden>
-                    <div class="manager-section-head">
-                        <h2>محصولات ثبت دستی</h2>
-                        <a href="{{ manual_products_url }}">مشاهده همه</a>
-                    </div>
-                    {% if manual_products %}
-                        <div class="manager-compact-grid manager-compact-grid-3">
-                            {% for product in manual_products %}
-                                <article class="manager-list-card">
-                                    <div class="manager-list-card-top">
-                                        <span class="manager-chip">{{ product.get_status_display }}</span>
-                                        <strong>{{ product.title }}</strong>
-                                    </div>
-                                    <p class="manager-list-meta">{{ product.artist|default:"بدون خالق" }} | {{ product.created_at|date:"Y/m/d" }}</p>
-                                    <div class="manager-inline-metrics">
-                                        <span>کد: {{ product.product_code|default:"-" }}</span>
-                                        <span>منبع: {{ product.get_source_type_display }}</span>
-                                    </div>
-                                    <div class="manager-list-actions">
-                                        <a class="button button-secondary" href="{% url 'products:detail' product.pk %}">جزئیات</a>
-                                        <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش</a>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <section class="empty-state">
-                            <h2>هنوز محصول ثبت دستی وجود ندارد.</h2>
-                        </section>
-                    {% endif %}
-                </section>
-
-                <section class="manager-tab-panel" data-dashboard-panel="all-products" hidden>
-                    <div class="manager-section-head">
-                        <h2>همه محصولات</h2>
-                        <a href="{{ all_products_url }}">مشاهده همه</a>
-                    </div>
-                    {% if all_products %}
-                        <div class="manager-compact-grid manager-compact-grid-3">
-                            {% for product in all_products %}
-                                <article class="manager-list-card">
-                                    <div class="manager-list-card-top">
-                                        <span class="manager-chip">{{ product.get_status_display }}</span>
-                                        <strong>{{ product.title }}</strong>
-                                    </div>
-                                    <p class="manager-list-meta">
-                                        {% if product.auction %}
-                                            {{ product.auction.name }}
-                                        {% else %}
-                                            {{ product.get_source_type_display }}
-                                        {% endif %}
-                                        | {{ product.created_at|date:"Y/m/d" }}
-                                    </p>
-                                    <div class="manager-inline-metrics">
-                                        <span>خالق: {{ product.artist|default:"-" }}</span>
-                                        <span>کد: {{ product.product_code|default:"-" }}</span>
-                                    </div>
-                                    <div class="manager-list-actions">
-                                        <a class="button button-secondary" href="{% url 'products:detail' product.pk %}">جزئیات</a>
-                                        <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش</a>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <section class="empty-state">
-                            <h2>هنوز محصولی ثبت نشده است.</h2>
-                        </section>
-                    {% endif %}
-                </section>
-            {% else %}
-                <section class="manager-panel-card">
-                    <div class="manager-section-head">
-                        <h2>دسترسی‌ها</h2>
-                    </div>
-                    <p>این داشبورد برای کاربر احراز هویت‌شده فعال است.</p>
-                    <div class="manager-quick-links">
-                        <a class="manager-quick-link manager-quick-link-secondary" href="{% url 'accounts:change_password' %}">تغییر رمز عبور</a>
-                        {% if can_view_operator_dashboard %}
-                            <a class="manager-quick-link manager-quick-link-primary" href="{% url 'operator_dashboard' %}">ورود به داشبورد اپراتور</a>
-                        {% endif %}
-                    </div>
+                    <a class="dash-btn dash-btn-invert" href="{{ pending_review_url }}">بررسی محصولات</a>
                 </section>
             {% endif %}
-        </div>
-    </div>
-</section>
+
+            {# KPI strip #}
+            <section class="dash-kpis" aria-label="آمار محصولات">
+                <div class="dash-kpi">
+                    <span>کل محصولات</span>
+                    <strong>{{ product_stats.total_products }}</strong>
+                </div>
+                <div class="dash-kpi">
+                    <span>هدف خرید</span>
+                    <strong>{{ product_stats.to_buy_products }}</strong>
+                </div>
+                <div class="dash-kpi">
+                    <span>لغو شده</span>
+                    <strong>{{ product_stats.cancelled_products }}</strong>
+                </div>
+                <div class="dash-kpi">
+                    <span>حراجی‌ها</span>
+                    <strong>{{ auction_stats.total_auctions }}</strong>
+                </div>
+            </section>
+
+            {# Source split + auction status #}
+            <section class="dash-split" aria-label="ترکیب منابع">
+                <div class="dash-panel">
+                    <div class="dash-panel-head">
+                        <h2>منبع محصولات</h2>
+                        <a href="{{ all_products_url }}">همه محصولات</a>
+                    </div>
+                    <div class="dash-bar" role="img" aria-label="ثبت دستی {{ product_stats.manual_products }} از {{ product_stats.total_products }}">
+                        <span class="dash-bar-fill" style="width: {% widthratio product_stats.manual_products product_stats.total_products 100 %}%"></span>
+                    </div>
+                    <dl class="dash-legend">
+                        <div><dt><i class="dot dot-ink"></i>ثبت دستی</dt><dd>{{ product_stats.manual_products }}</dd></div>
+                        <div><dt><i class="dot dot-soft"></i>حراجی خارجی</dt><dd>{{ product_stats.auction_products }}</dd></div>
+                    </dl>
+                </div>
+
+                <div class="dash-panel">
+                    <div class="dash-panel-head">
+                        <h2>وضعیت حراجی‌ها</h2>
+                        <a href="{{ auction_products_url }}">همه حراجی‌ها</a>
+                    </div>
+                    <dl class="dash-rows">
+                        <div><dt>در حال برگزاری</dt><dd>{{ auction_stats.ongoing_auctions }}</dd></div>
+                        <div><dt>به زودی</dt><dd>{{ auction_stats.upcoming_auctions }}</dd></div>
+                        <div><dt>پایان یافته</dt><dd>{{ auction_stats.ended_auctions }}</dd></div>
+                    </dl>
+                </div>
+            </section>
+
+            {# Tabbed lists #}
+            <section class="dash-panel dash-lists">
+                <div class="dash-tabs" role="tablist" data-dashboard-tabs>
+                    <button type="button" role="tab" class="dash-tab is-active" data-dashboard-tab="all-products">آخرین محصولات</button>
+                    <button type="button" role="tab" class="dash-tab" data-dashboard-tab="manual">ثبت دستی</button>
+                    <button type="button" role="tab" class="dash-tab" data-dashboard-tab="auctions">حراجی‌ها</button>
+                </div>
+
+                {# All products #}
+                <div data-dashboard-panel="all-products" role="tabpanel">
+                    {% if all_products %}
+                        <div class="dash-table-wrap">
+                            <table class="dash-table">
+                                <thead>
+                                    <tr><th>عنوان</th><th>منبع</th><th>وضعیت</th><th>تاریخ</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in all_products %}
+                                        <tr>
+                                            <td>
+                                                <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
+                                                <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
+                                            </td>
+                                            <td>{% if product.auction %}{{ product.auction.name }}{% else %}{{ product.get_source_type_display }}{% endif %}</td>
+                                            <td><span class="dash-tag">{{ product.get_status_display }}</span></td>
+                                            <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
+                                            <td class="dash-cell-actions"><a href="{% url 'products:edit' product.pk %}">ویرایش</a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a class="dash-more" href="{{ all_products_url }}">مشاهده همه محصولات</a>
+                    {% else %}
+                        <div class="dash-empty">
+                            <p>هنوز محصولی ثبت نشده است.</p>
+                            <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اولین اثر</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# Manual #}
+                <div data-dashboard-panel="manual" role="tabpanel" hidden>
+                    {% if manual_products %}
+                        <div class="dash-table-wrap">
+                            <table class="dash-table">
+                                <thead>
+                                    <tr><th>عنوان</th><th>پیشنهاددهنده</th><th>وضعیت</th><th>تاریخ</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in manual_products %}
+                                        <tr>
+                                            <td>
+                                                <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
+                                                <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
+                                            </td>
+                                            <td>{{ product.suggested_by|default:"-" }}</td>
+                                            <td><span class="dash-tag">{{ product.get_status_display }}</span></td>
+                                            <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
+                                            <td class="dash-cell-actions"><a href="{% url 'products:edit' product.pk %}">ویرایش</a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a class="dash-more" href="{{ manual_products_url }}">مشاهده همه ثبت‌های دستی</a>
+                    {% else %}
+                        <div class="dash-empty"><p>هنوز محصول ثبت دستی وجود ندارد.</p></div>
+                    {% endif %}
+                </div>
+
+                {# Auctions #}
+                <div data-dashboard-panel="auctions" role="tabpanel" hidden>
+                    {% if auction_items %}
+                        <div class="dash-table-wrap">
+                            <table class="dash-table">
+                                <thead>
+                                    <tr><th>حراجی</th><th>وضعیت</th><th>ثبت‌شده</th><th>هدف خرید</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for auction in auction_items %}
+                                        <tr>
+                                            <td>
+                                                <a class="dash-cell-title" href="{% url 'products:auction_detail' auction.pk %}">{{ auction.name }}</a>
+                                                <span class="dash-cell-meta">{{ auction.get_source_house_display }} · {{ auction.start_date|date:"Y/m/d" }}</span>
+                                            </td>
+                                            <td><span class="dash-tag">{{ auction.get_status_display }}</span></td>
+                                            <td class="dash-num">{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
+                                            <td class="dash-num">{{ auction.to_buy_count }}</td>
+                                            <td class="dash-cell-actions"><a href="{% url 'products:create' %}?auction={{ auction.pk }}">افزودن اثر</a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a class="dash-more" href="{{ auction_products_url }}">مشاهده همه حراجی‌ها</a>
+                    {% else %}
+                        <div class="dash-empty">
+                            <p>هنوز حراجی‌ای ثبت نشده است.</p>
+                            <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">ثبت حراجی</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+        {% else %}
+            <section class="dash-panel">
+                <div class="dash-panel-head"><h2>دسترسی‌ها</h2></div>
+                <p class="dash-sub">این داشبورد برای کاربر احراز هویت‌شده فعال است.</p>
+                <div class="dash-head-actions">
+                    <a class="dash-btn" href="{% url 'accounts:change_password' %}">تغییر رمز عبور</a>
+                    {% if can_view_operator_dashboard %}
+                        <a class="dash-btn dash-btn-solid" href="{% url 'operator_dashboard' %}">داشبورد اپراتور</a>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+</div>
 
 {% if can_manage_products %}
-    <script>
-        (function () {
-            var STORAGE_KEY = 'manager-dashboard-tab';
-            var buttons = document.querySelectorAll('[data-dashboard-tab]');
-            var panels = document.querySelectorAll('[data-dashboard-panel]');
+<script>
+    (function () {
+        var STORAGE_KEY = 'dashboard-tab';
+        var tabs = document.querySelectorAll('[data-dashboard-tab]');
+        var panels = document.querySelectorAll('[data-dashboard-panel]');
 
-            function setActiveTab(tabName) {
-                buttons.forEach(function (button) {
-                    button.classList.toggle('is-active', button.dataset.dashboardTab === tabName);
-                });
-                panels.forEach(function (panel) {
-                    panel.hidden = panel.dataset.dashboardPanel !== tabName;
-                });
-                try {
-                    window.localStorage.setItem(STORAGE_KEY, tabName);
-                } catch (error) {
-                    /* localStorage may be unavailable; ignore */
-                }
-            }
-
-            buttons.forEach(function (button) {
-                button.addEventListener('click', function () {
-                    setActiveTab(button.dataset.dashboardTab);
-                });
+        function setTab(name) {
+            tabs.forEach(function (tab) {
+                var active = tab.dataset.dashboardTab === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
             });
+            panels.forEach(function (panel) {
+                panel.hidden = panel.dataset.dashboardPanel !== name;
+            });
+            try { window.localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
+        }
 
-            var savedTab = null;
-            try {
-                savedTab = window.localStorage.getItem(STORAGE_KEY);
-            } catch (error) {
-                savedTab = null;
-            }
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () { setTab(tab.dataset.dashboardTab); });
+        });
 
-            if (savedTab) {
-                setActiveTab(savedTab);
-            }
-        }());
-    </script>
+        var saved = null;
+        try { saved = window.localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        var valid = Array.prototype.some.call(tabs, function (t) { return t.dataset.dashboardTab === saved; });
+        setTab(valid ? saved : 'all-products');
+    }());
+</script>
 {% endif %}
 {% endblock %}

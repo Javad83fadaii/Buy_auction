@@ -781,6 +781,355 @@
     display: none !important;
 }
 
+/* Dashboard: manager hub */
+.manager-dashboard-card {
+    background: #ffffff;
+    border-color: #d4d4d8;
+    box-shadow: none;
+    min-height: calc(100vh - 96px);
+    padding: 18px;
+}
+
+.manager-dashboard-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e4e4e7;
+    flex-wrap: wrap;
+}
+
+.manager-eyebrow {
+    margin: 0 0 6px;
+    color: #71717a;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.manager-dashboard-card h1,
+.manager-dashboard-card h2,
+.manager-dashboard-card h3,
+.manager-dashboard-card a,
+.manager-dashboard-card .muted-text,
+.manager-dashboard-card .button {
+    color: #111111;
+}
+
+.manager-dashboard-card .muted-text {
+    color: #6b7280;
+}
+
+.manager-dashboard-card .button-primary {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+}
+
+.manager-dashboard-card .button-primary:hover {
+    background: #262626;
+    border-color: #262626;
+}
+
+.manager-dashboard-card .button-secondary {
+    background: #ffffff;
+    border-color: #d4d4d8;
+    color: #111111;
+}
+
+.manager-dashboard-card .button-secondary:hover {
+    background: #f4f4f5;
+    border-color: #a1a1aa;
+}
+
+.manager-dashboard-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.manager-dashboard-sidebar,
+.manager-dashboard-main {
+    display: grid;
+    gap: 12px;
+}
+
+.manager-sidebar-card,
+.manager-panel-card,
+.manager-list-card {
+    border: 1px solid #e4e4e7;
+    border-radius: 14px;
+    background: #fcfcfc;
+}
+
+.manager-sidebar-card,
+.manager-panel-card {
+    padding: 14px;
+}
+
+.manager-sidebar-heading,
+.manager-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.manager-section-head {
+    margin-bottom: 14px;
+}
+
+.manager-section-head a {
+    color: #52525b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.manager-account-meta {
+    display: grid;
+    gap: 10px;
+}
+
+.manager-account-meta div {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid #ededf0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.manager-account-meta span {
+    color: #71717a;
+    font-size: 12px;
+}
+
+.manager-account-meta strong,
+.manager-highlight-value,
+.manager-tab-button span,
+.manager-metric-card strong,
+.manager-list-card-top strong {
+    font-weight: 700;
+}
+
+.manager-quick-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.manager-quick-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #d4d4d8;
+    border-radius: 12px;
+    color: #111111;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    background: #ffffff;
+}
+
+.manager-quick-link:hover {
+    background: #f4f4f5;
+    text-decoration: none;
+}
+
+.manager-quick-link-primary {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff !important;
+}
+
+.manager-quick-link-primary:hover {
+    background: #27272a;
+}
+
+.manager-sidebar-highlight {
+    background: #111111;
+    border-color: #111111;
+}
+
+.manager-sidebar-highlight h2,
+.manager-sidebar-highlight .muted-text,
+.manager-sidebar-highlight .manager-highlight-value {
+    color: #ffffff;
+}
+
+.manager-highlight-value {
+    margin: 0;
+    font-size: 42px;
+    line-height: 1;
+}
+
+.manager-sidebar-highlight .button-primary {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #111111;
+}
+
+.manager-sidebar-highlight .button-primary:hover {
+    background: #f4f4f5;
+    border-color: #f4f4f5;
+}
+
+.manager-tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.manager-tab-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border: 1px solid #d4d4d8;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #52525b;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.manager-tab-button.is-active {
+    border-color: #111111;
+    background: #111111;
+    color: #ffffff;
+}
+
+.manager-tab-button span {
+    min-width: 26px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f4f4f5;
+    color: #111111;
+    font-size: 12px;
+    text-align: center;
+}
+
+.manager-tab-button.is-active span {
+    background: #ffffff;
+}
+
+.manager-tab-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.manager-panel-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 14px;
+}
+
+.manager-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.manager-metric-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.manager-metric-card {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid #ededf0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.manager-metric-card span,
+.manager-list-meta,
+.manager-inline-metrics span {
+    color: #71717a;
+    font-size: 12px;
+}
+
+.manager-metric-card strong {
+    font-size: 22px;
+    line-height: 1;
+    color: #111111;
+}
+
+.manager-compact-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.manager-compact-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.manager-list-card {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    background: #ffffff;
+}
+
+.manager-list-card-top {
+    display: grid;
+    gap: 8px;
+}
+
+.manager-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 5px 10px;
+    border: 1px solid #d4d4d8;
+    border-radius: 999px;
+    background: #f4f4f5;
+    color: #111111;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.manager-list-meta {
+    margin: 0;
+}
+
+.manager-inline-metrics {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.manager-inline-metrics span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f4f4f5;
+}
+
+.manager-list-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.manager-list-actions .button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 12px;
+}
+
 @media (max-width: 900px) {
     .product-detail-hero,
     .form-grid-2,
@@ -799,6 +1148,20 @@
     .image-management-preview {
         width: 100%;
         height: 220px;
+    }
+
+    .manager-dashboard-card {
+        min-height: auto;
+    }
+
+    .manager-dashboard-layout,
+    .manager-panel-grid,
+    .manager-compact-grid-3,
+    .manager-tabbar,
+    .manager-metric-grid,
+    .manager-metric-grid-compact,
+    .manager-quick-links {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -829,5 +1192,15 @@
 
     .image-sort-form .text-input {
         width: 100%;
+    }
+
+    .manager-dashboard-card {
+        padding: 14px;
+    }
+
+    .manager-dashboard-topbar,
+    .manager-list-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

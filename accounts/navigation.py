@@ -44,11 +44,6 @@ def build_quick_links(user) -> list[dict[str, str]]:
                 'variant': 'secondary',
             },
             {
-                'label': 'ثبت دستی',
-                'url': build_url('products:list', source=ProductSourceTypeChoices.MANUAL),
-                'variant': 'secondary',
-            },
-            {
                 'label': 'داشبورد محصولات',
                 'url': reverse('products:dashboard'),
                 'variant': 'secondary',

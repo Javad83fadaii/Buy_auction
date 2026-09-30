@@ -77,9 +77,15 @@
             </form>
         </section>
 
-        {# Auction Cards Grid #}
         {% if auctions %}
-            <div class="auction-grid">
+            {# View Toggle #}
+            <div class="view-toggle" data-view-toggle-group>
+                <button type="button" class="toggle-btn is-active" data-view-toggle="card">نمایش کارتی</button>
+                <button type="button" class="toggle-btn" data-view-toggle="list">نمایش لیستی</button>
+            </div>
+
+            {# Card View #}
+            <div class="auction-grid" data-view-panel="card">
                 {% for auction in auctions %}
                     <article class="auction-card">
                         <header class="auction-card-header">
@@ -99,11 +105,11 @@
                         <div class="auction-card-body">
                             <ul class="auction-meta-list">
                                 <li>
-                                    <span class="meta-label">� تاریخ برگزاری:</span>
+                                    <span class="meta-label">📅 تاریخ برگزاری:</span>
                                     <strong>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</strong>
                                 </li>
                                 <li>
-                                    <span class="meta-label">📍 مکان:</span>
+                                    <span class="meta-label">� مکان:</span>
                                     <span>{{ auction.location|default:"مشخص نشده" }}</span>
                                 </li>
                                 <li>
@@ -165,6 +171,50 @@
                 {% endfor %}
             </div>
 
+            {# List View #}
+            <div class="dash-table-wrap" data-view-panel="list" hidden>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>حراجی</th>
+                            <th>خانه</th>
+                            <th>تاریخ</th>
+                            <th>وضعیت</th>
+                            <th>آثار وارد شده</th>
+                            <th>هدف خرید</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for auction in auctions %}
+                            <tr>
+                                <td>
+                                    <a class="dash-cell-title" href="{% url 'products:auction_detail' auction.pk %}">{{ auction.name }}</a>
+                                    <span class="dash-cell-meta">{{ auction.location|default:"مشخص نشده" }} · {{ auction.get_currency_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
+                                        {{ auction.get_source_house_display }}
+                                    </span>
+                                </td>
+                                <td class="dash-num">{{ auction.start_date|date:"Y/m/d" }}</td>
+                                <td>
+                                    <span class="status-badge status-badge-{{ auction.status|lower }}">
+                                        {{ auction.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="dash-num">{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
+                                <td class="dash-num">🎯 {{ auction.to_buy_count }}</td>
+                                <td class="dash-cell-actions">
+                                    <a href="{% url 'products:auction_detail' auction.pk %}">مشاهده</a>
+                                    <a href="{% url 'products:auction_edit' auction.pk %}">ویرایش</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
             {# Pagination #}
             {% if is_paginated %}
                 <nav class="pagination" aria-label="صفحات">
@@ -188,4 +238,45 @@
         {% endif %}
     </main>
 </div>
+
+{% if auctions %}
+    <script>
+        (function () {
+            var STORAGE_KEY = 'auctions-view-mode';
+            var toggleButtons = document.querySelectorAll('[data-view-toggle]');
+            var panels = document.querySelectorAll('[data-view-panel]');
+
+            function setView(mode) {
+                panels.forEach(function (panel) {
+                    panel.hidden = panel.dataset.viewPanel !== mode;
+                });
+                toggleButtons.forEach(function (button) {
+                    button.classList.toggle('is-active', button.dataset.viewToggle === mode);
+                });
+                try {
+                    window.localStorage.setItem(STORAGE_KEY, mode);
+                } catch (error) {
+                    /* localStorage may be unavailable; ignore */
+                }
+            }
+
+            toggleButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setView(button.dataset.viewToggle);
+                });
+            });
+
+            var savedMode = null;
+            try {
+                savedMode = window.localStorage.getItem(STORAGE_KEY);
+            } catch (error) {
+                savedMode = null;
+            }
+
+            if (savedMode === 'card' || savedMode === 'list') {
+                setView(savedMode);
+            }
+        }());
+    </script>
+{% endif %}
 {% endblock %}

@@ -141,6 +141,9 @@ class ProductDashboardView(RolePermissionMixin, TemplateView):
         context['pending_review_url'] = (
             f"{reverse('products:list')}?{urlencode({'status': ProductStatusChoices.PENDING_REVIEW})}"
         )
+        context['pending_review_count'] = Product.objects.filter(
+            status=ProductStatusChoices.PENDING_REVIEW
+        ).count()
         return context
 
 

@@ -22,7 +22,7 @@
         <span>نوع هنر: {{ product.art_type|default:"-" }}</span>
         {% if product.auction %}
             <span class="product-card-auction-meta">
-                🏛️ حراجی: <strong>{{ product.auction.name }}</strong> ({{ product.auction.get_source_house_display }})
+                حراجی: <strong>{{ product.auction.name }}</strong> ({{ product.auction.get_source_house_display }})
             </span>
         {% else %}
             <span>منبع: {{ product.get_source_type_display }}</span>
@@ -33,10 +33,10 @@
     <div class="table-badge-stack">
         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
         {% if product.to_buy %}
-            <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+            <span class="flag-badge flag-badge-buy">خرید</span>
         {% endif %}
         {% if product.final_inspection_done %}
-            <span class="flag-badge flag-badge-inspect">🔍 بازدید</span>
+            <span class="flag-badge flag-badge-inspect">بازدید</span>
         {% endif %}
         {% if product.is_cancelled %}
             <span class="flag-badge flag-badge-warning">لغو شده</span>

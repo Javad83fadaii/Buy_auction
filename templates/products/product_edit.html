@@ -3,14 +3,20 @@
 {% block title %}ویرایش محصول{% endblock %}
 
 {% block content %}
-<section class="card product-create-card">
-    <div class="dashboard-header">
-        <div>
-            <h1>{{ page_title }}</h1>
-            <p class="muted-text">اطلاعات فعلی محصول را ویرایش کنید. تصاویر و وضعیت workflow در فرم جداگانه مدیریت می‌شوند.</p>
-        </div>
-        <a class="button button-secondary" href="{{ cancel_url }}">بازگشت به جزئیات</a>
-    </div>
+<div class="dash">
+
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ page_title }}</h1>
+                <p class="dash-sub">اطلاعات فعلی محصول را ویرایش کنید. تصاویر و وضعیت workflow در فرم جداگانه مدیریت می‌شوند.</p>
+            </div>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{{ cancel_url }}">بازگشت به جزئیات</a>
+            </div>
+        </header>
 
     <form method="post" novalidate data-product-edit-form>
         {% csrf_token %}
@@ -29,7 +35,8 @@
             <a class="button button-secondary" href="{{ cancel_url }}">انصراف</a>
         </div>
     </form>
-</section>
+    </main>
+</div>
 
 <script>
     (function () {

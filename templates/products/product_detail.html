@@ -3,14 +3,23 @@
 {% block title %}جزئیات محصول{% endblock %}
 
 {% block content %}
-<section class="card product-detail-card">
-    <div class="dashboard-header">
-        <div>
-            <h1>{{ product.title }}</h1>
-            <p class="muted-text">جزئیات کامل اثر ثبت‌شده در سیستم.</p>
-        </div>
-        <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
-    </div>
+<div class="dash">
+
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ product.title }}</h1>
+                <p class="dash-sub">جزئیات کامل اثر ثبت‌شده در سیستم.</p>
+            </div>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
+                {% if can_manage_product %}
+                    <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
+                {% endif %}
+            </div>
+        </header>
 
     <div class="product-detail-hero">
         <section class="product-gallery" aria-label="گالری تصاویر محصول">
@@ -102,7 +111,7 @@
                         {{ product.auction.get_source_house_display }}
                     </span>
                     <a class="auction-link" href="{% url 'products:auction_detail' product.auction.pk %}">
-                        🏛️ {{ product.auction.name }}
+                        {{ product.auction.name }}
                     </a>
                 </div>
             {% endif %}
@@ -138,16 +147,16 @@
 
             <div class="flag-list" aria-label="پرچم‌های محصول">
                 {% if product.to_buy %}
-                    <span class="flag-badge flag-badge-buy">🎯 هدف خرید</span>
+                    <span class="flag-badge flag-badge-buy">هدف خرید</span>
                 {% endif %}
                 {% if product.final_inspection_done %}
-                    <span class="flag-badge flag-badge-inspect">🔍 بازدید نهایی شده</span>
+                    <span class="flag-badge flag-badge-inspect">بازدید نهایی شده</span>
                 {% endif %}
                 {% if product.has_all_prices %}
-                    <span class="flag-badge flag-badge-prices">💰 تمام قیمت‌ها ثبت شده</span>
+                    <span class="flag-badge flag-badge-prices">تمام قیمت‌ها ثبت شده</span>
                 {% endif %}
                 {% if product.has_initial_info %}
-                    <span class="flag-badge flag-badge-info">📋 اطلاعات اولیه کامل</span>
+                    <span class="flag-badge flag-badge-info">اطلاعات اولیه کامل</span>
                 {% endif %}
                 {% if product.is_cancelled %}
                     <span class="flag-badge flag-badge-warning">انصراف داده شده</span>
@@ -170,9 +179,9 @@
         {% if product.auction %}
             <section class="detail-section accent-amethyst auction-product-highlight">
                 <div class="section-header-inline">
-                    <h2>🏛️ اطلاعات حراجی خارجی و چک‌لیست خرید</h2>
+                    <h2>اطلاعات حراجی خارجی و چک‌لیست خرید</h2>
                     <a class="button button-secondary button-sm" href="{% url 'products:auction_detail' product.auction.pk %}">
-                        مشاهده کامل حراجی ←
+                        مشاهده کامل حراجی
                     </a>
                 </div>
                 <div class="detail-info-list detail-info-list-2">
@@ -208,7 +217,7 @@
                     <h3 class="checklist-title">وضعیت‌های نظارتی اثر در این حراجی:</h3>
                     <div class="checklist-grid">
                         <div class="checklist-item {% if product.has_initial_info %}is-checked{% endif %}">
-                            <span class="checklist-icon">{% if product.has_initial_info %}✅{% else %}⚪{% endif %}</span>
+                            <span class="checklist-icon">{% if product.has_initial_info %}●{% else %}○{% endif %}</span>
                             <div class="checklist-text">
                                 <strong>اطلاعات اولیه اثر</strong>
                                 <span>{% if product.has_initial_info %}کامل و ثبت شده{% else %}در انتظار تکمیل{% endif %}</span>
@@ -216,7 +225,7 @@
                         </div>
 
                         <div class="checklist-item {% if product.has_all_prices %}is-checked{% endif %}">
-                            <span class="checklist-icon">{% if product.has_all_prices %}✅{% else %}⚪{% endif %}</span>
+                            <span class="checklist-icon">{% if product.has_all_prices %}●{% else %}○{% endif %}</span>
                             <div class="checklist-text">
                                 <strong>تمام قیمت‌های اثر</strong>
                                 <span>{% if product.has_all_prices %}ثبت شده{% else %}در انتظار قیمت‌گذاری{% endif %}</span>
@@ -224,7 +233,7 @@
                         </div>
 
                         <div class="checklist-item {% if product.final_inspection_done %}is-checked{% endif %}">
-                            <span class="checklist-icon">{% if product.final_inspection_done %}✅{% else %}⚪{% endif %}</span>
+                            <span class="checklist-icon">{% if product.final_inspection_done %}●{% else %}○{% endif %}</span>
                             <div class="checklist-text">
                                 <strong>بازدید نهایی فیزیکی</strong>
                                 <span>{% if product.final_inspection_done %}تأیید و انجام شده{% else %}انجام نشده{% endif %}</span>
@@ -232,7 +241,7 @@
                         </div>
 
                         <div class="checklist-item {% if product.to_buy %}is-checked-buy{% endif %}">
-                            <span class="checklist-icon">{% if product.to_buy %}🎯{% else %}⚪{% endif %}</span>
+                            <span class="checklist-icon">{% if product.to_buy %}●{% else %}○{% endif %}</span>
                             <div class="checklist-text">
                                 <strong>اولویت خرید</strong>
                                 <span>{% if product.to_buy %}در سبد خرید حراجی{% else %}عادی (بدون هدف خرید){% endif %}</span>
@@ -331,7 +340,8 @@
     </div>
 
     {% include "products/partials/_status_actions.html" %}
-</section>
+    </main>
+</div>
 
 {% if gallery_images %}
     <script>

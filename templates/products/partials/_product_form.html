@@ -13,14 +13,12 @@
     <span class="mode-switcher-label">منبع ثبت اثر:</span>
     <div class="mode-switch-group" role="tablist" aria-label="حالت ثبت">
         <button type="button" class="mode-switch-btn is-active" data-mode-btn="manual" role="tab" aria-selected="true">
-            <span class="mode-icon">📝</span>
             <span class="mode-btn-text">
                 <strong>ثبت پیشنهاد دستی</strong>
                 <small>پیشنهاددهنده شخصی، تماس، پیام‌رسان‌ها</small>
             </span>
         </button>
         <button type="button" class="mode-switch-btn" data-mode-btn="auction" role="tab" aria-selected="false">
-            <span class="mode-icon">🏛️</span>
             <span class="mode-btn-text">
                 <strong>ثبت از حراجی‌های خارجی</strong>
                 <small>کریستیز، ساتبیز، بونهامز و سایر حراجی‌ها</small>
@@ -57,7 +55,7 @@
         <div class="form-field">
             <div id="auction-info-preview" class="auction-preview-card">
                 <div class="preview-placeholder">
-                    <span>💡 با انتخاب حراجی، جزئیات خانه، واحد پول و درصد کمیسیون در اینجا نمایش داده می‌شود.</span>
+                    <span>با انتخاب حراجی، جزئیات خانه، واحد پول و درصد کمیسیون در اینجا نمایش داده می‌شود.</span>
                 </div>
             </div>
         </div>
@@ -67,7 +65,7 @@
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card highlight-target-card" for="{{ form.to_buy.id_for_label }}">
                 {{ form.to_buy }}
-                <span>🎯 {{ form.to_buy.label }}</span>
+                <span>{{ form.to_buy.label }}</span>
             </label>
             {% if form.to_buy.help_text %}<small class="field-help">{{ form.to_buy.help_text }}</small>{% endif %}
             {% if form.to_buy.errors %}<small class="field-error">{{ form.to_buy.errors|join:", " }}</small>{% endif %}
@@ -76,7 +74,7 @@
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.final_inspection_done.id_for_label }}">
                 {{ form.final_inspection_done }}
-                <span>🔍 {{ form.final_inspection_done.label }}</span>
+                <span>{{ form.final_inspection_done.label }}</span>
             </label>
             {% if form.final_inspection_done.help_text %}<small class="field-help">{{ form.final_inspection_done.help_text }}</small>{% endif %}
             {% if form.final_inspection_done.errors %}<small class="field-error">{{ form.final_inspection_done.errors|join:", " }}</small>{% endif %}
@@ -85,7 +83,7 @@
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.has_initial_info.id_for_label }}">
                 {{ form.has_initial_info }}
-                <span>📋 {{ form.has_initial_info.label }}</span>
+                <span>{{ form.has_initial_info.label }}</span>
             </label>
             {% if form.has_initial_info.help_text %}<small class="field-help">{{ form.has_initial_info.help_text }}</small>{% endif %}
             {% if form.has_initial_info.errors %}<small class="field-error">{{ form.has_initial_info.errors|join:", " }}</small>{% endif %}
@@ -94,7 +92,7 @@
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.has_all_prices.id_for_label }}">
                 {{ form.has_all_prices }}
-                <span>💰 {{ form.has_all_prices.label }}</span>
+                <span>{{ form.has_all_prices.label }}</span>
             </label>
             {% if form.has_all_prices.help_text %}<small class="field-help">{{ form.has_all_prices.help_text }}</small>{% endif %}
             {% if form.has_all_prices.errors %}<small class="field-error">{{ form.has_all_prices.errors|join:", " }}</small>{% endif %}

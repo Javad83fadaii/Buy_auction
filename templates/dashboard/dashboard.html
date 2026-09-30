@@ -6,30 +6,7 @@
 <div class="dash">
 
     {# ───────── Sidebar ───────── #}
-    <aside class="dash-side" aria-label="منوی اصلی">
-        <div class="dash-brand">
-            <span class="dash-brand-mark" aria-hidden="true"></span>
-            <span class="dash-brand-name">Buy Auction</span>
-        </div>
-
-        <nav class="dash-nav">
-            {% for link in quick_links %}
-                <a class="dash-nav-link{% if link.variant == 'primary' %} is-strong{% endif %}" href="{{ link.url }}">{{ link.label }}</a>
-            {% endfor %}
-        </nav>
-
-        <div class="dash-user">
-            <div class="dash-user-avatar" aria-hidden="true">{{ request.user.username|slice:":1"|upper }}</div>
-            <div class="dash-user-info">
-                <strong>{{ request.user.username }}</strong>
-                <span>{{ request.user.role_display }}</span>
-            </div>
-            <form method="post" action="{% url 'accounts:logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="dash-link-btn">خروج</button>
-            </form>
-        </div>
-    </aside>
+    {% include "dashboard/_sidebar.html" %}
 
     {# ───────── Main ───────── #}
     <main class="dash-main">

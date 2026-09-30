@@ -1,4 +1,4 @@
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlsplit
 
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeDoneView, PasswordChangeView
 from django.db.models import Count, Q
@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 
 from .constants import EXPERT_ROLE
 from .forms import LoginForm
+from .navigation import build_url
 from .permissions import RolePermissionMixin
 from products.choices import AuctionStatusChoices, ProductSourceTypeChoices, ProductStatusChoices
 from products.models import Auction, Product
@@ -80,14 +81,6 @@ class UserPasswordChangeDoneView(PasswordChangeDoneView):
 class DashboardView(RolePermissionMixin, TemplateView):
     template_name = 'dashboard/dashboard.html'
     permission_required = 'accounts.view_dashboard'
-
-    def _build_url(self, view_name: str, **params) -> str:
-        base_url = reverse(view_name)
-        filtered_params = {key: value for key, value in params.items() if value not in (None, '', [])}
-        if not filtered_params:
-            return base_url
-        query_string = urlencode(filtered_params)
-        return f'{base_url}?{query_string}'
 
     def get_product_stats(self) -> dict[str, int]:
         return Product.objects.aggregate(
@@ -164,73 +157,13 @@ class DashboardView(RolePermissionMixin, TemplateView):
             if can_manage_products
             else []
         )
-        quick_links = [
-            {
-                'label': 'تغییر رمز',
-                'url': reverse('accounts:change_password'),
-                'variant': 'secondary',
-            },
-        ]
-        if can_manage_products:
-            quick_links = [
-                {
-                    'label': 'لیست حراجی‌ها',
-                    'url': reverse('products:auction_list'),
-                    'variant': 'primary',
-                },
-                {
-                    'label': 'ثبت محصول',
-                    'url': reverse('products:create'),
-                    'variant': 'primary',
-                },
-                {
-                    'label': 'همه محصولات',
-                    'url': reverse('products:list'),
-                    'variant': 'secondary',
-                },
-                {
-                    'label': 'ثبت دستی',
-                    'url': self._build_url(
-                        'products:list',
-                        source=ProductSourceTypeChoices.MANUAL,
-                    ),
-                    'variant': 'secondary',
-                },
-                {
-                    'label': 'داشبورد محصولات',
-                    'url': reverse('products:dashboard'),
-                    'variant': 'secondary',
-                },
-                *quick_links,
-            ]
-        if can_review_products:
-            quick_links.insert(
-                2,
-                {
-                    'label': 'در انتظار بررسی',
-                    'url': self._build_url(
-                        'products:list',
-                        status=ProductStatusChoices.PENDING_REVIEW,
-                    ),
-                    'variant': 'secondary',
-                },
-            )
-        if can_view_operator_dashboard:
-            quick_links.append(
-                {
-                    'label': 'داشبورد اپراتور',
-                    'url': reverse('operator_dashboard'),
-                    'variant': 'secondary',
-                }
-            )
-        context['quick_links'] = quick_links
-        context['manual_products_url'] = self._build_url(
+        context['manual_products_url'] = build_url(
             'products:list',
             source=ProductSourceTypeChoices.MANUAL,
         )
         context['auction_products_url'] = reverse('products:auction_list')
         context['all_products_url'] = reverse('products:list')
-        context['pending_review_url'] = self._build_url(
+        context['pending_review_url'] = build_url(
             'products:list',
             status=ProductStatusChoices.PENDING_REVIEW,
         )

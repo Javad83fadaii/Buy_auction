@@ -41,7 +41,7 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="{% if product.is_notable %}off{% else %}on{% endif %}">
             <button type="submit" class="button button-secondary">
-                {% if product.is_notable %}⭐ حذف قابل توجه{% else %}⭐ قابل توجه{% endif %}
+                {% if product.is_notable %}حذف قابل توجه{% else %}قابل توجه{% endif %}
             </button>
         </form>
 
@@ -49,7 +49,7 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="{% if product.needs_expert_review %}off{% else %}on{% endif %}">
             <button type="submit" class="button button-secondary">
-                {% if product.needs_expert_review %}🔬 حذف نیاز کارشناسی{% else %}🔬 نیازمند کارشناسی{% endif %}
+                {% if product.needs_expert_review %}حذف نیاز کارشناسی{% else %}نیازمند کارشناسی{% endif %}
             </button>
         </form>
 
@@ -73,12 +73,12 @@
         <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
     {% elif is_locked_for_operator %}
         {% if product.is_cancelled %}
-            <span class="badge badge-warning" title="محصول لغو شده و ویرایش یا فعال‌سازی مجدد آن فقط توسط مدیر امکان‌پذیر است.">
-                🔒 قفل لغو (ویرایش و فعال‌سازی مجدد تنها توسط مدیر امکان‌پذیر است)
+            <span class="flag-badge" title="محصول لغو شده و ویرایش یا فعال‌سازی مجدد آن فقط توسط مدیر امکان‌پذیر است.">
+                قفل لغو (ویرایش و فعال‌سازی مجدد تنها توسط مدیر امکان‌پذیر است)
             </span>
         {% else %}
-            <span class="badge badge-warning" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال برای بررسی توسط مدیر امکان‌پذیر است.">
-                🔒 قفل انتشار (ویرایش و لغو تنها پس از ارسال برای بررسی امکان‌پذیر است)
+            <span class="flag-badge" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال برای بررسی توسط مدیر امکان‌پذیر است.">
+                قفل انتشار (ویرایش و لغو تنها پس از ارسال برای بررسی امکان‌پذیر است)
             </span>
         {% endif %}
     {% endif %}

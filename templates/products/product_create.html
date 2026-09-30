@@ -3,14 +3,20 @@
 {% block title %}ثبت محصول{% endblock %}
 
 {% block content %}
-<section class="card product-create-card">
-    <div class="dashboard-header">
-        <div>
-            <h1>{{ page_title }}</h1>
-            <p class="muted-text">ثبت مشخصات اثر در دو حالت پیشنهاد دستی یا ثبت از حراجی‌های بین‌المللی.</p>
-        </div>
-        <a class="button button-secondary" href="{{ cancel_url }}" data-unsaved-check="true">انصراف</a>
-    </div>
+<div class="dash">
+
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ page_title }}</h1>
+                <p class="dash-sub">ثبت مشخصات اثر در دو حالت پیشنهاد دستی یا ثبت از حراجی‌های بین‌المللی.</p>
+            </div>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{{ cancel_url }}" data-unsaved-check="true">انصراف</a>
+            </div>
+        </header>
 
     <form method="post" enctype="multipart/form-data" novalidate data-product-create-form>
         {% csrf_token %}
@@ -35,7 +41,8 @@
             <a class="button button-secondary" href="{{ cancel_url }}" data-unsaved-check="true">انصراف</a>
         </div>
     </form>
-</section>
+    </main>
+</div>
 
 <script>
     (function () {
@@ -136,7 +143,7 @@
             const selectedId = auctionSelect.value;
             const info = auctionData[selectedId];
             if (!info) {
-                auctionPreview.innerHTML = '<div class="preview-placeholder"><span>💡 با انتخاب حراجی، مشخصات خانه، واحد پول و درصد کمیسیون نمایش داده می‌شود.</span></div>';
+                auctionPreview.innerHTML = '<div class="preview-placeholder"><span>با انتخاب حراجی، مشخصات خانه، واحد پول و درصد کمیسیون نمایش داده می‌شود.</span></div>';
                 return;
             }
 
@@ -148,9 +155,9 @@
                         <span class="status-badge status-badge-warning">کمیسیون: ${info.commission}٪</span>
                     </div>
                     <div class="auction-preview-meta">
-                        <span>📍 مکان: ${info.location || 'مشخص نشده'}</span>
-                        <span>📅 تاریخ شروع: ${info.startDate}</span>
-                        <span>📊 آثار ثبت‌شده: ${info.enteredLots} از ${info.totalLots}</span>
+                        <span>مکان: ${info.location || 'مشخص نشده'}</span>
+                        <span>تاریخ شروع: ${info.startDate}</span>
+                        <span>آثار ثبت‌شده: ${info.enteredLots} از ${info.totalLots}</span>
                     </div>
                 </div>
             `;

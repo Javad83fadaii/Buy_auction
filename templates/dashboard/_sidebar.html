@@ -1,0 +1,21 @@
+{# Shared dashboard sidebar: quick links and the signed-in user block. #}
+<aside class="dash-side" aria-label="منوی اصلی">
+
+    <nav class="dash-nav">
+        {% for link in quick_links %}
+            <a class="dash-nav-link{% if link.variant == 'primary' %} is-strong{% endif %}" href="{{ link.url }}">{{ link.label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="dash-user">
+        <div class="dash-user-avatar" aria-hidden="true">{{ request.user.username|slice:":1"|upper }}</div>
+        <div class="dash-user-info">
+            <strong>{{ request.user.username }}</strong>
+            <span>{{ request.user.role_display }}</span>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="dash-link-btn">خروج</button>
+        </form>
+    </div>
+</aside>

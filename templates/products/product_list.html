@@ -3,29 +3,75 @@
 {% block title %}لیست محصولات{% endblock %}
 
 {% block content %}
-<section class="card product-list-card">
-    <div class="dashboard-header">
-        <div>
-            <h1>{{ page_title }}</h1>
-            <p class="muted-text">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p>
-        </div>
-        <div class="header-actions">
-            <a class="button button-secondary" href="{% url 'products:auction_list' %}">🏛️ حراجی‌های خارجی</a>
-            {% if perms.products.add_product %}
-                <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
-            {% endif %}
-            {% if perms.accounts.view_dashboard %}
-                <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
-            {% endif %}
-        </div>
-    </div>
+<div class="dash">
 
-    <form method="get" class="filter-panel">
-        {% if search_query %}
-            <input type="hidden" name="q" value="{{ search_query }}">
-        {% endif %}
+    {% include "dashboard/_sidebar.html" %}
 
-        <div class="filter-group">
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ page_title }}</h1>
+                <p class="dash-sub">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p>
+            </div>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{% url 'products:auction_list' %}">حراجی‌های خارجی</a>
+                {% if perms.accounts.view_dashboard %}
+                    <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+                {% endif %}
+                {% if perms.products.add_product %}
+                    <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <form method="get" class="inline-form" role="search">
+            <label class="sr-only" for="id_q">جستجوی محصولات</label>
+            {% if selected_status %}
+                <input type="hidden" name="status" value="{{ selected_status }}">
+            {% endif %}
+            {% if selected_source %}
+                <input type="hidden" name="source" value="{{ selected_source }}">
+            {% endif %}
+            {% if selected_auction %}
+                <input type="hidden" name="auction" value="{{ selected_auction }}">
+            {% endif %}
+            {% if selected_to_buy != 'all' %}
+                <input type="hidden" name="to_buy" value="{{ selected_to_buy }}">
+            {% endif %}
+            {% if selected_final_inspection != 'all' %}
+                <input type="hidden" name="final_inspection" value="{{ selected_final_inspection }}">
+            {% endif %}
+            {% if selected_cancelled != 'all' %}
+                <input type="hidden" name="cancelled" value="{{ selected_cancelled }}">
+            {% endif %}
+            {% if selected_art_type %}
+                <input type="hidden" name="art_type" value="{{ selected_art_type }}">
+            {% endif %}
+            {% if filter_form.date_from.value %}
+                <input type="hidden" name="date_from" value="{{ filter_form.date_from.value }}">
+            {% endif %}
+            {% if filter_form.date_to.value %}
+                <input type="hidden" name="date_to" value="{{ filter_form.date_to.value }}">
+            {% endif %}
+            {% if selected_sort != default_sort %}
+                <input type="hidden" name="sort" value="{{ selected_sort }}">
+            {% endif %}
+            <input
+                id="id_q"
+                type="search"
+                name="q"
+                value="{{ search_query }}"
+                placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده"
+            >
+            <button type="submit" class="button button-primary">جستجو</button>
+        </form>
+
+        <form method="get" class="filter-panel">
+            {% if search_query %}
+                <input type="hidden" name="q" value="{{ search_query }}">
+            {% endif %}
+
+            <div class="filter-group">
             <h3 class="filter-group-title">وضعیت و منبع</h3>
             <div class="filter-group-grid">
                 <div class="form-field filter-field">
@@ -78,13 +124,13 @@
         </div>
 
         <div class="filter-group">
-            <h3 class="filter-group-title">🎯 اهداف خرید و نظارت حراجی</h3>
+            <h3 class="filter-group-title">اهداف خرید و نظارت حراجی</h3>
             <div class="filter-group-grid">
                 <div class="form-field filter-field">
                     <label for="id_to_buy">اولویت خرید</label>
                     <select id="id_to_buy" name="to_buy">
                         <option value="all" {% if selected_to_buy == 'all' %}selected{% endif %}>همه آثار</option>
-                        <option value="1" {% if selected_to_buy == '1' %}selected{% endif %}>🎯 فقط موارد هدف خرید</option>
+                        <option value="1" {% if selected_to_buy == '1' %}selected{% endif %}>فقط موارد هدف خرید</option>
                         <option value="0" {% if selected_to_buy == '0' %}selected{% endif %}>سایر آثار</option>
                     </select>
                 </div>
@@ -93,7 +139,7 @@
                     <label for="id_final_inspection">بازدید نهایی فیزیکی</label>
                     <select id="id_final_inspection" name="final_inspection">
                         <option value="all" {% if selected_final_inspection == 'all' %}selected{% endif %}>همه وضعیت‌ها</option>
-                        <option value="1" {% if selected_final_inspection == '1' %}selected{% endif %}>🔍 بازدید شده</option>
+                        <option value="1" {% if selected_final_inspection == '1' %}selected{% endif %}>بازدید شده</option>
                         <option value="0" {% if selected_final_inspection == '0' %}selected{% endif %}>بازدید نشده</option>
                     </select>
                 </div>
@@ -167,49 +213,7 @@
             <button type="submit" class="button button-primary">اعمال فیلتر</button>
             <a class="button button-secondary" href="{{ clear_filters_url }}">حذف فیلترها</a>
         </div>
-    </form>
-
-    <form method="get" class="inline-form" role="search">
-        <label class="sr-only" for="id_q">جستجوی محصولات</label>
-        {% if selected_status %}
-            <input type="hidden" name="status" value="{{ selected_status }}">
-        {% endif %}
-        {% if selected_source %}
-            <input type="hidden" name="source" value="{{ selected_source }}">
-        {% endif %}
-        {% if selected_auction %}
-            <input type="hidden" name="auction" value="{{ selected_auction }}">
-        {% endif %}
-        {% if selected_to_buy != 'all' %}
-            <input type="hidden" name="to_buy" value="{{ selected_to_buy }}">
-        {% endif %}
-        {% if selected_final_inspection != 'all' %}
-            <input type="hidden" name="final_inspection" value="{{ selected_final_inspection }}">
-        {% endif %}
-        {% if selected_cancelled != 'all' %}
-            <input type="hidden" name="cancelled" value="{{ selected_cancelled }}">
-        {% endif %}
-        {% if selected_art_type %}
-            <input type="hidden" name="art_type" value="{{ selected_art_type }}">
-        {% endif %}
-        {% if filter_form.date_from.value %}
-            <input type="hidden" name="date_from" value="{{ filter_form.date_from.value }}">
-        {% endif %}
-        {% if filter_form.date_to.value %}
-            <input type="hidden" name="date_to" value="{{ filter_form.date_to.value }}">
-        {% endif %}
-        {% if selected_sort != default_sort %}
-            <input type="hidden" name="sort" value="{{ selected_sort }}">
-        {% endif %}
-        <input
-            id="id_q"
-            type="search"
-            name="q"
-            value="{{ search_query }}"
-            placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده"
-        >
-        <button type="submit" class="button button-primary">جستجو</button>
-    </form>
+        </form>
 
     {% if products %}
         <div class="view-toggle" data-view-toggle-group>
@@ -268,10 +272,10 @@
                                 <div class="table-badge-stack">
                                     <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
                                     {% if product.to_buy %}
-                                        <span class="flag-badge flag-badge-buy">🎯 خرید</span>
+                                        <span class="flag-badge flag-badge-buy">خرید</span>
                                     {% endif %}
                                     {% if product.final_inspection_done %}
-                                        <span class="flag-badge flag-badge-inspect">🔍 بازدید</span>
+                                        <span class="flag-badge flag-badge-inspect">بازدید</span>
                                     {% endif %}
                                     {% if product.is_cancelled %}
                                         <span class="flag-badge flag-badge-warning">لغو شده</span>
@@ -335,7 +339,8 @@
             </section>
         {% endif %}
     {% endif %}
-</section>
+    </main>
+</div>
 
 {% if products %}
     <script>

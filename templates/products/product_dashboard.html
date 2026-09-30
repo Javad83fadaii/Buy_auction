@@ -3,141 +3,149 @@
 {% block title %}مدیریت محصولات و حراجی‌ها{% endblock %}
 
 {% block content %}
-<section class="card product-dashboard-card">
-    <div class="dashboard-header">
-        <div>
-            <h1>{{ page_title }}</h1>
-            <p class="muted-text">مدیریت جامع آثار، پیشنهادها و حراجی‌های بین‌المللی (کریستیز، ساتبیز و ...)</p>
-        </div>
-        <div class="header-actions">
-            <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد اصلی</a>
-            <a class="button button-secondary" href="{% url 'products:auction_list' %}">🏛️ حراجی‌های خارجی</a>
-            <a class="button button-primary" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
-        </div>
-    </div>
+<div class="dash">
 
-    {# Products Stats #}
-    <section class="dashboard-section" aria-labelledby="product-statistics-title">
-        <div class="section-header">
-            <h2 id="product-statistics-title">آمار محصولات</h2>
-        </div>
-        <div class="stats-grid">
-            {% for stat in statistics %}
-                <article class="stat-card stat-card-{{ stat.accent }}">
-                    <span class="stat-card-label">{{ stat.label }}</span>
-                    <strong class="stat-card-value">{{ stat.count }}</strong>
-                </article>
-            {% endfor %}
-        </div>
-    </section>
+    {% include "dashboard/_sidebar.html" %}
 
-    {# External Auctions Stats & Quick Access #}
-    <section class="dashboard-section" aria-labelledby="auction-section-title">
-        <div class="section-header">
-            <h2 id="auction-section-title">🏛️ حراجی‌های خارجی و بین‌المللی</h2>
-            <a class="button button-secondary button-sm" href="{% url 'products:auction_list' %}">مشاهده همه حراجی‌ها ←</a>
-        </div>
-        <div class="stats-grid">
-            <article class="stat-card stat-card-primary">
-                <span class="stat-card-label">کل حراجی‌های تعریف‌شده</span>
-                <strong class="stat-card-value">{{ total_auctions }}</strong>
-            </article>
-            <article class="stat-card stat-card-success">
-                <span class="stat-card-label">حراجی‌های در حال برگزاری</span>
-                <strong class="stat-card-value">{{ ongoing_auctions }}</strong>
-            </article>
-            <article class="stat-card stat-card-info">
-                <span class="stat-card-label">حراجی‌های به‌زودی</span>
-                <strong class="stat-card-value">{{ upcoming_auctions }}</strong>
-            </article>
-        </div>
-    </section>
-
-    <section class="dashboard-section" aria-labelledby="product-quick-actions-title">
-        <div class="section-header">
-            <h2 id="product-quick-actions-title">دسترسی سریع و عملیات</h2>
-        </div>
-        <div class="dashboard-grid">
-            <article class="info-panel">
-                <h2>مشاهده محصولات</h2>
-                <p>فهرست کامل محصولات ثبت‌شده را با فیلترهای پیشرفته مشاهده و مدیریت کنید.</p>
-                <a class="button button-primary" href="{% url 'products:list' %}">مشاهده محصولات</a>
-            </article>
-
-            <article class="info-panel">
-                <h2>حراجی‌های بین‌المللی</h2>
-                <p>رهگیری آمار، کاتالوگ و آثار خانه‌های حراجی خارجی (ساتبیز، کریستیز و ...).</p>
-                <div class="inline-btn-group">
-                    <a class="button button-primary" href="{% url 'products:auction_list' %}">فهرست حراجی‌ها</a>
-                    <a class="button button-secondary" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
-                </div>
-            </article>
-
-            {% if can_review_products %}
-                <article class="info-panel">
-                    <h2>محصولات در انتظار بررسی</h2>
-                    <p>محصولات منتظر تصمیم نهایی کارشناسی را مستقیم با فیلتر وضعیت مشاهده کنید.</p>
-                    <a class="button button-primary" href="{{ pending_review_url }}">محصولات در انتظار بررسی</a>
-                </article>
-            {% endif %}
-
-            <article class="info-panel">
-                <h2>ثبت اثر یا محصول جدید</h2>
-                <p>برای ثبت یک اثر دستی یا اثر انتخاب‌شده از حراجی خارجی از فرم ثبت استفاده کنید.</p>
-                <a class="button button-primary" href="{% url 'products:create' %}">ثبت اثر جدید</a>
-            </article>
-        </div>
-    </section>
-
-    <section class="dashboard-section" aria-labelledby="recent-products-title">
-        <div class="section-header">
-            <h2 id="recent-products-title">محصولات اخیر</h2>
-        </div>
-
-        {% if recent_products %}
-            <div class="table-shell">
-                <table class="data-table recent-products-table">
-                    <thead>
-                        <tr>
-                            <th>عنوان</th>
-                            <th>کد اثر</th>
-                            <th>خالق</th>
-                            <th>وضعیت</th>
-                            <th>تاریخ ثبت</th>
-                            <th>مشاهده</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in recent_products %}
-                            <tr>
-                                <td>{{ product.title }}</td>
-                                <td>{{ product.product_code|default:"-" }}</td>
-                                <td>{{ product.artist|default:"-" }}</td>
-                                <td>
-                                    <div class="table-badge-stack">
-                                        <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
-                                        {% if product.to_buy %}
-                                            <span class="flag-badge flag-badge-buy">🎯 خرید</span>
-                                        {% endif %}
-                                        {% if product.is_cancelled %}
-                                            <span class="flag-badge flag-badge-warning">لغو شده</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
-                                <td>
-                                    <a class="button button-secondary" href="{% url 'products:detail' product.pk %}">مشاهده</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ page_title }}</h1>
+                <p class="dash-sub">مدیریت جامع آثار، پیشنهادها و حراجی‌های بین‌المللی (کریستیز، ساتبیز و ...)</p>
             </div>
-        {% else %}
-            <section class="empty-state" aria-live="polite">
-                <h2>هنوز محصولی ثبت نشده است.</h2>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+                <a class="button button-secondary" href="{% url 'products:auction_list' %}">حراجی‌های خارجی</a>
+                <a class="button button-secondary" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
+                <a class="button button-primary" href="{% url 'products:create' %}">ثبت اثر جدید</a>
+            </div>
+        </header>
+
+        {# Attention block (reviewers only) #}
+        {% if can_review_products and pending_review_count %}
+            <section class="dash-attention" aria-label="نیازمند رسیدگی">
+                <div>
+                    <p class="dash-attention-label">در انتظار بررسی</p>
+                    <p class="dash-attention-value">{{ pending_review_count }}</p>
+                </div>
+                <a class="button button-invert" href="{{ pending_review_url }}">بررسی محصولات</a>
             </section>
         {% endif %}
-    </section>
-</section>
+
+        {# Product statistics #}
+        <section class="dash-metrics" aria-label="آمار محصولات">
+            {% for stat in statistics %}
+                <div class="dash-metric">
+                    <span>{{ stat.label }}</span>
+                    <strong>{{ stat.count }}</strong>
+                </div>
+            {% endfor %}
+        </section>
+
+        {# Auction stats + quick access #}
+        <section class="dash-split" aria-label="حراجی‌های خارجی و دسترسی سریع">
+            <div class="dash-panel">
+                <div class="dash-panel-head">
+                    <h2>حراجی‌های خارجی</h2>
+                    <a href="{% url 'products:auction_list' %}">همه حراجی‌ها</a>
+                </div>
+                <dl class="dash-rows">
+                    <div><dt>کل حراجی‌های تعریف‌شده</dt><dd>{{ total_auctions }}</dd></div>
+                    <div><dt>در حال برگزاری</dt><dd>{{ ongoing_auctions }}</dd></div>
+                    <div><dt>به‌زودی</dt><dd>{{ upcoming_auctions }}</dd></div>
+                </dl>
+            </div>
+
+            <div class="dash-panel">
+                <div class="dash-panel-head"><h2>دسترسی سریع</h2></div>
+                <div class="dash-quick">
+                    <div class="dash-quick-row">
+                        <div>
+                            <strong>مشاهده محصولات</strong>
+                            <span>فهرست کامل آثار ثبت‌شده با فیلترهای پیشرفته.</span>
+                        </div>
+                        <a class="button button-secondary" href="{% url 'products:list' %}">مشاهده</a>
+                    </div>
+
+                    <div class="dash-quick-row">
+                        <div>
+                            <strong>ثبت اثر جدید</strong>
+                            <span>ثبت اثر دستی یا اثر انتخاب‌شده از حراجی خارجی.</span>
+                        </div>
+                        <a class="button button-secondary" href="{% url 'products:create' %}">ثبت اثر</a>
+                    </div>
+
+                    <div class="dash-quick-row">
+                        <div>
+                            <strong>حراجی‌های بین‌المللی</strong>
+                            <span>رهگیری آمار و آثار خانه‌های حراجی خارجی.</span>
+                        </div>
+                        <a class="button button-secondary" href="{% url 'products:auction_create' %}">ثبت حراجی</a>
+                    </div>
+
+                    {% if can_review_products %}
+                        <div class="dash-quick-row">
+                            <div>
+                                <strong>محصولات در انتظار بررسی</strong>
+                                <span>آثار منتظر تصمیم نهایی کارشناسی.</span>
+                            </div>
+                            <a class="button button-secondary" href="{{ pending_review_url }}">بررسی</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# Recent products #}
+        <section class="dash-panel" aria-labelledby="recent-products-title">
+            <div class="dash-panel-head">
+                <h2 id="recent-products-title">محصولات اخیر</h2>
+                <a href="{% url 'products:list' %}">همه محصولات</a>
+            </div>
+
+            {% if recent_products %}
+                <div class="dash-table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>عنوان</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ ثبت</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in recent_products %}
+                                <tr>
+                                    <td>
+                                        <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
+                                        <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="table-badge-stack">
+                                            <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                            {% if product.to_buy %}
+                                                <span class="flag-badge">هدف خرید</span>
+                                            {% endif %}
+                                            {% if product.is_cancelled %}
+                                                <span class="flag-badge">لغو شده</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
+                                    <td class="dash-cell-actions"><a href="{% url 'products:detail' product.pk %}">مشاهده</a></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="dash-empty">
+                    <p>هنوز محصولی ثبت نشده است.</p>
+                    <a class="button button-primary" href="{% url 'products:create' %}">ثبت اولین اثر</a>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+</div>
 {% endblock %}

@@ -1,0 +1,581 @@
+/* ==========================================================================
+   Dashboard-style pages — products, auctions and forms
+   Builds on dashboard.css: remaps the shared design tokens inside .dash so
+   the legacy component classes (buttons, badges, tables, forms, cards)
+   render in the same minimal monochrome language as the dashboard.
+   ========================================================================== */
+
+/* ---------- Token remap inside .dash ---------- */
+.dash {
+    --page-bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-muted: #fafafa;
+    --surface-subtle: #f5f5f5;
+    --border: #e5e5e5;
+    --border-strong: #cfcfcf;
+    --secondary-bg: #ffffff;
+    --secondary-hover: #f5f5f5;
+
+    --text-primary: #171717;
+    --text-secondary: #525252;
+    --text-muted: #8a8a8a;
+
+    --primary: #000000;
+    --primary-hover: #262626;
+    --primary-soft: #ececec;
+
+    --success: #171717;
+    --success-bg: #f5f5f5;
+    --warning: #171717;
+    --warning-bg: #f5f5f5;
+    --info: #171717;
+    --info-bg: #f5f5f5;
+    --draft: #171717;
+    --draft-bg: #f5f5f5;
+
+    --accent-sapphire: #e5e5e5;
+    --accent-emerald: #e5e5e5;
+    --accent-copper: #e5e5e5;
+
+    --radius-lg: 16px;
+    --radius-md: 14px;
+    --radius-sm: 8px;
+
+    --shadow-sm: none;
+    --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.dash .muted-text {
+    color: var(--d-text-3);
+}
+
+/* ---------- Buttons ---------- */
+.dash .button {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.dash .button:focus-visible {
+    outline: 2px solid var(--d-ink);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.dash .button-secondary:hover {
+    border-color: var(--d-ink);
+}
+
+.dash .button-invert {
+    background: var(--d-paper);
+    border-color: var(--d-paper);
+    color: var(--d-ink);
+}
+
+.dash .button-invert:hover {
+    background: var(--d-wash-2);
+    border-color: var(--d-wash-2);
+}
+
+.dash .dash-head-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+/* ---------- Badges & chips → monochrome tags ---------- */
+.dash .status-badge,
+.dash .flag-badge,
+.dash .badge,
+.dash .badge-house,
+.dash .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: fit-content;
+    padding: 3px 10px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 999px;
+    background: var(--d-paper);
+    color: var(--d-text);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+.dash .flag-badge,
+.dash .chip {
+    background: var(--d-wash);
+    border-color: var(--d-wash-2);
+}
+
+.dash .badge-house {
+    background: var(--d-ink);
+    border-color: var(--d-ink);
+    color: var(--d-paper);
+    font-weight: 600;
+}
+
+.dash .chip strong {
+    font-weight: 700;
+}
+
+/* ---------- Metrics strip (dashboard KPI look) ---------- */
+.dash-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--d-line);
+    border: 1px solid var(--d-line);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.dash-metrics-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dash-metric {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    padding: 20px 24px;
+    background: var(--d-paper);
+}
+
+.dash-metric span {
+    font-size: 13px;
+    color: var(--d-text-3);
+}
+
+.dash-metric strong {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Quick access rows ---------- */
+.dash-quick {
+    display: grid;
+}
+
+.dash-quick-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--d-line);
+}
+
+.dash-quick-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.dash-quick-row > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.dash-quick-row strong {
+    font-size: 14px;
+    color: var(--d-ink);
+}
+
+.dash-quick-row span {
+    font-size: 12px;
+    color: var(--d-text-3);
+}
+
+.dash-quick-row .button {
+    flex-shrink: 0;
+}
+
+/* ---------- Inputs ---------- */
+.dash .form-field input,
+.dash .form-field textarea,
+.dash .form-field select,
+.dash .form-field .text-input,
+.dash .text-input,
+.dash .inline-form input,
+.dash .filter-field select,
+.dash .filter-shell select {
+    border-radius: 8px;
+    font-family: inherit;
+}
+
+.dash .form-field input:focus,
+.dash .form-field textarea:focus,
+.dash .form-field select:focus,
+.dash .form-field .text-input:focus,
+.dash .text-input:focus,
+.dash .inline-form input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.07);
+}
+
+.dash .inline-form input {
+    flex: 1 1 320px;
+    width: auto;
+    padding: 10px 14px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background: var(--d-paper);
+    color: var(--d-text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* ---------- Required markers & notes ---------- */
+.dash .form-required-note {
+    border-color: var(--d-line-strong);
+    background: var(--d-wash);
+    color: var(--d-text-2);
+    font-weight: 500;
+}
+
+.dash .required-marker,
+.dash .required-indicator {
+    color: var(--d-ink);
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.dash .form-hint {
+    display: block;
+    color: var(--d-text-3);
+    font-size: 13px;
+}
+
+/* ---------- Mode switcher (manual vs auction) ---------- */
+.dash .mode-switcher-container {
+    display: grid;
+    gap: 10px;
+}
+
+.dash .mode-switcher-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--d-text-2);
+}
+
+.dash .mode-switch-group {
+    background: var(--d-wash);
+    border: 1px solid var(--d-line);
+    border-radius: 12px;
+    box-shadow: none;
+    margin-bottom: 20px;
+}
+
+.dash .mode-switch-btn {
+    color: var(--d-text-3);
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.dash .mode-switch-btn:hover {
+    color: var(--d-ink);
+    background: transparent;
+}
+
+.dash .mode-switch-btn.is-active {
+    background: var(--d-paper);
+    color: var(--d-ink);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.dash .section-heading-flex {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* ---------- Auction preview box (create form) ---------- */
+.dash .auction-preview-card {
+    border: 1px dashed var(--d-line-strong);
+    border-radius: 10px;
+    background: var(--d-wash);
+    padding: 16px 18px;
+    min-height: 86px;
+}
+
+.dash .preview-placeholder span {
+    color: var(--d-text-3);
+    font-size: 13px;
+}
+
+.dash .auction-preview-details {
+    display: grid;
+    gap: 12px;
+}
+
+.dash .auction-preview-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dash .auction-preview-meta {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--d-text-2);
+}
+
+/* ---------- Gallery & lightbox ---------- */
+.dash .product-gallery-thumb.is-active,
+.dash .lightbox-thumb:hover {
+    border-color: var(--d-ink);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+
+.dash .lightbox-overlay {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* ---------- Progress bars ---------- */
+.dash .progress-track {
+    background: var(--d-wash-2);
+}
+
+.dash .progress-fill {
+    background: var(--d-ink);
+}
+
+.dash .auction-progress-section {
+    background: var(--d-wash);
+    border-color: var(--d-line);
+    border-radius: 10px;
+}
+
+/* ---------- Auction cards ---------- */
+.dash .auction-grid {
+    gap: 20px;
+    margin-top: 0;
+}
+
+.dash .auction-card {
+    border-radius: 14px;
+    box-shadow: none;
+    padding: 22px;
+    transition: border-color 0.12s ease;
+}
+
+.dash .auction-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--d-line-strong);
+}
+
+.dash .auction-card-footer {
+    margin-top: 16px;
+    padding-top: 14px;
+}
+
+/* ---------- Checklists ---------- */
+.dash .checklist-item {
+    border-radius: 10px;
+}
+
+.dash .checklist-item.is-checked {
+    border-color: var(--d-line-strong);
+    background: var(--d-wash);
+}
+
+.dash .checklist-item.is-checked-buy {
+    border-color: var(--d-ink);
+    background: var(--d-wash);
+}
+
+/* ---------- Alerts → bold attention blocks ---------- */
+.dash .detail-alert {
+    border-radius: 12px;
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.dash .detail-alert-warning {
+    border: 0;
+    background: var(--d-ink);
+    color: var(--d-paper);
+}
+
+.dash .auction-summary-chip {
+    background: var(--d-wash);
+    border-color: var(--d-line);
+    border-radius: 10px;
+}
+
+.dash .auction-summary-chip .auction-link {
+    color: var(--d-ink);
+}
+
+.dash .auction-product-highlight {
+    background: var(--d-paper);
+    border-color: var(--d-line);
+}
+
+.dash .auction-header-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+/* ---------- Section headers ---------- */
+.dash .section-header h2,
+.dash .form-section-heading h2 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ---------- Uniform panels (no colored accents) ---------- */
+.dash .detail-section.accent-sapphire,
+.dash .detail-section.accent-emerald,
+.dash .detail-section.accent-copper,
+.dash .form-section.accent-sapphire,
+.dash .form-section.accent-emerald,
+.dash .form-section.accent-copper,
+.dash .form-section.accent-amethyst {
+    border-inline-start-width: 1px;
+}
+
+/* ---------- Data tables ---------- */
+.dash .data-table thead th {
+    font-weight: 600;
+    color: var(--d-text-3);
+}
+
+.dash .data-table tbody tr.row-clickable:hover {
+    background: #fafafa;
+}
+
+.dash .data-table tbody tr.row-clickable:focus-visible {
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Product cards (card view) ---------- */
+.dash .product-card {
+    border-radius: 14px;
+    padding: 14px;
+    gap: 10px;
+    transition: border-color 0.12s ease;
+}
+
+.dash .product-card:hover {
+    border-color: var(--d-line-strong);
+    text-decoration: none;
+}
+
+.dash .product-card-title {
+    font-size: 15px;
+}
+
+.dash .product-card-price {
+    color: var(--d-text);
+}
+
+.dash .product-card-auction-meta {
+    color: var(--d-text-2);
+    font-weight: 600;
+}
+
+/* ---------- Checkbox cards ---------- */
+.dash .checkbox-card {
+    background: var(--d-paper);
+    border-color: var(--d-line-strong);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.12s ease;
+}
+
+.dash .checkbox-card:hover {
+    border-color: var(--d-ink);
+}
+
+.dash .highlight-target-card {
+    background: var(--d-wash);
+}
+
+/* ---------- Workflow action rows ---------- */
+.dash .actions-row {
+    margin-top: 0;
+}
+
+.dash .actions-row form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.dash .actions-row form select {
+    min-width: 220px;
+}
+
+.dash .form-actions-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+/* ---------- Pagination & empty states ---------- */
+.dash .pagination-status,
+.dash .pagination-info {
+    color: var(--d-text-3);
+    font-size: 13px;
+}
+
+.dash .empty-state {
+    border-color: var(--d-line-strong);
+    padding: 48px 24px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 960px) {
+    .dash-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dash-quick-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 640px) {
+    .dash-metrics,
+    .dash-metrics-3 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dash-metric {
+        padding: 16px 18px;
+    }
+
+    .dash-metric strong {
+        font-size: 24px;
+    }
+
+    .dash .inline-form input {
+        flex-basis: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash * {
+        transition: none !important;
+    }
+}

@@ -128,12 +128,26 @@ class ProductDashboardView(RolePermissionMixin, TemplateView):
             .order_by('-created_at', '-pk')[:5]
         )
 
+    def get_manual_products(self):
+        return (
+            Product.objects.filter(source_type=ProductSourceTypeChoices.MANUAL)
+            .select_related('created_by')
+            .order_by('-created_at', '-pk')[:5]
+        )
+
+    def get_recent_auctions(self):
+        return (
+            Auction.objects.order_by('-created_at', '-pk')[:6]
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         all_auctions = Auction.objects.all()
         context['page_title'] = 'مدیریت محصولات'
         context['statistics'] = self.get_statistics()
         context['recent_products'] = list(self.get_recent_products())
+        context['manual_products'] = list(self.get_manual_products())
+        context['recent_auctions'] = list(self.get_recent_auctions())
         context['can_review_products'] = self.request.user.has_perm('products.review_product')
         context['total_auctions'] = all_auctions.count()
         context['upcoming_auctions'] = all_auctions.filter(status=AuctionStatusChoices.UPCOMING).count()

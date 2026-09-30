@@ -599,3 +599,33 @@
         justify-content: center;
     }
 }
+
+/* --- Compact Auction Grid for Dashboard --- */
+.auction-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.auction-grid-compact .auction-card {
+    padding: 18px;
+}
+
+.auction-grid-compact .auction-card-title {
+    font-size: 16px;
+}
+
+.auction-grid-compact .auction-meta-list {
+    font-size: 12px;
+}
+
+.auction-grid-compact .auction-card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+}
+
+@media (max-width: 640px) {
+    .auction-grid-compact {
+        grid-template-columns: 1fr;
+    }
+}

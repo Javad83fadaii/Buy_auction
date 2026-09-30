@@ -29,6 +29,12 @@ def build_quick_links(user) -> list[dict[str, str]]:
     if user.has_perm('products.add_product'):
         quick_links = [
             {
+                'label': 'داشبورد',
+                'url': reverse('products:dashboard'),
+                'variant': 'primary',
+
+            },
+             {
                 'label': 'لیست حراجی‌ها',
                 'url': reverse('products:auction_list'),
                 'variant': 'primary',
@@ -36,8 +42,9 @@ def build_quick_links(user) -> list[dict[str, str]]:
             {
                 'label': 'ثبت محصول',
                 'url': reverse('products:create'),
-                'variant': 'primary',
+                'variant': 'secondary',
             },
+            
             {
                 'label': 'همه محصولات',
                 'url': reverse('products:list'),

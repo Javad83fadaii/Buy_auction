@@ -17,7 +17,7 @@
                 <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
                 <a class="button button-secondary" href="{% url 'products:auction_list' %}">حراجی‌های خارجی</a>
                 <a class="button button-secondary" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
-                <a class="button button-primary" href="{% url 'products:create' %}">ثبت اثر جدید</a>
+                <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a>
             </div>
         </header>
 
@@ -96,56 +96,200 @@
             </div>
         </section>
 
-        {# Recent products #}
-        <section class="dash-panel" aria-labelledby="recent-products-title">
-            <div class="dash-panel-head">
-                <h2 id="recent-products-title">محصولات اخیر</h2>
-                <a href="{% url 'products:list' %}">همه محصولات</a>
+        {# Tabbed lists #}
+        <section class="dash-panel dash-lists">
+            <div class="dash-tabs" role="tablist" data-product-dashboard-tabs>
+                <button type="button" role="tab" class="dash-tab is-active" data-product-dashboard-tab="all-products">آخرین محصولات</button>
+                <button type="button" role="tab" class="dash-tab" data-product-dashboard-tab="manual">ثبت دستی</button>
+                <button type="button" role="tab" class="dash-tab" data-product-dashboard-tab="auctions">حراجی‌ها</button>
             </div>
 
-            {% if recent_products %}
-                <div class="dash-table-wrap">
-                    <table class="dash-table">
-                        <thead>
-                            <tr>
-                                <th>عنوان</th>
-                                <th>وضعیت</th>
-                                <th>تاریخ ثبت</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for product in recent_products %}
+            {# All products #}
+            <div data-product-dashboard-panel="all-products" role="tabpanel">
+                {% if recent_products %}
+                    <div class="dash-table-wrap">
+                        <table class="dash-table">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
-                                        <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="table-badge-stack">
-                                            <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
-                                            {% if product.to_buy %}
-                                                <span class="flag-badge">هدف خرید</span>
-                                            {% endif %}
-                                            {% if product.is_cancelled %}
-                                                <span class="flag-badge">لغو شده</span>
+                                    <th>عنوان</th>
+                                    <th>وضعیت</th>
+                                    <th>تاریخ ثبت</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in recent_products %}
+                                    <tr>
+                                        <td>
+                                            <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
+                                            <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="table-badge-stack">
+                                                <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                                {% if product.to_buy %}
+                                                    <span class="flag-badge">هدف خرید</span>
+                                                {% endif %}
+                                                {% if product.is_cancelled %}
+                                                    <span class="flag-badge">لغو شده</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
+                                        <td class="dash-cell-actions"><a href="{% url 'products:detail' product.pk %}">مشاهده</a></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a class="dash-more" href="{% url 'products:list' %}">مشاهده همه محصولات</a>
+                {% else %}
+                    <div class="dash-empty">
+                        <p>هنوز محصولی ثبت نشده است.</p>
+                        <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اولین اثر</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Manual #}
+            <div data-product-dashboard-panel="manual" role="tabpanel" hidden>
+                {% if manual_products %}
+                    <div class="dash-table-wrap">
+                        <table class="dash-table">
+                            <thead>
+                                <tr>
+                                    <th>عنوان</th>
+                                    <th>پیشنهاددهنده</th>
+                                    <th>وضعیت</th>
+                                    <th>تاریخ ثبت</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in manual_products %}
+                                    <tr>
+                                        <td>
+                                            <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
+                                            <span class="dash-cell-meta">{{ product.artist|default:"بدون خالق" }} · {{ product.product_code|default:"-" }}</span>
+                                        </td>
+                                        <td>{{ product.suggested_by|default:"-" }}</td>
+                                        <td>
+                                            <div class="table-badge-stack">
+                                                <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
+                                        <td class="dash-cell-actions"><a href="{% url 'products:detail' product.pk %}">مشاهده</a></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a class="dash-more" href="{% url 'products:list' %}?source=manual">مشاهده همه ثبت‌های دستی</a>
+                {% else %}
+                    <div class="dash-empty"><p>هنوز محصول ثبت دستی وجود ندارد.</p></div>
+                {% endif %}
+            </div>
+
+            {# Auctions #}
+            <div data-product-dashboard-panel="auctions" role="tabpanel" hidden>
+                {% if recent_auctions %}
+                    <div class="auction-grid auction-grid-compact">
+                        {% for auction in recent_auctions %}
+                            <article class="auction-card">
+                                <header class="auction-card-header">
+                                    <div class="auction-badge-stack">
+                                        <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
+                                            {{ auction.get_source_house_display }}
+                                        </span>
+                                        <span class="status-badge status-badge-{{ auction.status|lower }}">
+                                            {{ auction.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <h3 class="auction-card-title">
+                                        <a href="{% url 'products:auction_detail' auction.pk %}">{{ auction.name }}</a>
+                                    </h3>
+                                </header>
+
+                                <div class="auction-card-body">
+                                    <ul class="auction-meta-list">
+                                        <li>
+                                            <span class="meta-label">📅 تاریخ:</span>
+                                            <strong>{{ auction.start_date|date:"Y/m/d" }}</strong>
+                                        </li>
+                                        <li>
+                                            <span class="meta-label">📍 مکان:</span>
+                                            <span>{{ auction.location|default:"-" }}</span>
+                                        </li>
+                                    </ul>
+
+                                    <div class="auction-progress-section">
+                                        <div class="progress-labels">
+                                            <span>آثار وارد شده</span>
+                                            <strong>{{ auction.entered_lots_count }} / {{ auction.total_lots }}</strong>
+                                        </div>
+                                        <div class="progress-track">
+                                            {% if auction.total_lots > 0 %}
+                                                {% widthratio auction.entered_lots_count auction.total_lots 100 as pct %}
+                                                <div class="progress-fill" style="width: {% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%;"></div>
+                                            {% else %}
+                                                <div class="progress-fill" style="width: 0%;"></div>
                                             {% endif %}
                                         </div>
-                                    </td>
-                                    <td class="dash-num">{{ product.created_at|date:"Y/m/d" }}</td>
-                                    <td class="dash-cell-actions"><a href="{% url 'products:detail' product.pk %}">مشاهده</a></td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="dash-empty">
-                    <p>هنوز محصولی ثبت نشده است.</p>
-                    <a class="button button-primary" href="{% url 'products:create' %}">ثبت اولین اثر</a>
-                </div>
-            {% endif %}
+                                    </div>
+
+                                    <div class="auction-stat-chips">
+                                        <span class="chip chip-buy">🎯 {{ auction.to_buy_count }}</span>
+                                        <span class="chip chip-inspect">🔍 {{ auction.final_inspection_count }}</span>
+                                        <span class="chip chip-notable">⭐ {{ auction.notable_lots_count }}</span>
+                                    </div>
+                                </div>
+
+                                <footer class="auction-card-footer">
+                                    <a class="button button-primary button-sm" href="{% url 'products:auction_detail' auction.pk %}">جزئیات</a>
+                                    <a class="button button-secondary button-sm" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ اثر</a>
+                                </footer>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    <a class="dash-more" href="{% url 'products:auction_list' %}">مشاهده همه حراجی‌ها</a>
+                {% else %}
+                    <div class="dash-empty">
+                        <p>هنوز حراجی‌ای ثبت نشده است.</p>
+                        <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">ثبت حراجی</a>
+                    </div>
+                {% endif %}
+            </div>
         </section>
     </main>
 </div>
+
+<script>
+    (function () {
+        var STORAGE_KEY = 'product-dashboard-tab';
+        var tabs = document.querySelectorAll('[data-product-dashboard-tab]');
+        var panels = document.querySelectorAll('[data-product-dashboard-panel]');
+
+        function setTab(name) {
+            tabs.forEach(function (tab) {
+                var active = tab.dataset.productDashboardTab === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            panels.forEach(function (panel) {
+                panel.hidden = panel.dataset.productDashboardPanel !== name;
+            });
+            try { window.localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
+        }
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () { setTab(tab.dataset.productDashboardTab); });
+        });
+
+        var saved = null;
+        try { saved = window.localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        var valid = Array.prototype.some.call(tabs, function (t) { return t.dataset.productDashboardTab === saved; });
+        setTab(valid ? saved : 'all-products');
+    }());
+</script>
 {% endblock %}

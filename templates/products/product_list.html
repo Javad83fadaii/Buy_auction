@@ -19,7 +19,7 @@
                     <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
                 {% endif %}
                 {% if perms.products.add_product %}
-                    <a class="button button-primary" href="{% url 'products:create' %}">افزودن محصول</a>
+                    <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a>
                 {% endif %}
             </div>
         </header>

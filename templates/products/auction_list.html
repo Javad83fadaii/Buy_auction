@@ -16,7 +16,7 @@
             <div class="dash-head-actions">
                 <a class="button button-secondary" href="{% url 'products:dashboard' %}">بازگشت به داشبورد</a>
                 {% if can_manage_auctions %}
-                    <a class="button button-primary" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
+                    <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
                 {% endif %}
             </div>
         </header>
@@ -157,7 +157,7 @@
                         </div>
 
                         <footer class="auction-card-footer">
-                            <a class="button button-primary button-sm" href="{% url 'products:auction_detail' auction.pk %}">
+                            <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_detail' auction.pk %}">
                                 مشاهده جزئیات و آثار
                             </a>
                             <a class="button button-secondary button-sm" href="{% url 'products:create' %}?auction={{ auction.pk }}">

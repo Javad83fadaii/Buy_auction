@@ -86,6 +86,10 @@
     padding: 22px;
 }
 
+.filter-panel {
+    padding: 14px;
+}
+
 .product-detail-hero {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
@@ -383,13 +387,13 @@
 
 .filter-panel {
     display: grid;
-    gap: 18px;
+    gap: 10px;
 }
 
 .filter-group {
     display: grid;
-    gap: 12px;
-    padding-top: 14px;
+    gap: 6px;
+    padding-top: 8px;
     border-top: 1px solid var(--border);
 }
 
@@ -401,18 +405,41 @@
 .filter-group-title {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .filter-group-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    gap: 8px;
 }
 
 .filter-field {
     margin-bottom: 0;
+    gap: 4px;
+}
+
+.filter-field label {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.filter-field input,
+.filter-field select,
+.filter-field .text-input {
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.filter-panel .actions-row {
+    margin-top: 8px;
+    gap: 8px;
+}
+
+.filter-panel .actions-row .button {
+    padding: 8px 14px;
+    font-size: 13px;
 }
 
 .inline-form {
@@ -424,6 +451,13 @@
 
 .inline-form input {
     flex: 1 1 320px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.inline-form .button {
+    padding: 8px 14px;
+    font-size: 13px;
 }
 
 .form-section {

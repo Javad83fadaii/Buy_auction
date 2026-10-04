@@ -66,154 +66,108 @@
             <button type="submit" class="button button-primary">جستجو</button>
         </form>
 
-        <form method="get" class="filter-panel">
-            {% if search_query %}
-                <input type="hidden" name="q" value="{{ search_query }}">
+       <form method="get" class="filter-bar" role="search">
+        <div class="filter-bar-main">
+            <label class="sr-only" for="id_q">جستجوی محصولات</label>
+            <input
+                id="id_q"
+                type="search"
+                name="q"
+                class="filter-bar-search"
+                value="{{ search_query }}"
+                placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده"
+            >
+
+            <select id="id_status" name="status" aria-label="وضعیت">
+                <option value="">وضعیت: همه</option>
+                {% for option in status_options %}
+                    <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="id_source" name="source" aria-label="منبع">
+                <option value="">منبع: همه</option>
+                {% for option in source_options %}
+                    <option value="{{ option.value }}" {% if selected_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="id_sort" name="sort" aria-label="مرتب‌سازی">
+                {% for option in sort_options %}
+                    <option value="{{ option.value }}" {% if selected_sort == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="button button-primary button-sm">اعمال</button>
+            {% if search_query or has_active_filters %}
+                <a class="button button-secondary button-sm" href="{{ clear_filters_url }}">حذف فیلترها</a>
             {% endif %}
+        </div>
 
-            <div class="filter-group">
-            <h3 class="filter-group-title">وضعیت و منبع</h3>
-            <div class="filter-group-grid">
-                <div class="form-field filter-field">
-                    <label for="id_status">وضعیت</label>
-                    <select id="id_status" name="status">
-                        <option value="">همه</option>
-                        {% for option in status_options %}
-                            <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+    <details class="filter-more" {% if selected_auction or selected_to_buy != 'all' or selected_final_inspection != 'all' or selected_cancelled != 'all' or selected_art_type or filter_form.date_from.value or filter_form.date_to.value %}open{% endif %}>
+        <summary>فیلترهای بیشتر</summary>
+        <div class="filter-more-grid">
+            <div class="filter-mini">
+                <label for="id_auction">حراجی</label>
+                <select id="id_auction" name="auction">
+                    <option value="">همه</option>
+                    {% for a in auctions %}
+                        <option value="{{ a.pk }}" {% if selected_auction == a.pk %}selected{% endif %}>{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-                <div class="form-field filter-field">
-                    <label for="id_source">منبع</label>
-                    <select id="id_source" name="source">
-                        <option value="">همه</option>
-                        {% for option in source_options %}
-                            <option value="{{ option.value }}" {% if selected_source == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="filter-mini">
+                <label for="id_cancelled">وضعیت لغو</label>
+                <select id="id_cancelled" name="cancelled">
+                    {% for option in cancelled_filter_options %}
+                        <option value="{{ option.value }}" {% if selected_cancelled == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-                <div class="form-field filter-field">
-                    <label for="id_auction">حراجی خارجی</label>
-                    <select id="id_auction" name="auction">
-                        <option value="">همه حراجی‌ها</option>
-                        {% for a in auctions %}
-                            <option value="{{ a.pk }}" {% if selected_auction == a.pk %}selected{% endif %}>
-                                {{ a.name }} ({{ a.get_source_house_display }})
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="filter-mini">
+                <label for="id_to_buy">اولویت خرید</label>
+                <select id="id_to_buy" name="to_buy">
+                    <option value="all" {% if selected_to_buy == 'all' %}selected{% endif %}>همه</option>
+                    <option value="1" {% if selected_to_buy == '1' %}selected{% endif %}>هدف خرید</option>
+                    <option value="0" {% if selected_to_buy == '0' %}selected{% endif %}>سایر</option>
+                </select>
+            </div>
 
-                <div class="form-field filter-field">
-                    <label for="id_cancelled">وضعیت لغو</label>
-                    <select id="id_cancelled" name="cancelled">
-                        {% for option in cancelled_filter_options %}
-                            <option value="{{ option.value }}" {% if selected_cancelled == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="filter-mini">
+                <label for="id_final_inspection">بازدید نهایی</label>
+                <select id="id_final_inspection" name="final_inspection">
+                    <option value="all" {% if selected_final_inspection == 'all' %}selected{% endif %}>همه</option>
+                    <option value="1" {% if selected_final_inspection == '1' %}selected{% endif %}>بازدید شده</option>
+                    <option value="0" {% if selected_final_inspection == '0' %}selected{% endif %}>بازدید نشده</option>
+                </select>
+            </div>
+
+            <div class="filter-mini">
+                <label for="id_art_type">نوع هنر</label>
+                <select id="id_art_type" name="art_type" {% if not has_art_type_options %}disabled{% endif %}>
+                    <option value="">همه</option>
+                    {% for art_type in art_type_options %}
+                        <option value="{{ art_type }}" {% if selected_art_type == art_type %}selected{% endif %}>{{ art_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-mini">
+                <label for="id_date_from">از تاریخ</label>
+                <input id="id_date_from" type="date" name="date_from" value="{{ filter_form.date_from.value|default_if_none:'' }}">
+                {% if filter_form.date_from.errors %}<small class="field-error">{{ filter_form.date_from.errors|join:", " }}</small>{% endif %}
+            </div>
+
+            <div class="filter-mini">
+                <label for="id_date_to">تا تاریخ</label>
+                <input id="id_date_to" type="date" name="date_to" value="{{ filter_form.date_to.value|default_if_none:'' }}">
+                {% if filter_form.date_to.errors %}<small class="field-error">{{ filter_form.date_to.errors|join:", " }}</small>{% endif %}
             </div>
         </div>
-
-        <div class="filter-group">
-            <h3 class="filter-group-title">اهداف خرید و نظارت حراجی</h3>
-            <div class="filter-group-grid">
-                <div class="form-field filter-field">
-                    <label for="id_to_buy">اولویت خرید</label>
-                    <select id="id_to_buy" name="to_buy">
-                        <option value="all" {% if selected_to_buy == 'all' %}selected{% endif %}>همه آثار</option>
-                        <option value="1" {% if selected_to_buy == '1' %}selected{% endif %}>فقط موارد هدف خرید</option>
-                        <option value="0" {% if selected_to_buy == '0' %}selected{% endif %}>سایر آثار</option>
-                    </select>
-                </div>
-
-                <div class="form-field filter-field">
-                    <label for="id_final_inspection">بازدید نهایی فیزیکی</label>
-                    <select id="id_final_inspection" name="final_inspection">
-                        <option value="all" {% if selected_final_inspection == 'all' %}selected{% endif %}>همه وضعیت‌ها</option>
-                        <option value="1" {% if selected_final_inspection == '1' %}selected{% endif %}>بازدید شده</option>
-                        <option value="0" {% if selected_final_inspection == '0' %}selected{% endif %}>بازدید نشده</option>
-                    </select>
-                </div>
-
-                <div class="form-field filter-field">
-                    <label for="id_art_type">نوع هنر</label>
-                    <select
-                        id="id_art_type"
-                        name="art_type"
-                        {% if not has_art_type_options %}disabled{% endif %}
-                    >
-                        <option value="">همه</option>
-                        {% for art_type in art_type_options %}
-                            <option value="{{ art_type }}" {% if selected_art_type == art_type %}selected{% endif %}>
-                                {{ art_type }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    {% if not has_art_type_options %}
-                        <small class="muted-text">در حال حاضر نوع هنر قابل فیلتر وجود ندارد.</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <h3 class="filter-group-title">بازه تاریخ و مرتب‌سازی</h3>
-            <div class="filter-group-grid">
-                <div class="form-field filter-field">
-                    <label for="id_date_from">از تاریخ</label>
-                    <input
-                        id="id_date_from"
-                        type="date"
-                        name="date_from"
-                        class="text-input"
-                        value="{{ filter_form.date_from.value|default_if_none:'' }}"
-                    >
-                    {% if filter_form.date_from.errors %}
-                        <small class="field-error">{{ filter_form.date_from.errors|join:", " }}</small>
-                    {% endif %}
-                </div>
-
-                <div class="form-field filter-field">
-                    <label for="id_date_to">تا تاریخ</label>
-                    <input
-                        id="id_date_to"
-                        type="date"
-                        name="date_to"
-                        class="text-input"
-                        value="{{ filter_form.date_to.value|default_if_none:'' }}"
-                    >
-                    {% if filter_form.date_to.errors %}
-                        <small class="field-error">{{ filter_form.date_to.errors|join:", " }}</small>
-                    {% endif %}
-                </div>
-
-                <div class="form-field filter-field">
-                    <label for="id_sort">مرتب‌سازی</label>
-                    <select id="id_sort" name="sort">
-                        {% for option in sort_options %}
-                            <option value="{{ option.value }}" {% if selected_sort == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="actions-row">
-            <button type="submit" class="button button-primary">اعمال فیلتر</button>
-            <a class="button button-secondary" href="{{ clear_filters_url }}">حذف فیلترها</a>
-        </div>
-        </form>
+    </details>
+    </form>
 
     {% if products %}
         <div class="view-toggle" data-view-toggle-group>

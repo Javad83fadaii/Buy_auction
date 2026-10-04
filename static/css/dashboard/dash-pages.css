@@ -542,6 +542,115 @@
     padding: 48px 24px;
 }
 
+/* ---------- Compact filter bar ---------- */
+.dash .filter-bar {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--d-line);
+    border-radius: 10px;
+    background: var(--d-paper);
+}
+
+.dash .filter-bar-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dash .filter-bar input,
+.dash .filter-bar select {
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 6px;
+    background: var(--d-paper);
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--d-text);
+}
+
+.dash .filter-bar input:focus,
+.dash .filter-bar select:focus {
+    outline: none;
+    border-color: var(--d-ink);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+.dash .filter-bar-search {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.dash .filter-bar select {
+    flex: 0 1 140px;
+    min-width: 0;
+}
+
+.dash .filter-bar .button {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 12px;
+}
+
+.dash .filter-more summary {
+    width: fit-content;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--d-text-2);
+    cursor: pointer;
+    list-style: none;
+}
+
+.dash .filter-more summary::-webkit-details-marker {
+    display: none;
+}
+
+.dash .filter-more summary::before {
+    content: '+ ';
+}
+
+.dash .filter-more[open] summary::before {
+    content: '− ';
+}
+
+.dash .filter-more summary:hover {
+    color: var(--d-ink);
+}
+
+.dash .filter-more-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--d-line);
+}
+
+.dash .filter-mini {
+    display: grid;
+    gap: 3px;
+}
+
+.dash .filter-mini label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--d-text-3);
+}
+
+.dash .filter-mini input,
+.dash .filter-mini select {
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .dash .filter-bar select,
+    .dash .filter-bar-search {
+        flex: 1 1 100%;
+    }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
     .dash-metrics {

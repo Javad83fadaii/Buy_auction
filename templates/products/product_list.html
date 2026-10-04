@@ -98,15 +98,15 @@
                 {% endfor %}
             </select>
 
-            <button type="submit" class="button button-primary button-sm">اعمال</button>
+            <button type="submit" class="dash-btn dash-btn-solid filter-btn">اعمال فیلتر</button>
             {% if search_query or has_active_filters %}
-                <a class="button button-secondary button-sm" href="{{ clear_filters_url }}">حذف فیلترها</a>
+                <a class="dash-btn filter-btn filter-btn-clear" href="{{ clear_filters_url }}">حذف فیلترها</a>
             {% endif %}
         </div>
 
     <details class="filter-more" {% if selected_auction or selected_to_buy != 'all' or selected_final_inspection != 'all' or selected_cancelled != 'all' or selected_art_type or filter_form.date_from.value or filter_form.date_to.value %}open{% endif %}>
-        <summary>فیلترهای بیشتر</summary>
-        <div class="filter-more-grid">
+            <summary><span class="filter-more-icon" aria-hidden="true"></span>فیلترهای بیشتر</summary>
+            <div class="filter-more-grid">
             <div class="filter-mini">
                 <label for="id_auction">حراجی</label>
                 <select id="id_auction" name="auction">

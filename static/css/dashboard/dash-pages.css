@@ -339,14 +339,14 @@
 
 /* ---------- Auction cards ---------- */
 .dash .auction-grid {
-    gap: 20px;
+    gap: 16px;
     margin-top: 0;
 }
 
 .dash .auction-card {
     border-radius: 14px;
     box-shadow: none;
-    padding: 22px;
+    padding: 18px;
     transition: border-color 0.12s ease;
 }
 
@@ -357,8 +357,8 @@
 }
 
 .dash .auction-card-footer {
-    margin-top: 16px;
-    padding-top: 14px;
+    margin-top: 14px;
+    padding-top: 12px;
 }
 
 /* ---------- Checklists ---------- */
@@ -805,8 +805,8 @@
     border-radius: 12px;
     background: var(--d-paper);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    min-width: 680px;
-    max-width: 90vw;
+    min-width: 600px;
+    max-width: calc(100vw - 280px);
 }
 
 .dash .filter-mini {
@@ -875,6 +875,14 @@
 @media (max-width: 900px) {
     .dash .filter-more-grid {
         grid-template-columns: repeat(2, 1fr);
+        min-width: 450px;
+        max-width: calc(100vw - 260px);
+    }
+}
+
+@media (max-width: 1200px) {
+    .dash .filter-more-grid {
+        min-width: 500px;
     }
 }
 

@@ -93,12 +93,12 @@
     justify-content: center;
     gap: 4px;
     width: fit-content;
-    padding: 3px 10px;
+    padding: 2px 8px;
     border: 1px solid var(--d-line-strong);
     border-radius: 999px;
     background: var(--d-paper);
     color: var(--d-text);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     letter-spacing: 0;
     white-space: nowrap;
@@ -202,7 +202,6 @@
 .dash .form-field select,
 .dash .form-field .text-input,
 .dash .text-input,
-.dash .inline-form input,
 .dash .filter-field select,
 .dash .filter-shell select {
     border-radius: 8px;
@@ -214,22 +213,6 @@
 .dash .form-field select:focus,
 .dash .form-field .text-input:focus,
 .dash .text-input:focus,
-.dash .inline-form input:focus {
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.07);
-}
-
-.dash .inline-form input {
-    flex: 1 1 320px;
-    width: auto;
-    padding: 10px 14px;
-    border: 1px solid var(--d-line-strong);
-    border-radius: 8px;
-    background: var(--d-paper);
-    color: var(--d-text);
-    font-family: inherit;
-    font-size: 14px;
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
-}
 
 /* ---------- Required markers & notes ---------- */
 .dash .form-required-note {
@@ -542,47 +525,6 @@
     padding: 48px 24px;
 }
 
-/* ---------- Filter bar: buttons ---------- */
-.dash .filter-btn {
-    height: 32px;
-    padding: 0 16px;
-    gap: 6px;
-    border-radius: 8px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-.dash .filter-btn-clear::before {
-    content: '×';
-    font-size: 15px;
-    line-height: 1;
-    color: var(--d-text-3);
-    transition: color 0.12s ease;
-}
-
-.dash .filter-btn-clear:hover::before {
-    color: var(--d-ink);
-}
-
-/* ---------- Filter bar: selects with custom chevron ---------- */
-.dash .filter-bar select {
-    flex: 0 1 140px;
-    min-width: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    padding-inline: 10px 28px;
-    cursor: pointer;
-    background-color: var(--d-paper);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%238a8a8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: left 10px center;
-    transition: border-color 0.12s ease;
-}
-
-.dash .filter-bar select:hover {
-    border-color: var(--d-ink);
-}
-
 /* ---------- "More filters" toggle as a pill button ---------- */
 .dash .filter-more summary {
     display: inline-flex;
@@ -649,34 +591,6 @@
     transform: rotate(0deg);
 }
 
-/* ---------- Compact filter bar ---------- */
-.dash .filter-bar {
-    display: grid;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 1px solid var(--d-line);
-    border-radius: 10px;
-    background: var(--d-paper);
-}
-
-.dash .filter-bar-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.dash .filter-bar input,
-
-.dash .filter-bar input:focus,
-
-
-.dash .filter-bar-search {
-    flex: 1 1 220px;
-    min-width: 0;
-}
-
-
 .dash .filter-more-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -702,9 +616,265 @@
     width: 100%;
 }
 
+/* ==========================================================================
+   Filter bar — minimal, elegant design matching button-secondary style
+   ========================================================================== */
+.dash .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background: var(--d-paper);
+    flex-wrap: wrap;
+}
+
+/* Shared control look - matching button-secondary */
+.dash .filter-bar input,
+.dash .filter-bar select {
+    height: 38px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background-color: var(--d-paper);
+    color: var(--d-text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dash .filter-bar input {
+    padding: 0 14px;
+}
+
+.dash .filter-bar input::placeholder {
+    color: #9ca3af;
+}
+
+.dash .filter-bar input:hover,
+.dash .filter-bar select:hover {
+    border-color: var(--d-text-3);
+    background-color: var(--d-wash);
+}
+
+.dash .filter-bar input:focus,
+.dash .filter-bar select:focus {
+    outline: none;
+    border-color: var(--d-ink);
+    background-color: var(--d-paper);
+}
+
+/* Selects: custom chevron (RTL: arrow on the left) */
+.dash .filter-bar select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-block: 0;
+    padding-inline: 14px 36px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%238a8a8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 12px center;
+}
+
+.dash .filter-bar select:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.dash .filter-bar-search {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+.dash .filter-bar-main select {
+    flex: 0 1 150px;
+    min-width: 0;
+}
+
+/* Buttons - matching button-secondary style */
+.dash .filter-bar .button {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 8px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dash .filter-bar .button-secondary {
+    background: var(--d-paper);
+    border-color: var(--d-line-strong);
+    color: var(--d-text);
+}
+
+.dash .filter-bar .button-secondary:hover {
+    background: var(--d-wash);
+    border-color: var(--d-ink);
+}
+
+.dash .filter-bar .button-primary {
+    background: var(--d-ink);
+    border-color: var(--d-ink);
+    color: var(--d-paper);
+}
+
+.dash .filter-bar .button-primary:hover {
+    background: #262626;
+    border-color: #262626;
+}
+
+/* "More filters" toggle button - in same row */
+.dash .filter-more {
+    position: relative;
+}
+
+.dash .filter-more summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background: var(--d-paper);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--d-text);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dash .filter-more summary::-webkit-details-marker {
+    display: none;
+}
+
+.dash .filter-more summary:hover {
+    background: var(--d-wash);
+    border-color: var(--d-ink);
+}
+
+.dash .filter-more[open] summary {
+    background: var(--d-ink);
+    border-color: var(--d-ink);
+    color: var(--d-paper);
+}
+
+.dash .filter-more summary:focus-visible {
+    outline: 2px solid var(--d-ink);
+    outline-offset: 2px;
+}
+
+/* Filter icon - gear/settings icon */
+.dash .filter-more-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.15s ease, transform 0.2s ease;
+}
+
+.dash .filter-more summary:hover .filter-more-icon {
+    opacity: 1;
+}
+
+.dash .filter-more[open] summary .filter-more-icon {
+    opacity: 1;
+    transform: rotate(90deg);
+}
+
+/* Make icon white when open */
+.dash .filter-more[open] summary .filter-more-icon {
+    color: currentColor;
+}
+
+/* Extra filters panel - dropdown style */
+.dash .filter-more-grid {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 12px;
+    background: var(--d-paper);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    min-width: 680px;
+    max-width: 90vw;
+}
+
+.dash .filter-mini {
+    display: grid;
+    gap: 6px;
+}
+
+.dash .filter-mini label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--d-text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dash .filter-mini input,
+.dash .filter-mini select {
+    width: 100%;
+    height: 36px;
+    font-size: 13px;
+    border: 1px solid var(--d-line-strong);
+    border-radius: 8px;
+    background: var(--d-paper);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dash .filter-mini input:hover,
+.dash .filter-mini select:hover {
+    border-color: var(--d-text-3);
+    background-color: var(--d-wash);
+}
+
+.dash .filter-mini input:focus,
+.dash .filter-mini select:focus {
+    outline: none;
+    border-color: var(--d-ink);
+}
+
 @media (max-width: 640px) {
-    .dash .filter-bar-search {
+    .dash .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dash .filter-bar-search,
+    .dash .filter-bar select,
+    .dash .filter-bar .button,
+    .dash .filter-more summary {
         flex: 1 1 100%;
+    }
+
+    .dash .filter-more-grid {
+        position: static;
+        min-width: 100%;
+        max-width: 100%;
+        grid-template-columns: 1fr;
+    }
+
+    .dash .filter-mini input,
+    .dash .filter-mini select {
+        height: 38px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 900px) {
+    .dash .filter-more-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -735,9 +905,6 @@
         font-size: 24px;
     }
 
-    .dash .inline-form input {
-        flex-basis: 100%;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -15,8 +15,8 @@
     --d-wash-2: #ececec;
 
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
-    gap: 40px;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 24px;
     align-items: start;
     color: var(--d-text);
 }
@@ -154,7 +154,7 @@
 /* ---------- Main ---------- */
 .dash-main {
     display: grid;
-    gap: 28px;
+    gap: 20px;
     min-width: 0;
 }
 

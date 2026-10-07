@@ -3,6 +3,38 @@
 {% block title %}حراجی‌های خارجی{% endblock %}
 
 {% block content %}
+<style>
+    body {
+        overflow: hidden;
+    }
+
+    .page-shell {
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .dash {
+        height: 100%;
+        min-height: 0;
+        align-items: stretch;
+    }
+
+    .dash-main {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .dash-main > .auction-grid,
+    .dash-main > .dash-table-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-inline-end: 6px;
+    }
+</style>
 <div class="dash">
 
     {% include "dashboard/_sidebar.html" %}

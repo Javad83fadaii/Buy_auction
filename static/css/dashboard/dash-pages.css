@@ -805,7 +805,8 @@
     border-radius: 12px;
     background: var(--d-paper);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    min-width: 600px;
+    width: min(600px, calc(100vw - 32px));
+    min-width: min(600px, calc(100vw - 32px));
     max-width: calc(100vw - 280px);
 }
 
@@ -875,14 +876,16 @@
 @media (max-width: 900px) {
     .dash .filter-more-grid {
         grid-template-columns: repeat(2, 1fr);
-        min-width: 450px;
-        max-width: calc(100vw - 260px);
+        width: min(450px, calc(100vw - 32px));
+        min-width: min(450px, calc(100vw - 32px));
+        max-width: calc(100vw - 32px);
     }
 }
 
 @media (max-width: 1200px) {
     .dash .filter-more-grid {
-        min-width: 500px;
+        width: min(500px, calc(100vw - 32px));
+        min-width: min(500px, calc(100vw - 32px));
     }
 }
 

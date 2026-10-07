@@ -472,13 +472,14 @@
 
 /* ---------- Tables ---------- */
 .dash-table-wrap {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .dash-table {
     width: 100%;
-    min-width: 640px;
+    min-width: 0;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .dash-table th {
@@ -488,7 +489,8 @@
     font-weight: 600;
     color: var(--d-text-3);
     background: var(--d-wash);
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .dash-table td {

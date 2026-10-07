@@ -652,13 +652,14 @@
 }
 
 .table-shell {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .data-table {
     width: 100%;
-    min-width: 900px;
+    min-width: 0;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .recent-products-table {
@@ -687,7 +688,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .data-table tbody tr.row-clickable {

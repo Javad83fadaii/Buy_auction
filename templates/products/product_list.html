@@ -16,10 +16,10 @@
             <div class="dash-head-actions">
                 <a class="button button-secondary" href="{% url 'products:auction_list' %}">حراجی‌های خارجی</a>
                 {% if perms.accounts.view_dashboard %}
-                    <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a>
+                    {% comment %} <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a> {% endcomment %}
                 {% endif %}
                 {% if perms.products.add_product %}
-                    <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a>
+                    {% comment %} <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a> {% endcomment %}
                 {% endif %}
             </div>
         </header>

@@ -152,7 +152,7 @@ class AccountsTestCase(TestCase):
         self.assertContains(response, 'مدیریت محصولات')
         self.assertContains(
             response,
-            f'href="{reverse("products:dashboard")}"',
+            f'href="{reverse("dashboard")}"',
             html=False,
         )
 
@@ -165,7 +165,7 @@ class AccountsTestCase(TestCase):
         self.assertContains(response, 'مدیریت محصولات')
         self.assertContains(
             response,
-            f'href="{reverse("products:dashboard")}"',
+            f'href="{reverse("dashboard")}"',
             html=False,
         )
 

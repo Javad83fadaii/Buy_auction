@@ -46,7 +46,7 @@ SECRET_KEY = env_required('DJANGO_SECRET_KEY')
 DEBUG = env_bool('DJANGO_DEBUG', True)
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,testserver')
 LOGIN_URL = 'accounts:login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = 'products:list'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
 

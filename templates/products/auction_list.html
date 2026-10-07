@@ -11,10 +11,9 @@
         <header class="dash-head">
             <div>
                 <h1>حراجی‌های بین‌المللی و خارجی</h1>
-                <p class="dash-sub">مدیریت، رهگیری آمار و ثبت آثار حراجی‌های معتبر (کریستیز، ساتبیز، بونهامز و ...)</p>
             </div>
             <div class="dash-head-actions">
-                <a class="button button-secondary" href="{% url 'products:dashboard' %}">بازگشت به داشبورد</a>
+                {% comment %} <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a> {% endcomment %}
                 {% if can_manage_auctions %}
                     <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
                 {% endif %}

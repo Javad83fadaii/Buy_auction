@@ -19,56 +19,56 @@ def build_quick_links(user) -> list[dict[str, str]]:
         return []
 
     quick_links = [
-        {
-            'label': 'تغییر رمز',
-            'url': reverse('accounts:change_password'),
-            'variant': 'secondary',
-        },
+        # {
+        #     'label': 'تغییر رمز',
+        #     'url': reverse('accounts:change_password'),
+        #     'variant': 'secondary',
+        # },
     ]
 
     if user.has_perm('products.add_product'):
         quick_links = [
-            {
-                'label': 'داشبورد',
-                'url': reverse('products:dashboard'),
-                'variant': 'primary',
+            # {
+            #     'label': 'داشبورد',
+            #     'url': reverse('dashboard'),
+            #     'variant': 'primary',
 
-            },
+            # },
              {
                 'label': 'لیست حراجی‌ها',
                 'url': reverse('products:auction_list'),
                 'variant': 'primary',
             },
-            {
-                'label': 'ثبت محصول',
-                'url': reverse('products:create'),
-                'variant': 'secondary',
-            },
+            # {
+            #     'label': 'ثبت محصول',
+            #     'url': reverse('products:create'),
+            #     'variant': 'secondary',
+            # },
             
             {
                 'label': 'همه محصولات',
                 'url': reverse('products:list'),
                 'variant': 'secondary',
             },
-            {
-                'label': 'داشبورد محصولات',
-                'url': reverse('products:dashboard'),
-                'variant': 'secondary',
-            },
+            # {
+            #     'label': 'داشبورد محصولات',
+            #     'url': reverse('dashboard'),
+            #     'variant': 'secondary',
+            # },
             *quick_links,
         ]
-        if user.has_perm('products.review_product'):
-            quick_links.insert(
-                2,
-                {
-                    'label': 'در انتظار بررسی',
-                    'url': build_url(
-                        'products:list',
-                        status=ProductStatusChoices.PENDING_REVIEW,
-                    ),
-                    'variant': 'secondary',
-                },
-            )
+        # if user.has_perm('products.review_product'):
+        #     quick_links.insert(
+        #         2,
+        #         {
+        #             'label': 'در انتظار بررسی',
+        #             'url': build_url(
+        #                 'products:list',
+        #                 status=ProductStatusChoices.PENDING_REVIEW,
+        #             ),
+        #             'variant': 'secondary',
+        #         },
+        #     )
         if user.has_perm('accounts.view_operator_dashboard'):
             quick_links.append(
                 {

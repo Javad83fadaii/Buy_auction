@@ -2784,7 +2784,7 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
 class ProductDashboardViewTests(ProductCreateBaseTestCase):
     def dashboard_url(self):
-        return reverse('products:dashboard')
+        return reverse('dashboard')
 
     def get_dashboard(self, *, user=None):
         if user is not None:
@@ -3320,7 +3320,7 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
 
     def test_product_dashboard_renders_auction_stats(self):
         self.client.force_login(self.operator_user)
-        url = reverse('products:dashboard')
+        url = reverse('dashboard')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'حراجی‌های خارجی و بین‌المللی')

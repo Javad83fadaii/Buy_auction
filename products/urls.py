@@ -9,7 +9,6 @@ from .views import (
     ProductApproveView,
     ProductCancelToggleView,
     ProductCreateView,
-    ProductDashboardView,
     ProductDetailView,
     ProductEditView,
     ProductExpertFlagToggleView,
@@ -30,7 +29,6 @@ app_name = 'products'
 
 urlpatterns = [
     path('', ProductListView.as_view(), name='list'),
-    path('dashboard/', ProductDashboardView.as_view(), name='dashboard'),
     path('auctions/', AuctionListView.as_view(), name='auction_list'),
     path('auctions/create/', AuctionCreateView.as_view(), name='auction_create'),
     path('auctions/<int:id>/', AuctionDetailView.as_view(), name='auction_detail'),

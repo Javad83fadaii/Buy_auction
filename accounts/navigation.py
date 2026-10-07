@@ -18,57 +18,76 @@ def build_quick_links(user) -> list[dict[str, str]]:
     if not user.is_authenticated:
         return []
 
-    quick_links = [
-        # {
-        #     'label': 'تغییر رمز',
-        #     'url': reverse('accounts:change_password'),
-        #     'variant': 'secondary',
-        # },
-    ]
+    quick_links = []
+
+    if user.is_superuser:
+        quick_links.append(
+            {
+                'label': 'تغییر رمز',
+                'url': reverse('accounts:change_password'),
+                'variant': 'secondary',
+            }
+        )
 
     if user.has_perm('products.add_product'):
         quick_links = [
-            # {
-            #     'label': 'داشبورد',
-            #     'url': reverse('dashboard'),
-            #     'variant': 'primary',
-
-            # },
-             {
+            *(
+                [
+                    {
+                        'label': 'داشبورد',
+                        'url': reverse('dashboard'),
+                        'variant': 'primary',
+                    },
+                ]
+                if user.is_superuser
+                else []
+            ),
+            {
                 'label': 'لیست حراجی‌ها',
                 'url': reverse('products:auction_list'),
                 'variant': 'primary',
             },
-            # {
-            #     'label': 'ثبت محصول',
-            #     'url': reverse('products:create'),
-            #     'variant': 'secondary',
-            # },
-            
+            *(
+                [
+                    {
+                        'label': 'ثبت محصول',
+                        'url': reverse('products:create'),
+                        'variant': 'secondary',
+                    },
+                ]
+                if user.is_superuser
+                else []
+            ),
             {
                 'label': 'همه محصولات',
                 'url': reverse('products:list'),
                 'variant': 'secondary',
             },
-            # {
-            #     'label': 'داشبورد محصولات',
-            #     'url': reverse('dashboard'),
-            #     'variant': 'secondary',
-            # },
+            *(
+                [
+                    {
+                        'label': 'داشبورد محصولات',
+                        'url': reverse('dashboard'),
+                        'variant': 'secondary',
+                    },
+                ]
+                if user.is_superuser
+                else []
+            ),
             *quick_links,
         ]
-        # if user.has_perm('products.review_product'):
-        #     quick_links.insert(
-        #         2,
-        #         {
-        #             'label': 'در انتظار بررسی',
-        #             'url': build_url(
-        #                 'products:list',
-        #                 status=ProductStatusChoices.PENDING_REVIEW,
-        #             ),
-        #             'variant': 'secondary',
-        #         },
-        #     )
+        if user.is_superuser and user.has_perm('products.review_product'):
+            quick_links.insert(
+                2,
+                {
+                    'label': 'در انتظار بررسی',
+                    'url': build_url(
+                        'products:list',
+                        status=ProductStatusChoices.PENDING_REVIEW,
+                    ),
+                    'variant': 'secondary',
+                },
+            )
         if user.has_perm('accounts.view_operator_dashboard'):
             quick_links.append(
                 {

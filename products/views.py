@@ -296,6 +296,12 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         '-title': ('-title', '-pk'),
         'suitable_price': (F('suitable_price').asc(nulls_last=True), 'pk'),
         '-suitable_price': (F('suitable_price').desc(nulls_last=True), '-pk'),
+        'suggested_price': (F('suggested_price').asc(nulls_last=True), 'pk'),
+        '-suggested_price': (F('suggested_price').desc(nulls_last=True), '-pk'),
+        'product_code': (F('product_code').asc(nulls_last=True), 'pk'),
+        '-product_code': (F('product_code').desc(nulls_last=True), '-pk'),
+        'suggested_by': ('suggested_by', 'pk'),
+        '-suggested_by': ('-suggested_by', '-pk'),
     }
 
     def get_queryset(self):

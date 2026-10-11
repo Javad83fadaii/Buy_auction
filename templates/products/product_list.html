@@ -179,15 +179,28 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>تصویر اصلی</th>
-                        <th>عنوان</th>
-                        <th>کد اثر</th>
-                        <th>خالق</th>
-                        <th>نوع هنر</th>
-                        <th>قیمت مناسب</th>
-                        <th>وضعیت و نشان‌ها</th>
-                        <th>منبع / حراجی</th>
-                        <th>تاریخ ثبت</th>
+                        <th>تصویر</th>
+                        <th class="sortable" data-sort="product_code">
+                            کد اثر
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-sort="title">
+                            عنوان
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-sort="suggested_by">
+                            پیشنهاددهنده / حراجی
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <th>راه ارتباطی</th>
+                        <th class="sortable" data-sort="suggested_price">
+                            قیمت پیشنهادی
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-sort="created_at">
+                            تاریخ ثبت
+                            <span class="sort-indicator"></span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -203,41 +216,15 @@
                                     <img
                                         class="product-thumb"
                                         src="{{ product.primary_images.0.image.url }}"
-                                        alt="تصویر اصلی {{ product.title }}"
+                                        alt="تصویر {{ product.title }}"
                                     >
                                 {% else %}
                                     <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
                                 {% endif %}
                             </td>
+                            <td>{{ product.product_code|default:"-" }}</td>
                             <td>
                                 <strong>{{ product.title }}</strong>
-                            </td>
-                            <td>{{ product.product_code|default:"-" }}</td>
-                            <td>{{ product.artist|default:"-" }}</td>
-                            <td>{{ product.art_type|default:"-" }}</td>
-                            <td>
-                                {% if product.suitable_price %}
-                                    {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="table-badge-stack">
-                                    <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
-                                    {% if product.to_buy %}
-                                        <span class="flag-badge flag-badge-buy">خرید</span>
-                                    {% endif %}
-                                    {% if product.final_inspection_done %}
-                                        <span class="flag-badge flag-badge-inspect">بازدید</span>
-                                    {% endif %}
-                                    {% if product.is_cancelled %}
-                                        <span class="flag-badge flag-badge-warning">لغو شده</span>
-                                    {% endif %}
-                                    {% if product.is_notable %}
-                                        <span class="flag-badge flag-badge-success">شاخص</span>
-                                    {% endif %}
-                                </div>
                             </td>
                             <td>
                                 {% if product.auction %}
@@ -246,7 +233,15 @@
                                         <span class="table-auction-name">{{ product.auction.name }}</span>
                                     </div>
                                 {% else %}
-                                    {{ product.get_source_type_display }}
+                                    {{ product.suggested_by|default:"-" }}
+                                {% endif %}
+                            </td>
+                            <td>{{ product.get_contact_method_display|default:"-" }}</td>
+                            <td>
+                                {% if product.suggested_price %}
+                                    {{ product.suggested_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                                {% else %}
+                                    -
                                 {% endif %}
                             </td>
                             <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
@@ -347,6 +342,44 @@
             if (savedMode === 'card' || savedMode === 'list') {
                 setView(savedMode);
             }
+
+            // Table sorting functionality
+            var sortHeaders = document.querySelectorAll('.data-table thead th.sortable');
+            var currentSort = '{{ selected_sort|default:"-created_at" }}';
+            
+            // Update header styles based on current sort
+            function updateSortIndicators() {
+                sortHeaders.forEach(function (header) {
+                    var sortKey = header.dataset.sort;
+                    header.classList.remove('is-asc', 'is-desc');
+                    if (currentSort === sortKey) {
+                        header.classList.add('is-asc');
+                    } else if (currentSort === '-' + sortKey) {
+                        header.classList.add('is-desc');
+                    }
+                });
+            }
+            
+            updateSortIndicators();
+            
+            sortHeaders.forEach(function (header) {
+                header.addEventListener('click', function () {
+                    var sortKey = header.dataset.sort;
+                    var newSort = sortKey;
+                    
+                    // Toggle between asc and desc
+                    if (currentSort === sortKey) {
+                        newSort = '-' + sortKey;
+                    } else if (currentSort === '-' + sortKey) {
+                        newSort = sortKey;
+                    }
+                    
+                    // Build new URL with updated sort parameter
+                    var params = new URLSearchParams(window.location.search);
+                    params.set('sort', newSort);
+                    window.location.href = window.location.pathname + '?' + params.toString();
+                });
+            });
         }());
     </script>
 {% endif %}

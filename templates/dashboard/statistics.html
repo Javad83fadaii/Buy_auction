@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}آمار و گزارشات{% endblock %}
+
+{% block content %}
+<style>
+    body { overflow: hidden; }
+    .page-shell { height: 100dvh; overflow: hidden; }
+    .dash { height: 100%; min-height: 0; align-items: stretch; }
+    .dash-main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .dash-main > .stats-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        padding: 0 6px 0 0;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        padding: 0 0 16px 0;
+    }
+    .stats-section {
+        background: var(--d-paper);
+        border: 1px solid var(--d-line);
+        border-radius: 12px;
+        padding: 16px;
+    }
+    .stats-section h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--d-ink);
+        margin: 0 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--d-line);
+    }
+    .stats-grid-items {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        background: var(--d-wash);
+        border-radius: 6px;
+        font-size: 13px;
+    }
+    .stat-item dt { color: var(--d-text-2); }
+    .stat-item dd { font-weight: 700; color: var(--d-ink); }
+    .stat-item.highlight {
+        background: var(--d-ink);
+        color: var(--d-paper);
+    }
+    .stat-item.highlight dt { color: var(--d-paper); }
+    .stat-item.highlight dd { color: var(--d-paper); }
+    .kpi-mini {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .kpi-mini-item {
+        text-align: center;
+        padding: 12px 8px;
+        background: var(--d-paper);
+        border: 1px solid var(--d-line);
+        border-radius: 10px;
+    }
+    .kpi-mini-item span {
+        display: block;
+        font-size: 11px;
+        color: var(--d-text-3);
+        margin-bottom: 4px;
+    }
+    .kpi-mini-item strong {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--d-ink);
+    }
+</style>
+<div class="dash">
+
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>آمار و گزارشات</h1>
+            </div>
+        </header>
+
+        <div class="stats-content">
+            {# Top KPIs #}
+            <div class="kpi-mini">
+                <div class="kpi-mini-item">
+                    <span>کل محصولات</span>
+                    <strong>{{ product_stats.total_products }}</strong>
+                </div>
+                <div class="kpi-mini-item">
+                    <span>کل حراجی‌ها</span>
+                    <strong>{{ auction_stats.total_auctions }}</strong>
+                </div>
+                <div class="kpi-mini-item">
+                    <span>هدف خرید</span>
+                    <strong>🎯 {{ product_stats.to_buy_products }}</strong>
+                </div>
+                <div class="kpi-mini-item">
+                    <span>آثار وارد شده</span>
+                    <strong>{{ auction_stats.entered_lots }}</strong>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                {# Products Section #}
+                <div class="stats-section">
+                    <h3>محصولات</h3>
+                    <div class="stats-grid-items">
+                        <div class="stat-item">
+                            <dt>کل</dt>
+                            <dd>{{ product_stats.total_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>ثبت دستی</dt>
+                            <dd>{{ product_stats.manual_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>از حراجی</dt>
+                            <dd>{{ product_stats.auction_products }}</dd>
+                        </div>
+                        <div class="stat-item highlight">
+                            <dt>هدف خرید</dt>
+                            <dd>{{ product_stats.to_buy_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>لغو شده</dt>
+                            <dd>{{ product_stats.cancelled_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>قابل توجه</dt>
+                            <dd>⭐ {{ product_stats.notable_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>کارشناسی</dt>
+                            <dd>🔬 {{ product_stats.expert_review_products }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>بازدید نهایی</dt>
+                            <dd>🔍 {{ product_stats.final_inspection_done }}</dd>
+                        </div>
+                    </div>
+                </div>
+
+                {# Auctions Section #}
+                <div class="stats-section">
+                    <h3>حراجی‌ها</h3>
+                    <div class="stats-grid-items">
+                        <div class="stat-item">
+                            <dt>کل</dt>
+                            <dd>{{ auction_stats.total_auctions }}</dd>
+                        </div>
+                        <div class="stat-item highlight">
+                            <dt>در حال برگزاری</dt>
+                            <dd>{{ auction_stats.ongoing_auctions }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>به زودی</dt>
+                            <dd>{{ auction_stats.upcoming_auctions }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>پایان یافته</dt>
+                            <dd>{{ auction_stats.ended_auctions }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>کل آثار</dt>
+                            <dd>{{ auction_stats.total_lots }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>وارد شده</dt>
+                            <dd>{{ auction_stats.entered_lots }}</dd>
+                        </div>
+                        <div class="stat-item highlight">
+                            <dt>هدف خرید</dt>
+                            <dd>🎯 {{ auction_stats.to_buy_count }}</dd>
+                        </div>
+                        <div class="stat-item">
+                            <dt>انصرافی</dt>
+                            <dd>🚫 {{ auction_stats.cancelled_lots }}</dd>
+                        </div>
+                    </div>
+                </div>
+
+                {# Product Status #}
+                <div class="stats-section">
+                    <h3>وضعیت محصولات</h3>
+                    <div class="stats-grid-items">
+                        {% for status, count in product_stats.by_status.items %}
+                            <div class="stat-item">
+                                <dt>{{ status }}</dt>
+                                <dd>{{ count }}</dd>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Product Source #}
+                <div class="stats-section">
+                    <h3>منبع محصولات</h3>
+                    <div class="stats-grid-items">
+                        {% for source, count in product_stats.by_source.items %}
+                            <div class="stat-item">
+                                <dt>{{ source }}</dt>
+                                <dd>{{ count }}</dd>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Auction Houses #}
+                <div class="stats-section">
+                    <h3>خانه‌های حراجی</h3>
+                    <div class="stats-grid-items">
+                        {% for house, count in auction_stats.by_house.items %}
+                            <div class="stat-item">
+                                <dt>{{ house }}</dt>
+                                <dd>{{ count }}</dd>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Auction Status #}
+                <div class="stats-section">
+                    <h3>وضعیت حراجی‌ها</h3>
+                    <div class="stats-grid-items">
+                        {% for status, count in auction_stats.by_status.items %}
+                            <div class="stat-item">
+                                <dt>{{ status }}</dt>
+                                <dd>{{ count }}</dd>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

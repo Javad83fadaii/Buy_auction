@@ -5,6 +5,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from accounts.views import DashboardView, OperatorDashboardView
+from config.views import StatisticsView
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='accounts:login', permanent=False), name='home'),
@@ -12,6 +13,7 @@ urlpatterns = [
     path('products/', include('products.urls')),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('dashboard/operator/', OperatorDashboardView.as_view(), name='operator_dashboard'),
+    path('statistics/', StatisticsView.as_view(), name='statistics'),
     path('admin/', admin.site.urls),
 ]
 

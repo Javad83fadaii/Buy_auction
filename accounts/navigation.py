@@ -43,8 +43,13 @@ def build_quick_links(user) -> list[dict[str, str]]:
                 else []
             ),
             {
-                'label': 'لیست حراجی‌ها',
+                'label': 'لیست حراجیها',
                 'url': reverse('products:auction_list'),
+                'variant': 'primary',
+            },
+            {
+                'label': 'آمار و گزارشات',
+                'url': reverse('statistics'),
                 'variant': 'primary',
             },
             *(

@@ -23,6 +23,8 @@ PRODUCT_LIST_SORT_CHOICES = (
     ('created_at', 'قدیمی‌ترین'),
     ('title', 'عنوان A-Z'),
     ('-title', 'عنوان Z-A'),
+    ('suggested_price', 'قیمت پیشنهادی کم به زیاد'),
+    ('-suggested_price', 'قیمت پیشنهادی زیاد به کم'),
     ('suitable_price', 'قیمت مناسب کم به زیاد'),
     ('-suitable_price', 'قیمت مناسب زیاد به کم'),
 )

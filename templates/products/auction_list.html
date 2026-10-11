@@ -27,12 +27,16 @@
     }
 
     .dash-main > .auction-grid,
-    .dash-main > .dash-table-wrap {
+    .dash-main > .table-shell {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
         overscroll-behavior: contain;
         padding-inline-end: 6px;
+    }
+
+    .dash-main > .data-table {
+        width: 100%;
     }
 </style>
 <div class="dash">
@@ -45,7 +49,7 @@
                 <h1>حراجی‌های بین‌المللی و خارجی</h1>
             </div>
             <div class="dash-head-actions">
-                {% comment %} <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a> {% endcomment %}
+                <a class="button button-secondary" href="{% url 'products:list' %}">لیست محصولات</a>
                 {% if can_manage_auctions %}
                     <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
                 {% endif %}
@@ -73,40 +77,59 @@
         </section>
 
         {# Filter & Search Toolbar #}
-        <section class="dash-panel">
-            <form method="get" class="filter-panel" role="search">
-                <div class="filter-group">
-                    <div class="filter-group-grid">
-                        <div class="form-field filter-field">
-                            <label for="id_q">جستجو</label>
-                            {{ filter_form.q }}
-                        </div>
-                        <div class="form-field filter-field">
-                            <label for="id_source_house">خانه حراجی</label>
-                            {{ filter_form.source_house }}
-                        </div>
-                        <div class="form-field filter-field">
-                            <label for="id_status">وضعیت</label>
-                            {{ filter_form.status }}
-                        </div>
-                        <div class="form-field filter-field">
-                            <label for="id_date_from">از تاریخ</label>
-                            {{ filter_form.date_from }}
-                        </div>
-                        <div class="form-field filter-field">
-                            <label for="id_date_to">تا تاریخ</label>
-                            {{ filter_form.date_to }}
-                        </div>
+        <form method="get" class="filter-bar" role="search">
+            <div class="filter-bar-main">
+                <label class="sr-only" for="id_q">جستجوی حراجی‌ها</label>
+                <input
+                    id="id_q"
+                    type="search"
+                    name="q"
+                    class="filter-bar-search"
+                    value="{{ filter_form.q.value|default:'' }}"
+                    placeholder="جستجوی نام یا مکان حراجی..."
+                >
+
+                <select id="id_source_house" name="source_house" aria-label="خانه حراجی">
+                    <option value="">همه خانه‌ها</option>
+                    {% for choice_value, choice_label in filter_form.source_house.field.choices %}
+                        <option value="{{ choice_value }}" {% if filter_form.source_house.value == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+                    {% endfor %}
+                </select>
+
+                <select id="id_status" name="status" aria-label="وضعیت">
+                    <option value="">همه وضعیت‌ها</option>
+                    {% for choice_value, choice_label in filter_form.status.field.choices %}
+                        <option value="{{ choice_value }}" {% if filter_form.status.value == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="button button-primary">اعمال</button>
+                {% if has_active_filters %}
+                    <a class="button button-secondary" href="{{ clear_filters_url }}">پاک کردن</a>
+                {% endif %}
+            </div>
+
+            <details class="filter-more" {% if filter_form.date_from.value or filter_form.date_to.value %}open{% endif %}>
+                <summary>
+                    <svg class="filter-more-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>فیلترهای پیشرفته</span>
+                </summary>
+                <div class="filter-more-grid">
+                    <div class="filter-mini">
+                        <label for="id_date_from">از تاریخ</label>
+                        <input id="id_date_from" type="date" name="date_from" value="{{ filter_form.date_from.value|default_if_none:'' }}">
+                    </div>
+
+                    <div class="filter-mini">
+                        <label for="id_date_to">تا تاریخ</label>
+                        <input id="id_date_to" type="date" name="date_to" value="{{ filter_form.date_to.value|default_if_none:'' }}">
                     </div>
                 </div>
-                <div class="actions-row">
-                    <button type="submit" class="button button-primary">اعمال فیلتر</button>
-                    {% if has_active_filters %}
-                        <a class="button button-secondary" href="{{ clear_filters_url }}">حذف فیلترها</a>
-                    {% endif %}
-                </div>
-            </form>
-        </section>
+            </details>
+        </form>
 
         {% if auctions %}
             {# View Toggle #}
@@ -140,7 +163,7 @@
                                     <strong>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</strong>
                                 </li>
                                 <li>
-                                    <span class="meta-label">� مکان:</span>
+                                    <span class="meta-label">📍 مکان:</span>
                                     <span>{{ auction.location|default:"مشخص نشده" }}</span>
                                 </li>
                                 <li>
@@ -174,7 +197,7 @@
                                     🔍 بازدید: <strong>{{ auction.final_inspection_count }}</strong>
                                 </span>
                                 <span class="chip chip-expert" title="نیازمند کارشناسی">
-                                    � کارشناسی: <strong>{{ auction.expert_lots_count }}</strong>
+                                    🔬 کارشناسی: <strong>{{ auction.expert_lots_count }}</strong>
                                 </span>
                                 <span class="chip chip-notable" title="آثار قابل توجه">
                                     ⭐ شاخص: <strong>{{ auction.notable_lots_count }}</strong>
@@ -203,8 +226,8 @@
             </div>
 
             {# List View #}
-            <div class="dash-table-wrap" data-view-panel="list" hidden>
-                <table class="dash-table">
+            <div class="table-shell" data-view-panel="list" hidden>
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th>حراجی</th>
@@ -218,9 +241,9 @@
                     </thead>
                     <tbody>
                         {% for auction in auctions %}
-                            <tr>
+                            <tr class="row-clickable" tabindex="0" role="link" data-row-href="{% url 'products:auction_detail' auction.pk %}">
                                 <td>
-                                    <a class="dash-cell-title" href="{% url 'products:auction_detail' auction.pk %}">{{ auction.name }}</a>
+                                    <strong>{{ auction.name }}</strong>
                                     <span class="dash-cell-meta">{{ auction.location|default:"مشخص نشده" }} · {{ auction.get_currency_display }}</span>
                                 </td>
                                 <td>
@@ -228,14 +251,14 @@
                                         {{ auction.get_source_house_display }}
                                     </span>
                                 </td>
-                                <td class="dash-num">{{ auction.start_date|date:"Y/m/d" }}</td>
+                                <td>{{ auction.start_date|date:"Y/m/d" }}</td>
                                 <td>
                                     <span class="status-badge status-badge-{{ auction.status|lower }}">
                                         {{ auction.get_status_display }}
                                     </span>
                                 </td>
-                                <td class="dash-num">{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
-                                <td class="dash-num">🎯 {{ auction.to_buy_count }}</td>
+                                <td>{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
+                                <td>🎯 {{ auction.to_buy_count }}</td>
                                 <td class="dash-cell-actions">
                                     <a href="{% url 'products:auction_detail' auction.pk %}">مشاهده</a>
                                     <a href="{% url 'products:auction_edit' auction.pk %}">ویرایش</a>
@@ -259,8 +282,8 @@
                 </nav>
             {% endif %}
         {% else %}
-            <section class="dash-empty" aria-live="polite">
-                <p>هیچ حراجی‌ای با مشخصات درخواستی یافت نشد.</p>
+            <section class="empty-state" aria-live="polite">
+                <h2>هیچ حراجی‌ای با مشخصات درخواستی یافت نشد.</h2>
                 <p class="muted-text">می‌توانید فیلترها را حذف کنید یا حراجی جدید ثبت نمایید.</p>
                 {% if can_manage_auctions %}
                     <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت اولین حراجی</a>
@@ -273,6 +296,20 @@
 {% if auctions %}
     <script>
         (function () {
+            var rows = document.querySelectorAll('[data-row-href]');
+            rows.forEach(function (row) {
+                function go() {
+                    window.location.href = row.dataset.rowHref;
+                }
+                row.addEventListener('click', go);
+                row.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        go();
+                    }
+                });
+            });
+
             var STORAGE_KEY = 'auctions-view-mode';
             var toggleButtons = document.querySelectorAll('[data-view-toggle]');
             var panels = document.querySelectorAll('[data-view-panel]');

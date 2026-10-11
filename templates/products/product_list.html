@@ -346,6 +346,7 @@
             // Table sorting functionality
             var sortHeaders = document.querySelectorAll('.data-table thead th.sortable');
             var currentSort = '{{ selected_sort|default:"-created_at" }}';
+            var defaultSort = '{{ default_sort|default:"-created_at" }}';
             
             // Update header styles based on current sort
             function updateSortIndicators() {
@@ -367,17 +368,27 @@
                     var sortKey = header.dataset.sort;
                     var newSort = sortKey;
                     
-                    // Toggle between asc and desc
+                    // Three-state toggle: asc -> desc -> reset to default
                     if (currentSort === sortKey) {
                         newSort = '-' + sortKey;
                     } else if (currentSort === '-' + sortKey) {
-                        newSort = sortKey;
+                        newSort = defaultSort;
                     }
                     
                     // Build new URL with updated sort parameter
                     var params = new URLSearchParams(window.location.search);
-                    params.set('sort', newSort);
-                    window.location.href = window.location.pathname + '?' + params.toString();
+                    if (newSort === defaultSort) {
+                        params.delete('sort');
+                    } else {
+                        params.set('sort', newSort);
+                    }
+                    
+                    var newUrl = window.location.pathname;
+                    var queryString = params.toString();
+                    if (queryString) {
+                        newUrl += '?' + queryString;
+                    }
+                    window.location.href = newUrl;
                 });
             });
         }());

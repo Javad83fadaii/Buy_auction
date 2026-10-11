@@ -132,14 +132,13 @@
         </form>
 
         {% if auctions %}
-            {# View Toggle #}
-            <div class="view-toggle" data-view-toggle-group>
-                <button type="button" class="toggle-btn is-active" data-view-toggle="card">نمایش کارتی</button>
-                <button type="button" class="toggle-btn" data-view-toggle="list">نمایش لیستی</button>
-            </div>
+            <!-- <div class="view-toggle" data-view-toggle-group>
+                <button type="button" class="toggle-btn" data-view-toggle="card">نمایش کارتی</button>
+                <button type="button" class="toggle-btn is-active" data-view-toggle="list">نمایش لیستی</button>
+            </div> -->
 
             {# Card View #}
-            <div class="auction-grid" data-view-panel="card">
+            <div class="auction-grid" data-view-panel="card" hidden>
                 {% for auction in auctions %}
                     <article class="auction-card">
                         <header class="auction-card-header">
@@ -226,7 +225,7 @@
             </div>
 
             {# List View #}
-            <div class="table-shell" data-view-panel="list" hidden>
+            <div class="table-shell" data-view-panel="list">
                 <table class="data-table">
                     <thead>
                         <tr>

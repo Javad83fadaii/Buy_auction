@@ -170,10 +170,12 @@
     </form>
 
     {% if products %}
+        {% comment %} موقتاً غیرفعال — باکس تعویض نمایش لیستی/کارتی
         <div class="view-toggle" data-view-toggle-group>
             <button type="button" class="toggle-btn is-active" data-view-toggle="list">نمایش لیستی</button>
             <button type="button" class="toggle-btn" data-view-toggle="card">نمایش کارتی</button>
         </div>
+        {% endcomment %}
 
         <div class="table-shell" data-view-panel="list">
             <table class="data-table">
@@ -308,6 +310,7 @@
                 });
             });
 
+            /* موقتاً غیرفعال — تعویض نمایش لیستی/کارتی
             var STORAGE_KEY = 'products-view-mode';
             var toggleButtons = document.querySelectorAll('[data-view-toggle]');
             var panels = document.querySelectorAll('[data-view-panel]');
@@ -322,7 +325,7 @@
                 try {
                     window.localStorage.setItem(STORAGE_KEY, mode);
                 } catch (error) {
-                    /* localStorage may be unavailable; ignore */
+                    localStorage may be unavailable; ignore
                 }
             }
 
@@ -342,6 +345,7 @@
             if (savedMode === 'card' || savedMode === 'list') {
                 setView(savedMode);
             }
+            */
 
             // Table sorting functionality
             var sortHeaders = document.querySelectorAll('.data-table thead th.sortable');

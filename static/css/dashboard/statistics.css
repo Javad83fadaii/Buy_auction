@@ -1,0 +1,182 @@
+/* ==========================================================================
+   Statistics page — KPI strip + tiles + distribution bars
+   Loaded after dash-pages.css (see site.css).
+   Class prefix "st-" avoids clashing with the legacy .stats-grid in site.css.
+   ========================================================================== */
+
+/* ---------- Layout: no page scroll ---------- */
+.statistics-page { overflow: hidden; }
+.statistics-page .page-shell { height: 100dvh; overflow: hidden; }
+.statistics-page .dash { height: 100%; min-height: 0; align-items: stretch; }
+.statistics-page .dash-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow: hidden;
+}
+.statistics-page .dash-head { padding-bottom: 10px; align-items: center; }
+.statistics-page .dash-head h1 { font-size: 20px; }
+
+/* Safety net: on very short screens scroll inside the content instead of clipping it */
+.st-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+/* ---------- KPI strip ---------- */
+.st-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--d-line);
+    border-radius: 12px;
+    background: var(--d-paper);
+    overflow: hidden;
+}
+.st-kpi {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 18px;
+    font-size: 12px;
+    color: var(--d-text-3);
+}
+.st-kpi + .st-kpi { border-inline-start: 1px solid var(--d-line); }
+.st-kpi strong {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+.st-kpi.is-hot { background: var(--d-ink); }
+.st-kpi.is-hot,
+.st-kpi.is-hot strong { color: var(--d-paper); }
+
+/* ---------- Section label (محصولات / حراجی‌ها) ---------- */
+.st-section-label {
+    margin: 2px 0 -4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--d-text-3);
+    letter-spacing: 0.02em;
+}
+
+/* ---------- Cards grid: 3 columns, products row then auctions row ---------- */
+.st-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    align-items: stretch;
+}
+
+.st-card {
+    border: 1px solid var(--d-line);
+    border-radius: 12px;
+    background: var(--d-paper);
+    padding: 12px 14px;
+}
+
+.st-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--d-ink);
+}
+
+/* ---------- Tiles (metric cards) ---------- */
+.st-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+}
+.st-tile {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--d-wash);
+}
+.st-tile dt {
+    margin: 0;
+    font-size: 11px;
+    color: var(--d-text-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.st-tile dd {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+.st-tile.is-hot { background: var(--d-ink); }
+.st-tile.is-hot dt { color: #a3a3a3; }
+.st-tile.is-hot dd { color: var(--d-paper); }
+
+/* ---------- Distribution bars ---------- */
+.st-bars { margin: 0; display: grid; gap: 9px; }
+.st-bar { display: grid; gap: 4px; }
+.st-bar-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+}
+.st-bar-top dt {
+    margin: 0;
+    color: var(--d-text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.st-bar-top dd {
+    margin: 0;
+    font-weight: 700;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.st-bar-top small {
+    margin-inline-start: 4px;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--d-text-3);
+}
+.st-track {
+    height: 5px;
+    border-radius: 999px;
+    background: var(--d-wash-2);
+    overflow: hidden;
+}
+.st-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--d-ink);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1200px) {
+    .st-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+    .st-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .st-kpi:nth-child(3) { border-inline-start: 0; }
+    .st-kpi:nth-child(n + 3) { border-top: 1px solid var(--d-line); }
+}
+@media (max-width: 640px) {
+    .st-grid { grid-template-columns: minmax(0, 1fr); }
+}

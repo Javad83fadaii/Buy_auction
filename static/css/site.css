@@ -2,6 +2,8 @@
 @import url('./products/auctions.css');
 @import url('./dashboard/dashboard.css');
 @import url('./dashboard/dash-pages.css');
+@import url('./dashboard/auction-detail.css');
+@import url('./dashboard/statistics.css');
 .product-create-card,
 .product-list-card,
 .product-detail-card,

@@ -3,31 +3,26 @@
 {% block title %}{{ auction.name }} - جزئیات حراجی{% endblock %}
 
 {% block content %}
+<script>document.body.classList.add('auction-detail-page');</script>
+
 <div class="dash">
 
     {% include "dashboard/_sidebar.html" %}
 
     <main class="dash-main">
-        <header class="dash-head">
-            <div>
-                <div class="auction-header-badges">
-                    <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
-                        {{ auction.get_source_house_display }}
-                    </span>
-                    <span class="status-badge status-badge-{{ auction.status|lower }}">
-                        {{ auction.get_status_display }}
-                    </span>
-                </div>
+        <header class="dash-head ad-head">
+            <div class="ad-title-row">
                 <h1>{{ auction.name }}</h1>
-                <p class="dash-sub">اطلاعات برگزاری، آمارهای تحلیلی و آثار ثبت‌شده از این حراجی.</p>
+                <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">{{ auction.get_source_house_display }}</span>
+                <span class="status-badge status-badge-{{ auction.status|lower }}">{{ auction.get_status_display }}</span>
             </div>
             <div class="dash-head-actions">
                 <a class="button button-secondary" href="{% url 'products:auction_list' %}">بازگشت به لیست حراجی‌ها</a>
                 {% if can_add_product %}
-                    <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر به این حراجی</a>
+                    <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر</a>
                 {% endif %}
                 {% if can_manage_auctions %}
-                    <a class="button button-secondary" href="{% url 'products:auction_edit' auction.pk %}">ویرایش حراجی</a>
+                    <a class="button button-secondary" href="{% url 'products:auction_edit' auction.pk %}">ویرایش</a>
                     <form method="post" action="{% url 'products:auction_sync' auction.pk %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="button button-secondary" title="محاسبه و همگام‌سازی آمار از روی آثار ثبت‌شده">🔄 به‌روزرسانی آمار</button>
@@ -36,59 +31,28 @@
             </div>
         </header>
 
-        {# Information Overview Box #}
-        <section class="dash-panel" aria-label="مشخصات حراجی">
-            <div class="dash-panel-head">
-                <h2>مشخصات برگزاری</h2>
-            </div>
-            <dl class="dash-rows">
-                <div><dt>خانه حراجی</dt><dd>{{ auction.get_source_house_display }}</dd></div>
-                <div><dt>تاریخ برگزاری</dt><dd>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</dd></div>
-                <div><dt>مکان برگزاری</dt><dd>{{ auction.location|default:"-" }}</dd></div>
-                <div><dt>واحد پول</dt><dd>{{ auction.get_currency_display }}</dd></div>
-                <div><dt>درصد کمیسیون (Buyer's Premium)</dt><dd>{{ auction.commission_rate }}٪</dd></div>
-                <div><dt>وضعیت برگزاری</dt><dd>{{ auction.get_status_display }}</dd></div>
-            </dl>
+        {# مشخصات حراجی #}
+        <section class="ad-info" aria-label="مشخصات حراجی">
+            <span><span class="lbl">تاریخ:</span><b>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</b></span>
+            <span><span class="lbl">مکان:</span><b>{{ auction.location|default:"-" }}</b></span>
+            <span><span class="lbl">واحد پول:</span><b>{{ auction.get_currency_display }}</b></span>
+            <span><span class="lbl">کمیسیون (Buyer's Premium):</span><b>{{ auction.commission_rate }}٪</b></span>
         </section>
 
-        {# 8 Metric Cards #}
-        <section class="dash-metrics" aria-label="آمار و وضعیت آثار حراجی">
-            <div class="dash-metric">
-                <span>تعداد کل آثار کاتالوگ</span>
-                <strong>{{ auction.total_lots }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>آثار وارد شده به سامانه</span>
-                <strong>{{ auction.entered_lots_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>🎯 موارد هدف خرید</span>
-                <strong>{{ auction.to_buy_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>🔍 بازدید نهایی شده</span>
-                <strong>{{ auction.final_inspection_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>💰 تمام قیمت‌ها وارد شده</span>
-                <strong>{{ auction.all_prices_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>📋 اطلاعات اولیه وارد شده</span>
-                <strong>{{ auction.initial_info_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>🔬 نیازمند کارشناسی</span>
-                <strong>{{ auction.expert_lots_count }}</strong>
-            </div>
-            <div class="dash-metric">
-                <span>🚫 آثار انصرافی</span>
-                <strong>{{ auction.cancelled_lots_count }}</strong>
-            </div>
+        {# آمار حراجی #}
+        <section class="ad-stats" aria-label="آمار و وضعیت آثار حراجی">
+            <div class="ad-stat" title="تعداد کل آثار کاتالوگ"><span>کل آثار</span><strong>{{ auction.total_lots }}</strong></div>
+            <div class="ad-stat" title="آثار وارد شده به سامانه"><span>وارد شده</span><strong>{{ auction.entered_lots_count }}</strong></div>
+            <div class="ad-stat" title="موارد هدف خرید"><span>🎯 خرید</span><strong>{{ auction.to_buy_count }}</strong></div>
+            <div class="ad-stat" title="بازدید نهایی شده"><span>🔍 بازدید</span><strong>{{ auction.final_inspection_count }}</strong></div>
+            <div class="ad-stat" title="تمام قیمت‌ها وارد شده"><span>💰 قیمت</span><strong>{{ auction.all_prices_count }}</strong></div>
+            <div class="ad-stat" title="اطلاعات اولیه وارد شده"><span>📋 اطلاعات</span><strong>{{ auction.initial_info_count }}</strong></div>
+            <div class="ad-stat" title="نیازمند کارشناسی"><span>🔬 کارشناسی</span><strong>{{ auction.expert_lots_count }}</strong></div>
+            <div class="ad-stat" title="آثار انصرافی"><span>🚫 انصرافی</span><strong>{{ auction.cancelled_lots_count }}</strong></div>
         </section>
 
-        {# Lots / Products Table #}
-        <section class="dash-panel" aria-labelledby="auction-products-title">
+        {# لیست آثار (تنها بخش اسکرول‌شونده) #}
+        <section class="dash-panel ad-products" aria-labelledby="auction-products-title">
             <div class="dash-panel-head">
                 <h2 id="auction-products-title">آثار ثبت‌شده در این حراجی ({{ products|length }})</h2>
                 {% if can_add_product %}
@@ -97,68 +61,78 @@
             </div>
 
             {% if products %}
-                <div class="dash-table-wrap">
-                    <table class="dash-table">
+                <div class="ad-table-wrap">
+                    <table class="ad-table">
+                        <colgroup>
+                            <col class="ad-col-lot">
+                            <col class="ad-col-flags">
+                            <col class="ad-col-price">
+                            <col class="ad-col-status">
+                            <col class="ad-col-act">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>تصویر</th>
-                                <th>عنوان اثر</th>
-                                <th>کد اثر</th>
-                                <th>هنرمند</th>
+                                <th>اثر</th>
                                 <th>نشان‌های پیگیری</th>
-                                <th>قیمت پیشنهادی</th>
-                                <th>وضعیت بررسی</th>
+                                <th>قیمت‌ها</th>
+                                <th>وضعیت</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for product in products %}
-                                <tr>
+                                <tr
+                                    class="row-clickable{% if product.is_cancelled %} is-cancelled{% endif %}"
+                                    tabindex="0"
+                                    role="link"
+                                    data-row-href="{% url 'products:detail' product.pk %}"
+                                >
                                     <td>
-                                        {% if product.images.all %}
-                                            <img class="thumbnail-table" src="{{ product.images.all.0.image.url }}" alt="{{ product.title }}">
-                                        {% else %}
-                                            <span class="thumbnail-placeholder">-</span>
-                                        {% endif %}
+                                        <div class="ad-lot">
+                                            {% with first_image=product.images.all|first %}
+                                                {% if first_image %}
+                                                    <img class="ad-lot-thumb" src="{{ first_image.image.url }}" alt="{{ product.title }}" loading="lazy">
+                                                {% else %}
+                                                    <div class="ad-lot-thumb ad-lot-thumb-empty">بدون تصویر</div>
+                                                {% endif %}
+                                            {% endwith %}
+                                            <div class="ad-lot-text">
+                                                <a class="ad-lot-title" href="{% url 'products:detail' product.pk %}" title="{{ product.title }}">{{ product.title }}</a>
+                                                <span class="ad-lot-meta">
+                                                    {{ product.product_code|default:"بدون کد" }} · {{ product.artist|default:"بدون خالق" }}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <a class="dash-cell-title" href="{% url 'products:detail' product.pk %}">{{ product.title }}</a>
-                                    </td>
-                                    <td>{{ product.product_code|default:"-" }}</td>
-                                    <td>{{ product.artist|default:"-" }}</td>
                                     <td>
                                         <div class="table-badge-stack">
-                                            {% if product.to_buy %}
-                                                <span class="flag-badge flag-badge-buy">🎯 خرید</span>
-                                            {% endif %}
-                                            {% if product.final_inspection_done %}
-                                                <span class="flag-badge flag-badge-inspect">🔍 بازدید شده</span>
-                                            {% endif %}
-                                            {% if product.has_all_prices %}
-                                                <span class="flag-badge flag-badge-prices">💰 قیمت‌ها کامل</span>
-                                            {% endif %}
-                                            {% if product.is_notable %}
-                                                <span class="flag-badge flag-badge-notable">⭐ شاخص</span>
-                                            {% endif %}
-                                            {% if product.needs_expert_review %}
-                                                <span class="flag-badge flag-badge-expert">🔬 کارشناسی</span>
-                                            {% endif %}
-                                            {% if product.is_cancelled %}
-                                                <span class="flag-badge flag-badge-warning">لغو شده</span>
+                                            {% if product.to_buy %}<span class="flag-badge flag-badge-buy">🎯 خرید</span>{% endif %}
+                                            {% if product.final_inspection_done %}<span class="flag-badge flag-badge-inspect">🔍 بازدید</span>{% endif %}
+                                            {% if product.has_all_prices %}<span class="flag-badge flag-badge-prices">💰 قیمت کامل</span>{% endif %}
+                                            {% if product.is_notable %}<span class="flag-badge flag-badge-notable">⭐ شاخص</span>{% endif %}
+                                            {% if product.needs_expert_review %}<span class="flag-badge flag-badge-expert">🔬 کارشناسی</span>{% endif %}
+                                            {% if product.is_cancelled %}<span class="flag-badge flag-badge-warning">لغو شده</span>{% endif %}
+                                            {% if not product.to_buy and not product.final_inspection_done and not product.has_all_prices and not product.is_notable and not product.needs_expert_review and not product.is_cancelled %}
+                                                <span class="ad-muted">—</span>
                                             {% endif %}
                                         </div>
                                     </td>
-                                    <td class="dash-num">
-                                        {% if product.suggested_price %}
-                                            {{ product.suggested_price }} {{ auction.get_currency_display }}
+                                    <td>
+                                        {% if product.suggested_price or product.suitable_price %}
+                                            <div class="ad-price">
+                                                {% if product.suggested_price %}
+                                                    <span><small>پیشنهادی:</small> <b>{{ product.suggested_price|floatformat:"-2" }}</b></span>
+                                                {% endif %}
+                                                {% if product.suitable_price %}
+                                                    <span><small>مناسب:</small> <b>{{ product.suitable_price|floatformat:"-2" }}</b></span>
+                                                {% endif %}
+                                            </div>
                                         {% else %}
-                                            -
+                                            <span class="ad-muted">—</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="status-badge status-badge-{{ product.status|lower }}">
-                                            {{ product.get_status_display }}
-                                        </span>
+                                        <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
                                     </td>
                                     <td class="dash-cell-actions">
                                         <a href="{% url 'products:detail' product.pk %}">مشاهده</a>
@@ -180,4 +154,24 @@
         </section>
     </main>
 </div>
+
+{% if products %}
+<script>
+    (function () {
+        document.querySelectorAll('[data-row-href]').forEach(function (row) {
+            function go() { window.location.href = row.dataset.rowHref; }
+            row.addEventListener('click', function (event) {
+                if (event.target.closest('a, button, form')) { return; }
+                go();
+            });
+            row.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    go();
+                }
+            });
+        });
+    }());
+</script>
+{% endif %}
 {% endblock %}

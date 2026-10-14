@@ -1,0 +1,201 @@
+/* ==========================================================================
+   Auction detail page — compact header/stats + scrollable lots table
+   Loaded after dash-pages.css (see site.css).
+   ========================================================================== */
+
+/* ---------- Layout: no page scroll, only the lots table scrolls ---------- */
+.auction-detail-page { overflow: hidden; }
+.auction-detail-page .page-shell { height: 100dvh; overflow: hidden; }
+.auction-detail-page .dash { height: 100%; min-height: 0; align-items: stretch; }
+.auction-detail-page .dash-main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+}
+.auction-detail-page .dash-main > * { flex: 0 0 auto; }
+
+/* ---------- Fix: .dash a { color: inherit } made primary button text dark ---------- */
+.dash .button-primary,
+.dash .button-primary:hover,
+.dash .button-primary:visited {
+    color: #ffffff;
+}
+
+/* ---------- Compact header ---------- */
+.ad-head { padding-bottom: 10px; align-items: center; }
+.ad-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.ad-title-row h1 { font-size: 20px; margin: 0; }
+.ad-head .button,
+.ad-head .dash-btn { padding: 6px 12px; font-size: 12px; }
+
+/* ---------- Auction info strip ---------- */
+.ad-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    padding: 8px 14px;
+    border: 1px solid var(--d-line);
+    border-radius: 10px;
+    background: var(--d-paper);
+    font-size: 12px;
+    color: var(--d-text-2);
+}
+.ad-info b { color: var(--d-ink); font-weight: 600; }
+.ad-info .lbl { color: var(--d-text-3); margin-inline-end: 4px; }
+
+/* ---------- Stats strip ---------- */
+.ad-stats {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    border: 1px solid var(--d-line);
+    border-radius: 10px;
+    background: var(--d-paper);
+    overflow: hidden;
+}
+.ad-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--d-text-3);
+    white-space: nowrap;
+}
+.ad-stat + .ad-stat { border-inline-start: 1px solid var(--d-line); }
+.ad-stat strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--d-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Lots panel (the only scrollable area) ---------- */
+.ad-products {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+.ad-products .dash-panel-head {
+    margin: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--d-line);
+    align-items: center;
+}
+.ad-products .dash-panel-head h2 { font-size: 14px; }
+.ad-products .dash-panel-head .dash-btn { padding: 5px 12px; font-size: 12px; }
+
+.ad-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+/* ---------- Lots table ---------- */
+.ad-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.ad-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 8px 16px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--d-text-3);
+    background: var(--d-wash);
+    border-bottom: 1px solid var(--d-line);
+}
+.ad-table td {
+    padding: 10px 16px;
+    vertical-align: middle;
+    text-align: right;
+    font-size: 13px;
+    color: var(--d-text-2);
+    border-bottom: 1px solid var(--d-line);
+}
+.ad-table tbody tr:last-child td { border-bottom: 0; }
+.ad-table tbody tr.row-clickable { cursor: pointer; }
+.ad-table tbody tr.row-clickable:hover { background: #fafafa; }
+.ad-table tbody tr.row-clickable:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+.ad-table tbody tr.is-cancelled td { opacity: 0.55; }
+
+/* column widths */
+.ad-col-lot    { width: 38%; }
+.ad-col-flags  { width: 24%; }
+.ad-col-price  { width: 16%; }
+.ad-col-status { width: 14%; }
+.ad-col-act    { width: 8%; }
+
+/* lot cell: thumb + title + meta */
+.ad-lot { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ad-lot-thumb {
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border: 1px solid var(--d-line);
+    border-radius: 8px;
+    background: var(--d-wash);
+}
+.ad-lot-thumb-empty {
+    display: grid;
+    place-items: center;
+    color: var(--d-text-3);
+    font-size: 11px;
+}
+.ad-lot-text { display: grid; gap: 2px; min-width: 0; }
+.ad-lot-title {
+    font-weight: 600;
+    color: var(--d-ink) !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ad-lot-title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ad-lot-meta {
+    font-size: 12px;
+    color: var(--d-text-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* prices */
+.ad-price { display: grid; gap: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-price b { color: var(--d-ink); font-weight: 600; }
+.ad-price small { color: var(--d-text-3); font-size: 11px; }
+
+.ad-muted { color: var(--d-text-3); }
+
+.ad-products .dash-empty { padding: 32px 16px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+    .ad-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ad-stat:nth-child(5) { border-inline-start: 0; }
+    .ad-stat:nth-child(n + 5) { border-top: 1px solid var(--d-line); }
+}
+@media (max-width: 800px) {
+    .ad-table-wrap { overflow-x: auto; }
+    .ad-table { min-width: 720px; }
+}
+@media (max-width: 640px) {
+    .ad-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ad-stat:nth-child(odd) { border-inline-start: 0; }
+    .ad-stat:nth-child(n + 3) { border-top: 1px solid var(--d-line); }
+}

@@ -62,14 +62,15 @@
 
         <form method="get" class="filter-bar filter-bar-flat" role="search">
             <div class="filter-bar-main">
-        <label class="sr-only" for="id_q">جستجوی محصولات</label
-                id="id_q"
-                type="search"
-                name="q"
-                class="filter-bar-search"
-                value="{{ search_query }}"
-                placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده..."
-            >
+        <label class="sr-only" for="id_q">جستجوی محصولات</label>
+        <input
+            id="id_q"
+            type="search"
+            name="q"
+            class="filter-bar-search"
+            value="{{ search_query }}"
+            placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده..."
+        >
 
             <select id="id_status" name="status" aria-label="وضعیت">
                 <option value="">همه وضعیت‌ها</option>
@@ -193,7 +194,7 @@
                             پیشنهاددهنده / حراجی
                             <span class="sort-indicator"></span>
                         </th>
-                        <th>راه ارتباطی</th>
+                        <th>راه ارتباطی / خانه حراجی</th>
                         <th class="sortable" data-sort="suggested_price">
                             قیمت پیشنهادی
                             <span class="sort-indicator"></span>
@@ -227,17 +228,20 @@
                             <td>
                                 <strong>{{ product.title }}</strong>
                             </td>
-                            <td>
+                           <td>
                                 {% if product.auction %}
-                                    <div class="table-auction-cell">
-                                        <span class="badge badge-house badge-house-{{ product.auction.source_house|lower }}">{{ product.auction.get_source_house_display }}</span>
-                                        <span class="table-auction-name">{{ product.auction.name }}</span>
-                                    </div>
+                                    <span class="table-auction-name">{{ product.auction.name }}</span>
                                 {% else %}
                                     {{ product.suggested_by|default:"-" }}
                                 {% endif %}
                             </td>
-                            <td>{{ product.get_contact_method_display|default:"-" }}</td>
+                            <td>
+                                {% if product.auction %}
+                                    <span class="badge badge-house badge-house-{{ product.auction.source_house|lower }}">{{ product.auction.get_source_house_display }}</span>
+                                {% else %}
+                                    {{ product.get_contact_method_display|default:"-" }}
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if product.suggested_price %}
                                     {{ product.suggested_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}

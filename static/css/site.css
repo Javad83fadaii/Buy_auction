@@ -4,6 +4,7 @@
 @import url('./dashboard/dash-pages.css');
 @import url('./dashboard/auction-detail.css');
 @import url('./dashboard/statistics.css');
+@import url('./dashboard/filter-bar-flat.css');
 .product-create-card,
 .product-list-card,
 .product-detail-card,

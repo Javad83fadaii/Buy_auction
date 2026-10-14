@@ -1,0 +1,68 @@
+/* ==========================================================================
+   Flat filter bar — no white box behind the filters, smaller controls.
+   Opt-in: add class "filter-bar-flat" to <form class="filter-bar">.
+   Loaded after dash-pages.css (see site.css).
+   ========================================================================== */
+
+.dash .filter-bar.filter-bar-flat {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Let the controls and the "advanced filters" button share ONE flex row */
+.dash .filter-bar-flat .filter-bar-main {
+    display: contents;
+}
+
+/* smaller controls */
+.dash .filter-bar-flat input,
+.dash .filter-bar-flat select {
+    height: 32px;
+    font-size: 12px;
+    border-radius: 8px;
+}
+.dash .filter-bar-flat input { padding: 0 12px; }
+.dash .filter-bar-flat select {
+    padding-inline: 12px 30px;
+    background-position: left 10px center;
+}
+
+.dash .filter-bar-flat .filter-bar-search { flex: 1 1 220px; min-width: 160px; }
+.dash .filter-bar-flat .filter-bar-main select { flex: 0 1 130px; min-width: 0; }
+
+/* smaller buttons */
+.dash .filter-bar-flat .button {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 12px;
+    border-radius: 8px;
+    flex: 0 0 auto;
+}
+
+/* "advanced filters" toggle — stays in the same row, after the buttons */
+.dash .filter-bar-flat .filter-more { flex: 0 0 auto; }
+.dash .filter-bar-flat .filter-more summary {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+    gap: 6px;
+    white-space: nowrap;
+}
+.dash .filter-bar-flat .filter-more-icon { width: 14px; height: 14px; }
+
+/* The button now sits at the far (left) end in RTL, so open the panel toward the right */
+.dash .filter-bar-flat .filter-more-grid {
+    right: auto;
+    left: 0;
+}
+.dash .filter-bar-flat .filter-mini input,
+.dash .filter-bar-flat .filter-mini select { height: 32px; font-size: 12px; }
+
+@media (max-width: 640px) {
+    .dash .filter-bar.filter-bar-flat { flex-direction: column; align-items: stretch; }
+    .dash .filter-bar-flat .filter-more-grid { left: auto; }
+}

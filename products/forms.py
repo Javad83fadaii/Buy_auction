@@ -23,10 +23,18 @@ PRODUCT_LIST_SORT_CHOICES = (
     ('created_at', 'قدیمی‌ترین'),
     ('title', 'عنوان A-Z'),
     ('-title', 'عنوان Z-A'),
+    ('product_code', 'کد اثر (صعودی)'),
+    ('-product_code', 'کد اثر (نزولی)'),
     ('suggested_price', 'قیمت پیشنهادی کم به زیاد'),
     ('-suggested_price', 'قیمت پیشنهادی زیاد به کم'),
     ('suitable_price', 'قیمت مناسب کم به زیاد'),
     ('-suitable_price', 'قیمت مناسب زیاد به کم'),
+    ('suggested_by', 'پیشنهاددهنده (الفبا)'),
+    ('-suggested_by', 'پیشنهاددهنده (معکوس)'),
+    ('auction', 'نام حراجی'),
+    ('-auction', 'نام حراجی (معکوس)'),
+    ('house', 'خانه حراجی'),
+    ('-house', 'خانه حراجی (معکوس)'),
 )
 PRODUCT_IMAGE_ACCEPT_ATTR = '.jpg,.jpeg,.png,.webp'
 

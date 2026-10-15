@@ -189,14 +189,8 @@
                         </div>
 
                         <footer class="auction-card-footer">
-                            <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_detail' auction.pk %}">
-                                مشاهده جزئیات و آثار
-                            </a>
                             <a class="button button-secondary button-sm" href="{% url 'products:create' %}?auction={{ auction.pk }}">
                                 + افزودن اثر
-                            </a>
-                            <a class="button button-secondary button-sm" href="{% url 'products:auction_edit' auction.pk %}">
-                                ویرایش
                             </a>
                         </footer>
                     </article>
@@ -208,13 +202,24 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>حراجی</th>
-                            <th>خانه</th>
-                            <th>تاریخ</th>
-                            <th>وضعیت</th>
+                            <th class="sortable" data-sort="name">
+                                حراجی
+                                <span class="sort-indicator"></span>
+                            </th>
+                            <th class="sortable" data-sort="source_house">
+                                خانه
+                                <span class="sort-indicator"></span>
+                            </th>
+                            <th class="sortable" data-sort="start_date">
+                                تاریخ
+                                <span class="sort-indicator"></span>
+                            </th>
+                            <th class="sortable" data-sort="status">
+                                وضعیت
+                                <span class="sort-indicator"></span>
+                            </th>
                             <th>آثار وارد شده</th>
                             <th>هدف خرید</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -237,10 +242,6 @@
                                 </td>
                                 <td>{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
                                 <td>🎯 {{ auction.to_buy_count }}</td>
-                                <td class="dash-cell-actions">
-                                    <a href="{% url 'products:auction_detail' auction.pk %}">مشاهده</a>
-                                    <a href="{% url 'products:auction_edit' auction.pk %}">ویرایش</a>
-                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -285,6 +286,53 @@
                         event.preventDefault();
                         go();
                     }
+                });
+            });
+
+            var sortHeaders = document.querySelectorAll('.data-table thead th.sortable');
+            var currentSort = '{{ selected_sort|default:"-start_date" }}';
+            var defaultSort = '{{ default_sort|default:"-start_date" }}';
+
+            function updateSortIndicators() {
+                sortHeaders.forEach(function (header) {
+                    var sortKey = header.dataset.sort;
+                    header.classList.remove('is-asc', 'is-desc');
+                    if (currentSort === sortKey) {
+                        header.classList.add('is-asc');
+                    } else if (currentSort === '-' + sortKey) {
+                        header.classList.add('is-desc');
+                    }
+                });
+            }
+
+            updateSortIndicators();
+
+            sortHeaders.forEach(function (header) {
+                header.addEventListener('click', function () {
+                    var sortKey = header.dataset.sort;
+                    var newSort = sortKey;
+
+                    /* سه‌حالته: صعودی -> نزولی -> بازگشت به پیش‌فرض */
+                    if (currentSort === sortKey) {
+                        newSort = '-' + sortKey;
+                    } else if (currentSort === '-' + sortKey) {
+                        newSort = defaultSort;
+                    }
+
+                    var params = new URLSearchParams(window.location.search);
+                    if (newSort === defaultSort) {
+                        params.delete('sort');
+                    } else {
+                        params.set('sort', newSort);
+                    }
+                    params.delete('page');
+
+                    var newUrl = window.location.pathname;
+                    var queryString = params.toString();
+                    if (queryString) {
+                        newUrl += '?' + queryString;
+                    }
+                    window.location.href = newUrl;
                 });
             });
 

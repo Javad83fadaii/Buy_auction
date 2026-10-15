@@ -302,6 +302,10 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         '-product_code': (F('product_code').desc(nulls_last=True), '-pk'),
         'suggested_by': ('suggested_by', 'pk'),
         '-suggested_by': ('-suggested_by', '-pk'),
+        'auction': (F('auction__name').asc(nulls_last=True), 'pk'),
+        '-auction': (F('auction__name').desc(nulls_last=True), '-pk'),
+        'house': (F('auction__source_house').asc(nulls_last=True), 'pk'),
+        '-house': (F('auction__source_house').desc(nulls_last=True), '-pk'),
     }
 
     def get_queryset(self):
@@ -851,6 +855,19 @@ class AuctionListView(RolePermissionMixin, ListView):
     model = Auction
     context_object_name = 'auctions'
     paginate_by = 12
+    default_sort = '-start_date'
+    allowed_sorts = {
+        '-start_date': ('-start_date', '-created_at'),
+        'start_date': ('start_date', 'created_at'),
+        'created_at': ('created_at', 'pk'),
+        '-created_at': ('-created_at', '-pk'),
+        'name': ('name', 'pk'),
+        '-name': ('-name', '-pk'),
+        'source_house': ('source_house', 'pk'),
+        '-source_house': ('-source_house', '-pk'),
+        'status': ('status', 'pk'),
+        '-status': ('-status', '-pk'),
+    }
 
     def get_filter_form(self):
         if not hasattr(self, '_filter_form'):
@@ -858,8 +875,14 @@ class AuctionListView(RolePermissionMixin, ListView):
             self._filter_form.is_valid()
         return self._filter_form
 
+    def get_selected_sort(self):
+        sort = (self.request.GET.get('sort') or '').strip()
+        if sort in self.allowed_sorts:
+            return sort
+        return self.default_sort
+
     def get_queryset(self):
-        queryset = Auction.objects.all().order_by('-start_date', '-created_at')
+        queryset = Auction.objects.all()
         if is_expert_restricted_user(getattr(getattr(self, 'request', None), 'user', None)):
             queryset = queryset.filter(products__assigned_expert=self.request.user).distinct()
         form = self.get_filter_form()
@@ -880,7 +903,7 @@ class AuctionListView(RolePermissionMixin, ListView):
         date_to = form.cleaned_data.get('date_to')
         if date_to:
             queryset = queryset.filter(start_date__lte=date_to)
-        return queryset
+        return queryset.order_by(*self.allowed_sorts[self.get_selected_sort()])
 
     def get_pagination_query(self):
         query_data = self.request.GET.copy()
@@ -899,6 +922,8 @@ class AuctionListView(RolePermissionMixin, ListView):
             all_auctions = Auction.objects.all()
         context['page_title'] = 'حراجی‌های خارجی'
         context['filter_form'] = form
+        context['selected_sort'] = self.get_selected_sort()
+        context['default_sort'] = self.default_sort
         context['pagination_query'] = self.get_pagination_query()
         context['clear_filters_url'] = self.get_clear_filters_url()
         context['total_auctions_count'] = all_auctions.count()
@@ -914,6 +939,7 @@ class AuctionListView(RolePermissionMixin, ListView):
             or form.cleaned_data.get('status')
             or form.cleaned_data.get('date_from')
             or form.cleaned_data.get('date_to')
+            or self.get_selected_sort() != self.default_sort
         )
         return context
 

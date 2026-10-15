@@ -190,11 +190,14 @@
                             عنوان
                             <span class="sort-indicator"></span>
                         </th>
-                        <th class="sortable" data-sort="suggested_by">
+                        <th class="sortable" data-sort="auction">
                             پیشنهاددهنده / حراجی
                             <span class="sort-indicator"></span>
                         </th>
-                        <th>راه ارتباطی / خانه حراجی</th>
+                        <th class="sortable" data-sort="house">
+                            راه ارتباطی / خانه حراجی
+                            <span class="sort-indicator"></span>
+                        </th>
                         <th class="sortable" data-sort="suggested_price">
                             قیمت پیشنهادی
                             <span class="sort-indicator"></span>
@@ -389,7 +392,7 @@
                     } else {
                         params.set('sort', newSort);
                     }
-                    
+                    params.delete('page');
                     var newUrl = window.location.pathname;
                     var queryString = params.toString();
                     if (queryString) {

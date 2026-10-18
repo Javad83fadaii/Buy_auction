@@ -1,7 +1,7 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Q, Sum
+from django.db.models import Avg, Sum
 from django.views.generic import TemplateView
 
+from accounts.permissions import RolePermissionMixin
 from products.choices import (
     AuctionHouseChoices,
     AuctionStatusChoices,
@@ -9,6 +9,7 @@ from products.choices import (
     ProductStatusChoices,
 )
 from products.models import Auction, Product
+from products.services import is_expert_restricted_user
 
 
 def home(request):
@@ -16,8 +17,9 @@ def home(request):
     return redirect('accounts:login')
 
 
-class StatisticsView(LoginRequiredMixin, TemplateView):
+class StatisticsView(RolePermissionMixin, TemplateView):
     template_name = 'dashboard/statistics.html'
+    permission_required = 'products.add_product'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -25,7 +27,7 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
         
         # Product statistics
         all_products = Product.objects.all()
-        if hasattr(user, 'has_perm') and not user.has_perm('products.review_product'):
+        if is_expert_restricted_user(user):
             # Expert-restricted users only see their assigned products
             all_products = all_products.filter(assigned_expert=user)
         
@@ -63,8 +65,8 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
         price_stats = all_products.aggregate(
             total_suggested_price=Sum('suggested_price'),
             total_suitable_price=Sum('suitable_price'),
-            avg_suggested_price=Sum('suggested_price') / Count('suggested_price') if all_products.filter(suggested_price__isnull=False).exists() else 0,
-            avg_suitable_price=Sum('suitable_price') / Count('suitable_price') if all_products.filter(suitable_price__isnull=False).exists() else 0,
+            avg_suggested_price=Avg('suggested_price'),
+            avg_suitable_price=Avg('suitable_price'),
         )
         context['product_stats']['price'] = price_stats
         
@@ -99,4 +101,3 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
         
         context['page_title'] = 'آمار و گزارشات'
         return context
-

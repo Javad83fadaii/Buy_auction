@@ -41,14 +41,14 @@ class AccountsTestCase(TestCase):
         user.refresh_from_db()
         return user
 
-    def test_successful_login(self):
+    def test_successful_login_redirects_to_default_destination(self):
         response = self.client.post(
             reverse('accounts:login'),
             {'username': self.operator_user.username, 'password': self.password},
             follow=True,
         )
 
-        self.assertRedirects(response, reverse('dashboard'))
+        self.assertRedirects(response, reverse('products:list'))
         self.assertTrue(response.context['user'].is_authenticated)
 
     def test_expert_login_redirects_to_product_list(self):
@@ -140,6 +140,21 @@ class AccountsTestCase(TestCase):
     def test_expert_cannot_access_general_dashboard(self):
         self.client.force_login(self.expert_user)
         response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_operator_can_access_statistics_view(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('statistics'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'آمار و گزارشات')
+
+    def test_expert_cannot_access_statistics_view(self):
+        self.client.force_login(self.expert_user)
+
+        response = self.client.get(reverse('statistics'))
 
         self.assertEqual(response.status_code, 403)
 

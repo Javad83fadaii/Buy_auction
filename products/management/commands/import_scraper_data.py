@@ -80,7 +80,9 @@ class Command(BaseCommand):
         finally:
             conn.close()
 
-        for auction in Auction.objects.filter(pk__in=auction_map.values()):
+        for auction in Auction.objects.filter(
+            pk__in=[auction_data['pk'] for auction_data in auction_map.values()]
+        ):
             auction.sync_statistics()
         self.stdout.write(self.style.SUCCESS('Done.'))
 
@@ -100,7 +102,7 @@ class Command(BaseCommand):
         return code if code in CurrencyChoices.values else CurrencyChoices.OTHER
 
     def import_auctions(self, conn):
-        auction_map = {}  # old id -> new Auction pk
+        auction_map = {}  # old id -> {'pk': new Auction pk, 'auction_number': value}
         with conn.cursor(DictCursor) as cur:
             cur.execute('SELECT * FROM auctions')
             rows = cur.fetchall()
@@ -126,24 +128,40 @@ class Command(BaseCommand):
                     start_date=start.date(),
                     defaults=defaults,
                 )
-                auction_map[row['id']] = auction.pk
+                auction_map[row['id']] = {
+                    'pk': auction.pk,
+                    'auction_number': auction.auction_number,
+                }
         self.stdout.write(f'Auctions imported: {len(auction_map)}')
         return auction_map
 
     # ---------- lots ----------
+    def build_product_code(self, row, auction_map):
+        auction_data = auction_map.get(row['auction_id']) or {}
+        auction_number = str(auction_data.get('auction_number') or '').strip()
+        lot_number = str(row.get('lot_number') or '').strip()
+
+        if auction_number and lot_number:
+            return f'{auction_number}-{lot_number}'[:64]
+        if lot_number:
+            return lot_number[:64]
+        if auction_number:
+            return auction_number[:64]
+        return f"auction-{row['auction_id']}-lot"[:64]
+
     def build_product(self, row, auction_map):
         low, high = parse_estimate(row['estimate_text'])
         description = '\n\n'.join(p for p in (row['description'], row['lot_essay']) if p)
         return Product(
             title=(row['title'] or f"Lot {row['lot_number']}")[:255],
-            product_code=str(row['lot_number']),
+            product_code=self.build_product_code(row, auction_map),
             description=description,
             suggested_price=low,
             suitable_price=high,
             suggestion_date=row['first_seen_at'].date(),
             source_type=SOURCE_TYPE_MAP.get(row['source_name'], ProductSourceTypeChoices.OTHER_AUCTION),
             source_url=row['url'],
-            auction_id=auction_map.get(row['auction_id']),
+            auction_id=(auction_map.get(row['auction_id']) or {}).get('pk'),
             status=ProductStatusChoices.PENDING_REVIEW,
             is_cancelled=(row['lot_status'] or '').lower() == 'deleted',
         )

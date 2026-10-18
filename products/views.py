@@ -5,13 +5,6 @@ from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import Count, F, Prefetch, Q
 from django.db.models.functions import Trim
-import logging
-from urllib.parse import urlencode
-
-from django.contrib import messages
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Count, F, Prefetch, Q
-from django.db.models.functions import Trim
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import DetailView, FormView, ListView, TemplateView, UpdateView, View

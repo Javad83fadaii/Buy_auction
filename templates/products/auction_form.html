@@ -45,6 +45,14 @@
                     </div>
 
                     <div class="form-field">
+                        <label for="{{ form.auction_number.id_for_label }}">شماره حراجی</label>
+                        {{ form.auction_number }}
+                        {% if form.auction_number.errors %}
+                            <small class="field-error">{{ form.auction_number.errors|join:", " }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field">
                         <label for="{{ form.source_house.id_for_label }}">خانه حراجی <span class="required-indicator">*</span></label>
                         {{ form.source_house }}
                         {% if form.source_house.errors %}

@@ -481,38 +481,23 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'لیست محصولات')
 
-    def test_admin_sees_add_product_button(self):
+    def test_admin_does_not_see_inline_add_product_button(self):
         response = self.get_list(user=self.admin_user)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'افزودن محصول')
-        self.assertContains(
-            response,
-            f'href="{reverse("products:create")}"',
-            html=False,
-        )
+        self.assertNotContains(response, 'افزودن محصول')
 
-    def test_operator_sees_add_product_button(self):
+    def test_operator_does_not_see_inline_add_product_button(self):
         response = self.get_list(user=self.operator_user)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'افزودن محصول')
-        self.assertContains(
-            response,
-            f'href="{reverse("products:create")}"',
-            html=False,
-        )
+        self.assertNotContains(response, 'افزودن محصول')
 
-    def test_expert_does_not_see_add_product_button(self):
+    def test_expert_does_not_see_inline_add_product_button(self):
         response = self.get_list(user=self.expert_user)
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'افزودن محصول')
-        self.assertNotContains(
-            response,
-            f'href="{reverse("products:create")}"',
-            html=False,
-        )
 
     def test_expert_does_not_see_dashboard_back_button(self):
         response = self.get_list(user=self.expert_user)
@@ -1264,7 +1249,7 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             sort='title',
         )
 
-        self.assertContains(response, 'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF">حذف فیلترها</a>', html=False)
+        self.assertContains(response, 'href="/products/?q=%D9%85%D8%AD%D9%85%D8%AF">پاک کردن</a>', html=False)
 
 
 class ProductDetailViewTests(ProductCreateBaseTestCase):
@@ -2882,7 +2867,7 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'مدیریت محصولات')
 
-    def test_statistics_counts_are_calculated_from_database(self):
+    def test_product_stats_are_calculated_from_database(self):
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-1',
             title='پیش‌نویس فعال',
@@ -2921,16 +2906,16 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
         )
 
         response = self.get_dashboard(user=self.operator_user)
-        statistics = {item['label']: item['count'] for item in response.context['statistics']}
+        product_stats = response.context['product_stats']
 
-        self.assertEqual(statistics['کل محصولات'], 6)
-        self.assertEqual(statistics['محصولات فعال'], 4)
-        self.assertEqual(statistics['محصولات لغوشده'], 2)
-        self.assertEqual(statistics['در انتظار بررسی'], 1)
-        self.assertEqual(statistics['تأیید شده'], 2)
-        self.assertEqual(statistics['منتشر شده'], 2)
+        self.assertEqual(product_stats['total_products'], 6)
+        self.assertEqual(product_stats['manual_products'], 6)
+        self.assertEqual(product_stats['auction_products'], 0)
+        self.assertEqual(product_stats['pending_review_products'], 1)
+        self.assertEqual(product_stats['cancelled_products'], 2)
+        self.assertEqual(product_stats['to_buy_products'], 0)
 
-    def test_latest_five_products_displayed_in_recent_products(self):
+    def test_latest_six_products_are_available_in_all_products_context(self):
         now = timezone.now()
         products = []
         for index in range(6):
@@ -2941,18 +2926,18 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
             products.append(self.set_created_at(product, now - timedelta(hours=index)))
 
         response = self.get_dashboard(user=self.operator_user)
-        recent_products = response.context['recent_products']
+        all_products = response.context['all_products']
 
-        self.assertEqual(len(recent_products), 5)
+        self.assertEqual(len(all_products), 6)
         self.assertEqual(
-            [product.pk for product in recent_products],
-            [product.pk for product in products[:5]],
+            [product.pk for product in all_products],
+            [product.pk for product in products],
         )
         self.assertContains(response, 'محصول اخیر 0')
         self.assertContains(response, 'محصول اخیر 4')
-        self.assertNotContains(response, 'محصول اخیر 5')
+        self.assertContains(response, 'محصول اخیر 5')
 
-    def test_recent_products_are_ordered_by_created_at_descending(self):
+    def test_all_products_context_is_ordered_by_created_at_descending(self):
         now = timezone.now()
         oldest_product = self.set_created_at(
             self.create_dashboard_product(
@@ -2979,11 +2964,11 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
         response = self.get_dashboard(user=self.operator_user)
 
         self.assertEqual(
-            [product.pk for product in response.context['recent_products']],
+            [product.pk for product in response.context['all_products']],
             [newest_product.pk, middle_product.pk, oldest_product.pk],
         )
 
-    def test_recent_products_include_product_detail_link(self):
+    def test_dashboard_includes_product_detail_link_for_manual_products(self):
         product = self.create_dashboard_product(
             product_code='ART-DASHBOARD-LINK-1',
             title='محصول دارای لینک',
@@ -3000,9 +2985,9 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
     def test_empty_state_is_displayed_when_no_product_exists(self):
         response = self.get_dashboard(user=self.operator_user)
 
-        self.assertContains(response, 'هنوز محصولی ثبت نشده است.')
+        self.assertContains(response, 'هنوز محصول ثبت دستی وجود ندارد.')
 
-    def test_cancelled_badge_displayed_in_recent_products(self):
+    def test_cancelled_badge_displayed_for_manual_products(self):
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-CANCELLED-1',
             title='محصول لغوشده داشبورد',
@@ -3024,7 +3009,6 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
         self.assertContains(
             response,
             f'href="{reverse("products:list")}"',
-            count=2,
             html=False,
         )
         self.assertContains(
@@ -3036,7 +3020,7 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
     def test_admin_sees_pending_review_quick_action(self):
         response = self.get_dashboard(user=self.admin_user)
 
-        self.assertContains(response, 'محصولات در انتظار بررسی')
+        self.assertContains(response, 'در انتظار بررسی')
         self.assertContains(
             response,
             f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
@@ -3275,10 +3259,12 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         response = self.client.get(create_url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'products/auction_form.html')
+        self.assertContains(response, 'name="auction_number"', html=False)
 
         # POST form
         payload = {
             'name': 'حراج ساتبیز نیویورک',
+            'auction_number': 'SNY-2026-10',
             'source_house': AuctionHouseChoices.SOTHEBYS,
             'start_date': '2026-10-15',
             'location': 'نیویورک، خیابان یورک',
@@ -3298,6 +3284,7 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         post_response = self.client.post(create_url, data=payload)
         self.assertEqual(post_response.status_code, 302)
         new_auction = Auction.objects.get(name='حراج ساتبیز نیویورک')
+        self.assertEqual(new_auction.auction_number, 'SNY-2026-10')
         self.assertEqual(new_auction.source_house, AuctionHouseChoices.SOTHEBYS)
         self.assertEqual(new_auction.created_by, self.operator_user)
 

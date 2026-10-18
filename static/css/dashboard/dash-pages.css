@@ -212,7 +212,11 @@
 .dash .form-field textarea:focus,
 .dash .form-field select:focus,
 .dash .form-field .text-input:focus,
-.dash .text-input:focus,
+.dash .text-input:focus {
+    outline: none;
+    border-color: var(--d-ink);
+    box-shadow: none;
+}
 
 /* ---------- Required markers & notes ---------- */
 .dash .form-required-note {

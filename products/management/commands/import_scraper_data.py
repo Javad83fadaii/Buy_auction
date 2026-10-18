@@ -111,6 +111,7 @@ class Command(BaseCommand):
                 start = row['start_at'] or row['first_seen_at']
                 house = HOUSE_MAP.get(row['source_name'], AuctionHouseChoices.OTHER)
                 defaults = {
+                    'auction_number': (row['auction_number'] or row['auction_key'] or '')[:128],
                     'end_date': row['end_at'].date() if row['end_at'] else None,
                     'location': (row['location'] or '')[:255],
                     'currency': self.detect_currency(cur, row['id']),

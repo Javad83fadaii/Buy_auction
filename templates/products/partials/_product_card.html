@@ -6,8 +6,10 @@
     {% if product.primary_images %}
         <img
             class="product-card-thumb"
-            src="{{ product.primary_images.0.image.url }}"
+            src="{{ product.primary_images.0.display_url }}"
             alt="تصویر اصلی {{ product.title }}"
+            loading="lazy"
+            decoding="async"
         >
     {% else %}
         <div class="product-card-thumb product-card-thumb-placeholder">بدون تصویر</div>

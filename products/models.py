@@ -1,5 +1,5 @@
-import uuid
-from pathlib import Path
+import re
+from pathlib import Path, PurePosixPath
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -18,15 +18,36 @@ from .choices import (
 from .validators import validate_product_image
 
 
+LOT_IMAGE_ROOT = 'lots'
+THUMB_IMAGE_ROOT = 'thumbs'
+SAFE_MEDIA_COMPONENT_RE = re.compile(r'[^A-Za-z0-9._-]+')
+
+
+def normalize_media_component(value, fallback: str) -> str:
+    raw_value = str(value or '').strip()
+    normalized = SAFE_MEDIA_COMPONENT_RE.sub('_', raw_value).strip('._')
+    return normalized or fallback
+
+
 def product_image_upload_to(instance, filename: str) -> str:
-    extension = Path(filename).suffix.lower() or '.bin'
-    product_id = instance.product_id or 'unassigned'
-    image_name = instance.pk or uuid.uuid4().hex
-    return f'products/{product_id}/{image_name}{extension}'
+    return instance.build_image_relative_path(filename=filename)
+
+
+def build_thumbnail_relative_path(image_name: str) -> str:
+    if not image_name:
+        return ''
+    return str(PurePosixPath(THUMB_IMAGE_ROOT) / PurePosixPath(image_name).with_suffix('.webp'))
 
 
 class Auction(models.Model):
     name = models.CharField('نام حراجی', max_length=255, db_index=True)
+    auction_number = models.CharField(
+        'شماره مزایده',
+        max_length=128,
+        blank=True,
+        db_index=True,
+        help_text='شماره یا کد یکتای مزایده برای مسیر ذخیره‌سازی تصاویر.',
+    )
     source_house = models.CharField(
         'خانه حراجی',
         max_length=32,
@@ -135,6 +156,10 @@ class Auction(models.Model):
 
     def __str__(self) -> str:
         return f'{self.name} ({self.get_source_house_display()})'
+
+    def get_image_directory_name(self) -> str:
+        fallback = f'auction-{self.pk}' if self.pk else 'auction'
+        return normalize_media_component(self.auction_number, fallback)
 
     def sync_statistics(self, commit: bool = True) -> dict[str, int]:
         related_products = self.products.all()
@@ -282,6 +307,11 @@ class Product(models.Model):
     def __str__(self) -> str:
         return self.title
 
+    def get_image_directory_name(self) -> str:
+        if self.auction_id and self.auction is not None:
+            return self.auction.get_image_directory_name()
+        return 'manual'
+
     def clean(self) -> None:
         super().clean()
         self._normalize_blank_fields()
@@ -325,6 +355,7 @@ class ProductImage(models.Model):
         upload_to=product_image_upload_to,
         validators=[validate_product_image],
     )
+    thumbnail = models.CharField('مسیر thumbnail', max_length=500, blank=True, default='')
     is_primary = models.BooleanField('تصویر اصلی', default=False)
     sort_order = models.PositiveIntegerField(
         'ترتیب نمایش',
@@ -347,6 +378,36 @@ class ProductImage(models.Model):
     def __str__(self) -> str:
         return f'{self.product} - {self.sort_order}'
 
+    def build_image_relative_path(self, *, filename: str, sort_order: int | None = None) -> str:
+        extension = Path(filename).suffix.lower() or '.bin'
+        product_id = normalize_media_component(self.product_id, 'unassigned')
+        image_index = max(int(self.sort_order if sort_order is None else sort_order), 0)
+        image_name = f'{image_index:03d}{extension}'
+        return str(
+            PurePosixPath(LOT_IMAGE_ROOT)
+            / self.product.get_image_directory_name()
+            / product_id
+            / image_name
+        )
+
+    def build_thumbnail_relative_path(self) -> str:
+        if not self.image:
+            return ''
+        return build_thumbnail_relative_path(self.image.name)
+
+    def get_thumbnail_url(self) -> str:
+        if self.thumbnail:
+            return self.image.storage.url(self.thumbnail)
+        return self.image.url
+
+    @property
+    def display_url(self) -> str:
+        return self.get_thumbnail_url()
+
+    @property
+    def original_url(self) -> str:
+        return self.image.url
+
     def clean(self) -> None:
         super().clean()
         if not self.is_primary or not self.product_id:
@@ -358,3 +419,14 @@ class ProductImage(models.Model):
 
         if existing_primary_images.exists():
             raise ValidationError({'is_primary': 'برای هر محصول فقط یک تصویر اصلی مجاز است.'})
+
+    def delete(self, *args, **kwargs):
+        storage = self.image.storage
+        image_name = self.image.name
+        thumbnail_name = self.thumbnail
+        res = super().delete(*args, **kwargs)
+        if image_name and storage.exists(image_name):
+            storage.delete(image_name)
+        if thumbnail_name and storage.exists(thumbnail_name):
+            storage.delete(thumbnail_name)
+        return res

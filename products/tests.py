@@ -1876,6 +1876,18 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
 
 
 class ProductImageManagementTests(ProductCreateBaseTestCase):
+    def create_test_auction(self, **overrides):
+        payload = {
+            'name': 'حراجی تست',
+            'auction_number': 'AUC-2026-001',
+            'source_house': AuctionHouseChoices.CHRISTIES,
+            'start_date': date(2026, 10, 1),
+            'status': AuctionStatusChoices.UPCOMING,
+            'currency': CurrencyChoices.USD,
+        }
+        payload.update(overrides)
+        return Auction.objects.create(**payload)
+
     def create_management_product(self, **overrides):
         payload = {
             'title': 'محصول مدیریت تصویر',
@@ -1997,6 +2009,22 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         image = ProductImage.objects.get(product=product)
         self.assertTrue(image.is_primary)
 
+    def test_auction_image_saved_under_auction_number_and_product_id(self):
+        auction = self.create_test_auction(auction_number='AUC/2026/001')
+        product = self.create_management_product(
+            product_code='ART-IMAGE-MANAGE-AUCTION-1',
+            auction=auction,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+        )
+
+        self.post_upload(product, image=self.create_test_image('auction-main.jpg'))
+
+        image = ProductImage.objects.get(product=product)
+        self.assertEqual(
+            image.image.name,
+            f'lots/{auction.get_image_directory_name()}/{product.pk}/000.jpg',
+        )
+
     def test_changing_primary_works(self):
         product = self.create_management_product()
         first_image = self.create_product_image(product, name='primary-old.jpg', is_primary=True, sort_order=0)
@@ -2009,6 +2037,8 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         self.assertRedirects(response, self.detail_url(product))
         self.assertFalse(first_image.is_primary)
         self.assertTrue(second_image.is_primary)
+        self.assertTrue(second_image.image.name.endswith('/000.jpg'))
+        self.assertTrue(first_image.image.name.endswith('/001.jpg'))
 
     def test_only_one_primary_exists(self):
         product = self.create_management_product()
@@ -2065,6 +2095,7 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         replacement_image.refresh_from_db()
         self.assertFalse(ProductImage.objects.filter(pk=primary_image.pk).exists())
         self.assertTrue(replacement_image.is_primary)
+        self.assertTrue(replacement_image.image.name.endswith('/000.jpg'))
 
     def test_delete_only_image(self):
         product = self.create_management_product()
@@ -2083,6 +2114,21 @@ class ProductImageManagementTests(ProductCreateBaseTestCase):
         image.refresh_from_db()
         self.assertRedirects(response, self.detail_url(product), fetch_redirect_response=False)
         self.assertEqual(image.sort_order, 7)
+
+    def test_sort_order_change_renames_non_primary_files(self):
+        product = self.create_management_product(product_code='ART-IMAGE-MANAGE-SORT-2')
+        first_image = self.create_product_image(product, name='sort-main.jpg', is_primary=True, sort_order=0)
+        second_image = self.create_product_image(product, name='sort-second.jpg', is_primary=False, sort_order=1)
+        third_image = self.create_product_image(product, name='sort-third.jpg', is_primary=False, sort_order=2)
+
+        self.post_sort(product, third_image, sort_order=1)
+
+        first_image.refresh_from_db()
+        second_image.refresh_from_db()
+        third_image.refresh_from_db()
+        self.assertTrue(first_image.image.name.endswith('/000.jpg'))
+        self.assertTrue(third_image.image.name.endswith('/001.jpg'))
+        self.assertTrue(second_image.image.name.endswith('/002.jpg'))
 
     def test_images_displayed_according_to_sort_order(self):
         product = self.create_management_product()

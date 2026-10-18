@@ -1,9 +1,14 @@
+from pathlib import Path, PurePosixPath
+from uuid import uuid4
+
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Max
+from PIL import Image, ImageOps
 
 from .choices import ProductSourceTypeChoices, ProductStatusChoices
-from .models import Auction, Product, ProductImage
+from .models import Auction, Product, ProductImage, build_thumbnail_relative_path
 
 
 def is_expert_restricted_user(user) -> bool:
@@ -196,6 +201,8 @@ def create_product(*, cleaned_data: dict, images: list, user) -> Product:
             product.save()
             for image_instance in image_instances:
                 image_instance.save()
+                generate_product_image_thumbnail(image_instance=image_instance)
+            _normalize_product_image_storage(product=product)
     except ValidationError as exc:
         raise _normalize_validation_error(exc, product=product) from exc
     except IntegrityError as exc:
@@ -226,6 +233,130 @@ def _build_product_images(*, product: Product, images: list) -> list[ProductImag
     return image_instances
 
 
+def _build_media_path(relative_path: str) -> Path:
+    return Path(settings.MEDIA_ROOT, *PurePosixPath(relative_path).parts)
+
+
+def _build_temp_relative_path(relative_path: str, *, token: str) -> str:
+    path = PurePosixPath(relative_path)
+    return str(path.with_name(f'{path.stem}.__tmp__{token}{path.suffix}'))
+
+
+def _move_media_file(*, source_rel_path: str, target_rel_path: str) -> None:
+    if not source_rel_path or source_rel_path == target_rel_path:
+        return
+
+    source_path = _build_media_path(source_rel_path)
+    if not source_path.exists():
+        return
+
+    target_path = _build_media_path(target_rel_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if target_path.exists():
+        target_path.unlink()
+    source_path.replace(target_path)
+
+
+def _normalize_product_image_storage(*, product: Product) -> None:
+    product_images = list(
+        ProductImage.objects.select_for_update()
+        .filter(product=product)
+        .order_by('sort_order', 'id')
+    )
+    if not product_images:
+        return
+
+    primary_image = next((image for image in product_images if image.is_primary), None) or product_images[0]
+    ordered_images = [primary_image] + [image for image in product_images if image.pk != primary_image.pk]
+
+    staged_moves: list[tuple[str, str]] = []
+    desired_paths: dict[int, tuple[str, str]] = {}
+
+    for index, image_instance in enumerate(ordered_images):
+        current_image_path = image_instance.image.name
+        if not current_image_path:
+            continue
+
+        desired_image_path = image_instance.build_image_relative_path(
+            filename=current_image_path,
+            sort_order=index,
+        )
+        current_thumbnail_path = image_instance.thumbnail or ''
+        desired_thumbnail_path = (
+            build_thumbnail_relative_path(desired_image_path) if current_thumbnail_path else ''
+        )
+        desired_paths[image_instance.pk] = (desired_image_path, desired_thumbnail_path)
+
+        if current_image_path != desired_image_path:
+            temp_image_path = _build_temp_relative_path(
+                current_image_path,
+                token=f'image-{image_instance.pk}-{uuid4().hex}',
+            )
+            _move_media_file(source_rel_path=current_image_path, target_rel_path=temp_image_path)
+            staged_moves.append((temp_image_path, desired_image_path))
+
+        if current_thumbnail_path and current_thumbnail_path != desired_thumbnail_path:
+            temp_thumbnail_path = _build_temp_relative_path(
+                current_thumbnail_path,
+                token=f'thumb-{image_instance.pk}-{uuid4().hex}',
+            )
+            _move_media_file(
+                source_rel_path=current_thumbnail_path,
+                target_rel_path=temp_thumbnail_path,
+            )
+            staged_moves.append((temp_thumbnail_path, desired_thumbnail_path))
+
+    for source_rel_path, target_rel_path in staged_moves:
+        _move_media_file(source_rel_path=source_rel_path, target_rel_path=target_rel_path)
+
+    for image_instance in ordered_images:
+        desired_path_info = desired_paths.get(image_instance.pk)
+        if not desired_path_info:
+            continue
+
+        desired_image_path, desired_thumbnail_path = desired_path_info
+        update_fields = []
+        if image_instance.image.name != desired_image_path:
+            image_instance.image.name = desired_image_path
+            update_fields.append('image')
+        if image_instance.thumbnail != desired_thumbnail_path:
+            image_instance.thumbnail = desired_thumbnail_path
+            update_fields.append('thumbnail')
+        if update_fields:
+            image_instance.save(update_fields=update_fields)
+
+
+def generate_product_image_thumbnail(*, image_instance: ProductImage, size: int = 400, quality: int = 80) -> str:
+    if not image_instance.image:
+        return ''
+
+    media_root = Path(settings.MEDIA_ROOT)
+    source_path = media_root / image_instance.image.name
+    if not source_path.exists():
+        return ''
+
+    thumbnail_rel_path = image_instance.build_thumbnail_relative_path()
+    thumbnail_path = media_root / thumbnail_rel_path
+
+    try:
+        if not thumbnail_path.exists():
+            with Image.open(source_path) as image_file:
+                image_file.draft('RGB', (size, size))
+                image_file = ImageOps.exif_transpose(image_file)
+                image_file.thumbnail((size, size))
+                if image_file.mode not in ('RGB', 'RGBA'):
+                    image_file = image_file.convert('RGB')
+                thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
+                image_file.save(thumbnail_path, 'WEBP', quality=quality)
+        if image_instance.thumbnail != thumbnail_rel_path:
+            image_instance.thumbnail = thumbnail_rel_path
+            image_instance.save(update_fields=['thumbnail'])
+    except Exception:
+        return ''
+
+    return thumbnail_rel_path
+
+
 def add_product_image(*, product: Product, image) -> ProductImage:
     with transaction.atomic():
         product_images = ProductImage.objects.select_for_update().filter(product=product)
@@ -238,6 +369,8 @@ def add_product_image(*, product: Product, image) -> ProductImage:
         )
         image_instance.full_clean()
         image_instance.save()
+        generate_product_image_thumbnail(image_instance=image_instance)
+        _normalize_product_image_storage(product=product)
     return image_instance
 
 
@@ -251,6 +384,7 @@ def set_product_image_primary(*, product: Product, image: ProductImage) -> Produ
             target_image.is_primary = True
             target_image.full_clean()
             target_image.save(update_fields=['is_primary'])
+        _normalize_product_image_storage(product=product)
 
     return target_image
 
@@ -266,6 +400,7 @@ def update_product_image_sort_order(
         managed_image.sort_order = sort_order
         managed_image.full_clean()
         managed_image.save(update_fields=['sort_order'])
+        _normalize_product_image_storage(product=product)
     return managed_image
 
 
@@ -286,6 +421,7 @@ def delete_product_image(*, product: Product, image: ProductImage) -> None:
             replacement_image.is_primary = True
             replacement_image.full_clean()
             replacement_image.save(update_fields=['is_primary'])
+        _normalize_product_image_storage(product=product)
 
 
 def _require_review_permission(user) -> None:

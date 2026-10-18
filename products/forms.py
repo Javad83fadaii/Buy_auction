@@ -451,6 +451,7 @@ class AuctionForm(forms.ModelForm):
         model = Auction
         fields = (
             'name',
+            'auction_number',
             'source_house',
             'start_date',
             'end_date',
@@ -470,6 +471,7 @@ class AuctionForm(forms.ModelForm):
         )
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'مثلاً: حراج پاییز ۲۰۲۴ ساتبیز لندن'}),
+            'auction_number': forms.TextInput(attrs={'placeholder': 'مثلاً: 2024-ISLAMIC-ART'}),
             'source_house': forms.Select(),
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),

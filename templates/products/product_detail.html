@@ -28,7 +28,7 @@
                     <img
                         id="product-main-image"
                         class="product-detail-main-image"
-                        src="{{ primary_image.image.url }}"
+                        src="{{ primary_image.original_url }}"
                         alt="تصویر {{ product.title }}"
                     >
                 {% else %}
@@ -49,7 +49,7 @@
                                     data-gallery-lightbox-trigger
                                     aria-label="نمایش همه تصاویر"
                                 >
-                                    <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
+                                    <img src="{{ image.display_url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}" loading="lazy" decoding="async">
                                     <span class="product-gallery-thumb-more-count">+{{ total_images|add:"-3" }}</span>
                                 </button>
                             {% else %}
@@ -57,11 +57,11 @@
                                     type="button"
                                     class="product-gallery-thumb{% if primary_image and image.pk == primary_image.pk %} is-active{% endif %}"
                                     data-gallery-trigger
-                                    data-image-url="{{ image.image.url }}"
+                                    data-image-url="{{ image.original_url }}"
                                     data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
                                     aria-label="نمایش تصویر {{ forloop.counter }}"
                                 >
-                                    <img src="{{ image.image.url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}">
+                                    <img src="{{ image.display_url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}" loading="lazy" decoding="async">
                                 </button>
                             {% endif %}
                         {% endfor %}
@@ -80,10 +80,10 @@
                                     <button
                                         type="button"
                                         class="lightbox-thumb"
-                                        data-image-url="{{ image.image.url }}"
+                                        data-image-url="{{ image.original_url }}"
                                         data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
                                     >
-                                        <img src="{{ image.image.url }}" alt="تصویر {{ forloop.counter }} {{ product.title }}">
+                                        <img src="{{ image.display_url }}" alt="تصویر {{ forloop.counter }} {{ product.title }}" loading="lazy" decoding="async">
                                     </button>
                                 {% endfor %}
                             </div>

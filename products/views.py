@@ -91,6 +91,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'id',
             'product_id',
             'image',
+            'thumbnail',
             'is_primary',
             'sort_order',
         ).order_by('sort_order', 'id')
@@ -313,6 +314,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
             'id',
             'product_id',
             'image',
+            'thumbnail',
             'is_primary',
         )
         queryset = (
@@ -957,7 +959,19 @@ class AuctionDetailView(RolePermissionMixin, DetailView):
         products = (
             auction.products.all()
             .select_related('created_by')
-            .prefetch_related('images')
+            .prefetch_related(
+                Prefetch(
+                    'images',
+                    queryset=ProductImage.objects.only(
+                        'id',
+                        'product_id',
+                        'image',
+                        'thumbnail',
+                        'is_primary',
+                        'sort_order',
+                    ).order_by('sort_order', 'id'),
+                )
+            )
             .order_by('-created_at')
         )
         if is_expert_restricted_user(self.request.user):

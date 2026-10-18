@@ -56,8 +56,10 @@
                 <article class="image-management-card">
                     <img
                         class="image-management-preview"
-                        src="{{ managed_image.image.image.url }}"
+                        src="{{ managed_image.image.display_url }}"
                         alt="پیش‌نمایش تصویر {{ forloop.counter }} {{ product.title }}"
+                        loading="lazy"
+                        decoding="async"
                     >
 
                     <div class="image-management-body">

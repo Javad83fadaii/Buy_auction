@@ -50,6 +50,9 @@
             </div>
             <div class="dash-head-actions">
                 <a class="button button-secondary" href="{% url 'products:list' %}">لیست محصولات</a>
+                {% if can_import_scraper %}
+                    <a class="button button-secondary" href="{% url 'products:scraper_import' %}">ورود از اسکرپر</a>
+                {% endif %}
                 {% if can_manage_auctions %}
                     <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
                 {% endif %}

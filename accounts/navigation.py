@@ -59,6 +59,11 @@ def build_quick_links(user) -> list[dict[str, str]]:
                         'url': reverse('products:create'),
                         'variant': 'secondary',
                     },
+                    {
+                        'label': 'ایمپورت اسکرپر',
+                        'url': reverse('products:scraper_import'),
+                        'variant': 'secondary',
+                    },
                 ]
                 if user.is_superuser
                 else []

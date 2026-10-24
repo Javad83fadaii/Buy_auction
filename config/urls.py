@@ -9,6 +9,7 @@ from config.views import StatisticsView
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='accounts:login', permanent=False), name='home'),
+    path('home/', RedirectView.as_view(pattern_name='accounts:login', permanent=False)),
     path('accounts/', include('accounts.urls')),
     path('products/', include('products.urls')),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),

@@ -13,6 +13,7 @@ from .choices import (
     ProductStatusChoices,
 )
 from .models import Auction, Product, ProductImage
+from .scraper_import import SUPPORTED_SOURCE_CHOICES
 from .validators import validate_product_image
 
 User = get_user_model()
@@ -518,3 +519,58 @@ class AuctionFilterForm(forms.Form):
         for name, field in self.fields.items():
             existing_class = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f'{existing_class} text-input'.strip()
+
+
+class ScraperImportForm(forms.Form):
+    scraper_db = forms.CharField(
+        label='نام دیتابیس اسکرپر',
+        max_length=128,
+        initial='christies_scraper',
+        help_text='نام همان دیتابیسی که crawler داده خام را داخل آن ذخیره کرده است.',
+    )
+    source_name = forms.ChoiceField(
+        label='منبع',
+        choices=SUPPORTED_SOURCE_CHOICES,
+        required=False,
+        help_text='در صورت نیاز فقط یک منبع خاص مثل Christies یا Sothebys را import کنید.',
+    )
+    limit = forms.IntegerField(
+        label='محدودیت تعداد لات',
+        required=False,
+        min_value=0,
+        initial=0,
+        help_text='برای تست می‌توانید تعداد رکوردهای واردشونده را محدود کنید. صفر یعنی بدون محدودیت.',
+    )
+    batch_size = forms.IntegerField(
+        label='اندازه batch',
+        min_value=1,
+        max_value=5000,
+        initial=500,
+        help_text='تعداد رکوردهایی که در هر batch پردازش و ذخیره می‌شود.',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        widgets = {
+            'scraper_db': forms.TextInput(attrs={'placeholder': 'مثلاً christies_scraper'}),
+            'source_name': forms.Select(),
+            'limit': forms.NumberInput(attrs={'min': '0', 'inputmode': 'numeric'}),
+            'batch_size': forms.NumberInput(attrs={'min': '1', 'max': '5000', 'inputmode': 'numeric'}),
+        }
+        for field_name, widget in widgets.items():
+            self.fields[field_name].widget = widget
+
+        for field in self.fields.values():
+            existing_class = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{existing_class} text-input'.strip()
+            field.widget.attrs.setdefault('dir', 'rtl')
+
+        self.fields['scraper_db'].error_messages['required'] = 'نام دیتابیس اسکرپر الزامی است.'
+        self.fields['limit'].error_messages['invalid'] = 'مقدار limit معتبر نیست.'
+        self.fields['batch_size'].error_messages['invalid'] = 'مقدار batch معتبر نیست.'
+
+    def clean_scraper_db(self):
+        return (self.cleaned_data.get('scraper_db') or '').strip()
+
+    def clean_limit(self):
+        return self.cleaned_data.get('limit') or 0

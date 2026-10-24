@@ -5,6 +5,7 @@ from .views import (
     AuctionDetailView,
     AuctionEditView,
     AuctionListView,
+    ScraperImportView,
     AuctionSyncView,
     ProductApproveView,
     ProductCancelToggleView,
@@ -30,6 +31,7 @@ app_name = 'products'
 urlpatterns = [
     path('', ProductListView.as_view(), name='list'),
     path('auctions/', AuctionListView.as_view(), name='auction_list'),
+    path('auctions/import/', ScraperImportView.as_view(), name='scraper_import'),
     path('auctions/create/', AuctionCreateView.as_view(), name='auction_create'),
     path('auctions/<int:id>/', AuctionDetailView.as_view(), name='auction_detail'),
     path('auctions/<int:id>/edit/', AuctionEditView.as_view(), name='auction_edit'),

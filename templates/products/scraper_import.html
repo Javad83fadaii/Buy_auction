@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="dash">
+
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="dash-main">
+        <header class="dash-head">
+            <div>
+                <h1>{{ page_title }}</h1>
+                <p class="dash-sub">ایمپورت داده خام اسکرپر با لایه mapping مرکزی انجام می‌شود و منطق ذخیره‌سازی بین CLI و UI مشترک است.</p>
+            </div>
+            <div class="dash-head-actions">
+                <a class="button button-secondary" href="{{ cancel_url }}">بازگشت</a>
+            </div>
+        </header>
+
+        {% if form.non_field_errors %}
+            <div class="detail-alert detail-alert-warning" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if last_import_result %}
+            <section class="form-section accent-emerald">
+                <header class="form-section-heading">
+                    <h2>خلاصه آخرین اجرا</h2>
+                    <p class="muted-text">نتیجه آخرین import موفق که با الگوی PRG پس از redirect نگه داشته شده است.</p>
+                </header>
+                <div class="form-grid form-grid-3">
+                    <div class="form-field">
+                        <label>دیتابیس اسکرپر</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.scraper_db }}" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>منبع</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.source_name|default:'همه منابع' }}" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>تعداد حراجی sync شده</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.auctions_imported }}" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>محصول جدید</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.products_created }}" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>محصول به‌روزرسانی شده</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.products_updated }}" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>بدون تغییر / تکراری</label>
+                        <input class="text-input" type="text" value="{{ last_import_result.products_skipped }}" readonly>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        <form method="post" class="auction-form" novalidate>
+            {% csrf_token %}
+
+            <section class="form-section accent-sapphire">
+                <header class="form-section-heading">
+                    <h2>تنظیمات اتصال و اجرا</h2>
+                    <p class="muted-text">این صفحه فایل SQL اجرا نمی‌کند؛ فقط داده خام را از دیتابیس اسکرپر می‌خواند و با mapperهای منبع‌محور به مدل‌های اصلی پروژه وارد می‌کند.</p>
+                </header>
+
+                <div class="form-grid form-grid-2">
+                    <div class="form-field">
+                        <label for="{{ form.scraper_db.id_for_label }}">نام دیتابیس اسکرپر <span class="required-indicator">*</span></label>
+                        {{ form.scraper_db }}
+                        {% if form.scraper_db.help_text %}
+                            <small class="form-hint">{{ form.scraper_db.help_text }}</small>
+                        {% endif %}
+                        {% if form.scraper_db.errors %}
+                            <small class="field-error">{{ form.scraper_db.errors|join:", " }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field">
+                        <label for="{{ form.source_name.id_for_label }}">منبع</label>
+                        {{ form.source_name }}
+                        {% if form.source_name.help_text %}
+                            <small class="form-hint">{{ form.source_name.help_text }}</small>
+                        {% endif %}
+                        {% if form.source_name.errors %}
+                            <small class="field-error">{{ form.source_name.errors|join:", " }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field">
+                        <label for="{{ form.limit.id_for_label }}">محدودیت تعداد لات</label>
+                        {{ form.limit }}
+                        {% if form.limit.help_text %}
+                            <small class="form-hint">{{ form.limit.help_text }}</small>
+                        {% endif %}
+                        {% if form.limit.errors %}
+                            <small class="field-error">{{ form.limit.errors|join:", " }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field">
+                        <label for="{{ form.batch_size.id_for_label }}">اندازه batch <span class="required-indicator">*</span></label>
+                        {{ form.batch_size }}
+                        {% if form.batch_size.help_text %}
+                            <small class="form-hint">{{ form.batch_size.help_text }}</small>
+                        {% endif %}
+                        {% if form.batch_size.errors %}
+                            <small class="field-error">{{ form.batch_size.errors|join:", " }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-actions-bar">
+                <button type="submit" class="button button-primary button-lg">شروع import</button>
+                <a class="button button-secondary button-lg" href="{{ cancel_url }}">انصراف</a>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}

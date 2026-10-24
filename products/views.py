@@ -29,8 +29,10 @@ from .forms import (
     ProductImageSortOrderForm,
     ProductImageUploadForm,
     ProductListFilterForm,
+    ScraperImportForm,
 )
 from .models import Auction, Product, ProductImage
+from .scraper_import import ScraperImportService
 from .services import (
     add_product_image,
     can_user_modify_product,
@@ -928,6 +930,7 @@ class AuctionListView(RolePermissionMixin, ListView):
         context['total_lots_count'] = sum(a.total_lots for a in all_auctions)
         context['total_to_buy_count'] = sum(a.to_buy_count for a in all_auctions)
         context['can_manage_auctions'] = self.request.user.has_perm('products.add_product')
+        context['can_import_scraper'] = self.request.user.is_superuser
         context['has_active_filters'] = bool(
             form.cleaned_data.get('q')
             or form.cleaned_data.get('source_house')
@@ -936,6 +939,45 @@ class AuctionListView(RolePermissionMixin, ListView):
             or form.cleaned_data.get('date_to')
             or self.get_selected_sort() != self.default_sort
         )
+        return context
+
+
+class ScraperImportView(RolePermissionMixin, FormView):
+    template_name = 'products/scraper_import.html'
+    form_class = ScraperImportForm
+    permission_required = 'products.add_product'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        try:
+            result = ScraperImportService(
+                scraper_db=form.cleaned_data['scraper_db'],
+                source_name=form.cleaned_data.get('source_name', ''),
+                limit=form.cleaned_data.get('limit', 0),
+                batch_size=form.cleaned_data['batch_size'],
+                user=self.request.user,
+            ).run()
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+            return self.form_invalid(form)
+        except Exception:
+            logger.exception('Scraper import failed for user %s', self.request.user.pk)
+            form.add_error(None, 'ایمپورت با خطا مواجه شد. تنظیمات اتصال و ساختار دیتابیس اسکرپر را بررسی کنید.')
+            return self.form_invalid(form)
+
+        self.request.session['scraper_import_result'] = result.as_dict()
+        messages.success(self.request, result.build_summary())
+        return redirect('products:scraper_import')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'ورود داده از اسکرپر'
+        context['cancel_url'] = reverse('products:auction_list')
+        context['last_import_result'] = self.request.session.pop('scraper_import_result', None)
         return context
 
 

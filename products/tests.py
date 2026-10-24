@@ -1,13 +1,14 @@
 import shutil
 import tempfile
 from datetime import date, timedelta
-from io import BytesIO
+from io import BytesIO, StringIO
 from urllib.parse import quote, urlencode
 from unittest.mock import patch
 
 from PIL import Image
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
@@ -3204,6 +3205,15 @@ class AuctionModelAndSyncTestCase(TestCase):
 
 
 class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.superuser = User.objects.create_superuser(
+            username='product_root',
+            email='product_root@example.com',
+            password=cls.password,
+        )
+
     def setUp(self):
         super().setUp()
         self.auction = Auction.objects.create(
@@ -3241,6 +3251,12 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertContains(response, self.auction.name)
         self.assertContains(response, self.auction.location)
         self.assertContains(response, '25.00')
+
+    def test_auction_list_shows_scraper_import_link_for_superuser(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('products:auction_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('products:scraper_import'))
 
     def test_auction_detail_view_renders_correctly(self):
         self.client.force_login(self.operator_user)
@@ -3356,8 +3372,49 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         url = reverse('dashboard')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'حراجی‌های خارجی و بین‌المللی')
-        self.assertContains(response, 'کل حراجی‌های تعریف‌شده')
+        self.assertContains(response, 'وضعیت حراجی‌ها')
+        self.assertContains(response, 'حراجی‌ها')
+
+    def test_scraper_import_view_requires_superuser(self):
+        self.client.force_login(self.operator_user)
+        response = self.client.get(reverse('products:scraper_import'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_scraper_import_view_renders_for_superuser(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('products:scraper_import'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'products/scraper_import.html')
+        self.assertContains(response, 'name="scraper_db"', html=False)
+
+
+class ScraperImportCommandTests(ProductCreateBaseTestCase):
+    def test_command_uses_shared_import_service(self):
+        result_mock = type(
+            'Result',
+            (),
+            {'build_summary': lambda self: 'ایمپورت انجام شد.'},
+        )()
+        stdout = StringIO()
+
+        with patch('products.management.commands.import_scraper_data.ScraperImportService') as service_mock:
+            service_mock.return_value.run.return_value = result_mock
+            call_command(
+                'import_scraper_data',
+                scraper_db='christies_scraper',
+                source_name='christies',
+                limit=25,
+                batch_size=50,
+                stdout=stdout,
+            )
+
+        service_mock.assert_called_once_with(
+            scraper_db='christies_scraper',
+            source_name='christies',
+            limit=25,
+            batch_size=50,
+        )
+        self.assertIn('ایمپورت انجام شد.', stdout.getvalue())
 
 
 class ProductRoleAccessTestCase(ProductCreateBaseTestCase):

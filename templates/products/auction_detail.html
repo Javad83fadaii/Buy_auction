@@ -16,28 +16,7 @@
                 <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">{{ auction.get_source_house_display }}</span>
                 <span class="status-badge status-badge-{{ auction.status|lower }}">{{ auction.get_status_display }}</span>
             </div>
-            <div class="dash-head-actions">
-                <a class="button button-secondary" href="{% url 'products:auction_list' %}">بازگشت به لیست حراجی‌ها</a>
-                {% if can_add_product %}
-                    <a class="button button-primary" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر</a>
-                {% endif %}
-                {% if can_manage_auctions %}
-                    <a class="button button-secondary" href="{% url 'products:auction_edit' auction.pk %}">ویرایش</a>
-                    <form method="post" action="{% url 'products:auction_sync' auction.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="button button-secondary" title="محاسبه و همگام‌سازی آمار از روی آثار ثبت‌شده">🔄 به‌روزرسانی آمار</button>
-                    </form>
-                {% endif %}
-            </div>
         </header>
-
-        {# مشخصات حراجی #}
-        <section class="ad-info" aria-label="مشخصات حراجی">
-            <span><span class="lbl">تاریخ:</span><b>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</b></span>
-            <span><span class="lbl">مکان:</span><b>{{ auction.location|default:"-" }}</b></span>
-            <span><span class="lbl">واحد پول:</span><b>{{ auction.get_currency_display }}</b></span>
-            <span><span class="lbl">کمیسیون (Buyer's Premium):</span><b>{{ auction.commission_rate }}٪</b></span>
-        </section>
 
         {# آمار حراجی #}
         <section class="ad-stats" aria-label="آمار و وضعیت آثار حراجی">
@@ -53,12 +32,7 @@
 
         {# لیست آثار (تنها بخش اسکرول‌شونده) #}
         <section class="dash-panel ad-products" aria-labelledby="auction-products-title">
-            <div class="dash-panel-head">
-                <h2 id="auction-products-title">آثار ثبت‌شده در این حراجی ({{ products|length }})</h2>
-                {% if can_add_product %}
-                    <a class="dash-btn" href="{% url 'products:create' %}?auction={{ auction.pk }}">+ افزودن اثر جدید</a>
-                {% endif %}
-            </div>
+
 
             {% if products %}
                 <div class="ad-table-wrap">

@@ -30,21 +30,6 @@
 .ad-head .button,
 .ad-head .dash-btn { padding: 6px 12px; font-size: 12px; }
 
-/* ---------- Auction info strip ---------- */
-.ad-info {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 18px;
-    padding: 8px 14px;
-    border: 1px solid var(--d-line);
-    border-radius: 10px;
-    background: var(--d-paper);
-    font-size: 12px;
-    color: var(--d-text-2);
-}
-.ad-info b { color: var(--d-ink); font-weight: 600; }
-.ad-info .lbl { color: var(--d-text-3); margin-inline-end: 4px; }
-
 /* ---------- Stats strip ---------- */
 .ad-stats {
     display: grid;

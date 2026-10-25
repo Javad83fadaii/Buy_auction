@@ -40,22 +40,52 @@
     }
 
     .auction-list-table col.auction-col {
-        width: 42%;
+        width: 30%;
     }
 
     .auction-list-table col.house-col {
-        width: 18%;
+        width: 13%;
     }
 
-    .auction-list-table col.date-col,
+    .auction-list-table col.info-col {
+        width: 28%;
+    }
+
     .auction-list-table col.status-col,
     .auction-list-table col.entered-col {
-        width: 13.33%;
+        width: 14.5%;
     }
 
     .auction-list-title {
         display: block;
         line-height: 1.5;
+    }
+
+    /* یک فیلد ترکیبی: تاریخ، واحد پول، مکان و کمیسیون */
+    .auction-list-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 10px;
+        font-size: 11px;
+        line-height: 1.7;
+        color: var(--text-secondary);
+    }
+
+    .auction-list-info .info-item {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    .auction-list-info .info-label {
+        color: var(--text-muted);
+        font-size: 10px;
+    }
+
+    .auction-list-info .info-value {
+        color: var(--text-primary);
+        font-weight: 600;
     }
 
     .dash-head-actions .button,
@@ -73,20 +103,6 @@
     {% include "dashboard/_sidebar.html" %}
 
     <main class="dash-main">
-        <header class="dash-head">
-            <div>
-                <h1>حراجی‌های بین‌المللی و خارجی</h1>
-            </div>
-            <div class="dash-head-actions">
-                <a class="button button-secondary" href="{% url 'products:list' %}">لیست محصولات</a>
-                {% if can_import_scraper %}
-                    <a class="button button-secondary" href="{% url 'products:scraper_import' %}">ورود از اسکرپر</a>
-                {% endif %}
-                {% if can_manage_auctions %}
-                    <a class="dash-btn dash-btn-solid" href="{% url 'products:auction_create' %}">+ ثبت حراجی جدید</a>
-                {% endif %}
-            </div>
-        </header>
 
         {# Filter & Search Toolbar #}
         <form method="get" class="filter-bar filter-bar-flat" role="search">
@@ -204,22 +220,22 @@
                     <colgroup>
                         <col class="auction-col">
                         <col class="house-col">
-                        <col class="date-col">
+                        <col class="info-col">
                         <col class="status-col">
                         <col class="entered-col">
                     </colgroup>
                     <thead>
                         <tr>
                             <th class="sortable" data-sort="name">
-                                حراجی
+                               نام
                                 <span class="sort-indicator"></span>
                             </th>
                             <th class="sortable" data-sort="source_house">
-                                خانه
+                               حراجی
                                 <span class="sort-indicator"></span>
                             </th>
                             <th class="sortable" data-sort="start_date">
-                                تاریخ
+                                تاریخ و مشخصات
                                 <span class="sort-indicator"></span>
                             </th>
                             <th class="sortable" data-sort="status">
@@ -240,7 +256,26 @@
                                         {{ auction.get_source_house_display }}
                                     </span>
                                 </td>
-                                <td>{{ auction.start_date|date:"Y/m/d" }}</td>
+                                <td>
+                                    <div class="auction-list-info">
+                                        <span class="info-item">
+                                            <span class="info-label">تاریخ:</span>
+                                            <span class="info-value">{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</span>
+                                        </span>
+                                        <span class="info-item">
+                                            <span class="info-label">واحد پول:</span>
+                                            <span class="info-value">{{ auction.get_currency_display }}</span>
+                                        </span>
+                                        <span class="info-item">
+                                            <span class="info-label">مکان:</span>
+                                            <span class="info-value">{{ auction.location|default:"-" }}</span>
+                                        </span>
+                                        <span class="info-item">
+                                            <span class="info-label">کمیسیون:</span>
+                                            <span class="info-value">{{ auction.commission_rate }}٪</span>
+                                        </span>
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="status-badge status-badge-{{ auction.status|lower }}">
                                         {{ auction.get_status_display }}

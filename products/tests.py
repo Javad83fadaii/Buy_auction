@@ -1046,6 +1046,100 @@ class ProductListViewTests(ProductCreateBaseTestCase):
         self.assertEqual(list(response.context['products']), [newer_product, older_product])
         self.assertContains(response, '<option value="-created_at" selected>', html=False)
 
+    def test_product_list_supports_all_declared_sorts(self):
+        auction_alpha = Auction.objects.create(
+            name='Auction Alpha',
+            source_house=AuctionHouseChoices.BONHAMS,
+            start_date=date.today() + timedelta(days=1),
+            location='Paris',
+            currency=CurrencyChoices.EUR,
+            commission_rate=20.0,
+            status=AuctionStatusChoices.ENDED,
+            total_lots=10,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        auction_bravo = Auction.objects.create(
+            name='Auction Bravo',
+            source_house=AuctionHouseChoices.CHRISTIES,
+            start_date=date.today() + timedelta(days=2),
+            location='London',
+            currency=CurrencyChoices.GBP,
+            commission_rate=22.0,
+            status=AuctionStatusChoices.ONGOING,
+            total_lots=20,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        auction_charlie = Auction.objects.create(
+            name='Auction Charlie',
+            source_house=AuctionHouseChoices.SOTHEBYS,
+            start_date=date.today() + timedelta(days=3),
+            location='New York',
+            currency=CurrencyChoices.USD,
+            commission_rate=24.0,
+            status=AuctionStatusChoices.UPCOMING,
+            total_lots=30,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        product_alpha = self.create_product(
+            title='Alpha',
+            product_code='P-100',
+            auction=auction_alpha,
+            suggested_by='Alpha Contact',
+            suggested_price='100',
+            suitable_price='150',
+        )
+        product_bravo = self.create_product(
+            title='Bravo',
+            product_code='P-200',
+            auction=auction_bravo,
+            suggested_by='Bravo Contact',
+            suggested_price='200',
+            suitable_price='250',
+        )
+        product_charlie = self.create_product(
+            title='Charlie',
+            product_code='P-300',
+            auction=auction_charlie,
+            suggested_by='Charlie Contact',
+            suggested_price='300',
+            suitable_price='350',
+        )
+        now = timezone.now()
+        self.set_created_at(product_alpha, now - timedelta(days=3))
+        self.set_created_at(product_bravo, now - timedelta(days=2))
+        self.set_created_at(product_charlie, now - timedelta(days=1))
+
+        expected_orders = {
+            'created_at': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-created_at': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'title': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-title': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'product_code': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-product_code': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'suggested_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-suggested_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'suitable_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-suitable_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'suggested_by': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-suggested_by': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'auction': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-auction': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'house': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-house': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+        }
+
+        for sort_key, expected_ids in expected_orders.items():
+            with self.subTest(sort=sort_key):
+                response = self.get_list(user=self.authorized_user, q='a', sort=sort_key)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    [product.pk for product in response.context['page_obj'].object_list],
+                    expected_ids,
+                )
+
     def test_search_and_status_filter_work_together(self):
         matching_product = self.create_product(
             title='محمد و طبیعت',
@@ -3249,8 +3343,69 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'products/auction_list.html')
         self.assertContains(response, self.auction.name)
-        self.assertContains(response, self.auction.location)
-        self.assertContains(response, '25.00')
+        self.assertNotContains(response, self.auction.location)
+        self.assertNotContains(response, self.auction.get_currency_display())
+        self.assertNotContains(response, 'هدف خرید')
+
+    def test_auction_list_supports_all_declared_sorts(self):
+        self.client.force_login(self.operator_user)
+        base_url = reverse('products:auction_list')
+        auction_alpha = Auction.objects.create(
+            name='sort-check Alpha',
+            source_house=AuctionHouseChoices.BONHAMS,
+            start_date=date.today() + timedelta(days=1),
+            location='Paris',
+            currency=CurrencyChoices.EUR,
+            commission_rate=20.0,
+            status=AuctionStatusChoices.ENDED,
+            total_lots=10,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        auction_bravo = Auction.objects.create(
+            name='sort-check Bravo',
+            source_house=AuctionHouseChoices.SOTHEBYS,
+            start_date=date.today() + timedelta(days=2),
+            location='New York',
+            currency=CurrencyChoices.USD,
+            commission_rate=22.0,
+            status=AuctionStatusChoices.ONGOING,
+            total_lots=20,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+        auction_charlie = Auction.objects.create(
+            name='sort-check Charlie',
+            source_house=AuctionHouseChoices.CHRISTIES,
+            start_date=date.today() + timedelta(days=3),
+            location='London',
+            currency=CurrencyChoices.GBP,
+            commission_rate=24.0,
+            status=AuctionStatusChoices.UPCOMING,
+            total_lots=30,
+            created_by=self.operator_user,
+            updated_by=self.operator_user,
+        )
+
+        expected_orders = {
+            'start_date': [auction_alpha.pk, auction_bravo.pk, auction_charlie.pk],
+            '-start_date': [auction_charlie.pk, auction_bravo.pk, auction_alpha.pk],
+            'name': [auction_alpha.pk, auction_bravo.pk, auction_charlie.pk],
+            '-name': [auction_charlie.pk, auction_bravo.pk, auction_alpha.pk],
+            'source_house': [auction_alpha.pk, auction_charlie.pk, auction_bravo.pk],
+            '-source_house': [auction_bravo.pk, auction_charlie.pk, auction_alpha.pk],
+            'status': [auction_alpha.pk, auction_bravo.pk, auction_charlie.pk],
+            '-status': [auction_charlie.pk, auction_bravo.pk, auction_alpha.pk],
+        }
+
+        for sort_key, expected_ids in expected_orders.items():
+            with self.subTest(sort=sort_key):
+                response = self.client.get(base_url, {'q': 'sort-check', 'sort': sort_key})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    [auction.pk for auction in response.context['page_obj'].object_list],
+                    expected_ids,
+                )
 
     def test_auction_list_shows_scraper_import_link_for_superuser(self):
         self.client.force_login(self.superuser)

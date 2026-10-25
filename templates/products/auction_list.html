@@ -38,6 +38,35 @@
     .dash-main > .data-table {
         width: 100%;
     }
+
+    .auction-list-table col.auction-col {
+        width: 42%;
+    }
+
+    .auction-list-table col.house-col {
+        width: 18%;
+    }
+
+    .auction-list-table col.date-col,
+    .auction-list-table col.status-col,
+    .auction-list-table col.entered-col {
+        width: 13.33%;
+    }
+
+    .auction-list-title {
+        display: block;
+        line-height: 1.5;
+    }
+
+    .dash-head-actions .button,
+    .dash-head-actions .dash-btn,
+    .filter-bar .button,
+    .pagination .button,
+    .empty-state .dash-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
 </style>
 <div class="dash">
 
@@ -58,26 +87,6 @@
                 {% endif %}
             </div>
         </header>
-
-        {# KPI Stats Overview #}
-        <!-- <section class="dash-kpis" aria-label="آمار حراجی‌ها">
-            <div class="dash-kpi">
-                <span>کل حراجی‌ها</span>
-                <strong>{{ total_auctions_count }}</strong>
-            </div>
-            <div class="dash-kpi">
-                <span>در حال برگزاری</span>
-                <strong>{{ ongoing_auctions_count }}</strong>
-            </div>
-            <div class="dash-kpi">
-                <span>به زودی</span>
-                <strong>{{ upcoming_auctions_count }}</strong>
-            </div>
-            <div class="dash-kpi">
-                <span>هدف خرید (کل)</span>
-                <strong>🎯 {{ total_to_buy_count }}</strong>
-            </div>
-        </section> -->
 
         {# Filter & Search Toolbar #}
         <form method="get" class="filter-bar filter-bar-flat" role="search">
@@ -143,14 +152,6 @@
                                     <span class="meta-label">📅 تاریخ برگزاری:</span>
                                     <strong>{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</strong>
                                 </li>
-                                <li>
-                                    <span class="meta-label">📍 مکان:</span>
-                                    <span>{{ auction.location|default:"مشخص نشده" }}</span>
-                                </li>
-                                <li>
-                                    <span class="meta-label">💱 واحد پول و کمیسیون:</span>
-                                    <span>{{ auction.get_currency_display }} ({{ auction.commission_rate }}٪ کمیسیون)</span>
-                                </li>
                             </ul>
 
                             {# Progress bar: entered lots vs total lots #}
@@ -171,9 +172,6 @@
 
                             {# Key metrics chips #}
                             <div class="auction-stat-chips">
-                                <span class="chip chip-buy" title="تعداد مواردی که باید خریداری شود">
-                                    🎯 خرید: <strong>{{ auction.to_buy_count }}</strong>
-                                </span>
                                 <span class="chip chip-inspect" title="تعداد بازدیدهای نهایی شده">
                                     🔍 بازدید: <strong>{{ auction.final_inspection_count }}</strong>
                                 </span>
@@ -202,7 +200,14 @@
 
             {# List View #}
             <div class="table-shell" data-view-panel="list">
-                <table class="data-table">
+                <table class="data-table auction-list-table">
+                    <colgroup>
+                        <col class="auction-col">
+                        <col class="house-col">
+                        <col class="date-col">
+                        <col class="status-col">
+                        <col class="entered-col">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th class="sortable" data-sort="name">
@@ -222,15 +227,13 @@
                                 <span class="sort-indicator"></span>
                             </th>
                             <th>آثار وارد شده</th>
-                            <th>هدف خرید</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for auction in auctions %}
                             <tr class="row-clickable" tabindex="0" role="link" data-row-href="{% url 'products:auction_detail' auction.pk %}">
                                 <td>
-                                    <strong>{{ auction.name }}</strong>
-                                    <span class="dash-cell-meta">{{ auction.location|default:"مشخص نشده" }} · {{ auction.get_currency_display }}</span>
+                                    <strong class="auction-list-title">{{ auction.name }}</strong>
                                 </td>
                                 <td>
                                     <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
@@ -244,7 +247,6 @@
                                     </span>
                                 </td>
                                 <td>{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
-                                <td>🎯 {{ auction.to_buy_count }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -313,13 +315,17 @@
             sortHeaders.forEach(function (header) {
                 header.addEventListener('click', function () {
                     var sortKey = header.dataset.sort;
-                    var newSort = sortKey;
+                    var sortStates = [sortKey, '-' + sortKey];
 
-                    /* سه‌حالته: صعودی -> نزولی -> بازگشت به پیش‌فرض */
-                    if (currentSort === sortKey) {
-                        newSort = '-' + sortKey;
-                    } else if (currentSort === '-' + sortKey) {
-                        newSort = defaultSort;
+                    if (sortStates.indexOf(defaultSort) === -1) {
+                        sortStates.push(defaultSort);
+                    }
+
+                    var currentIndex = sortStates.indexOf(currentSort);
+                    var newSort = sortStates[0];
+
+                    if (currentIndex !== -1) {
+                        newSort = sortStates[(currentIndex + 1) % sortStates.length];
                     }
 
                     var params = new URLSearchParams(window.location.search);

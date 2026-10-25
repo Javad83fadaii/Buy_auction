@@ -37,6 +37,59 @@
 
     .dash-main > .table-shell .data-table {
         width: 100%;
+        table-layout: fixed;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(1),
+    .dash-main > .table-shell .data-table td:nth-child(1) {
+        width: 8%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(2),
+    .dash-main > .table-shell .data-table td:nth-child(2) {
+        width: 10%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(3),
+    .dash-main > .table-shell .data-table td:nth-child(3) {
+        width: 28%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(4),
+    .dash-main > .table-shell .data-table td:nth-child(4) {
+        width: 18%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(5),
+    .dash-main > .table-shell .data-table td:nth-child(5) {
+        width: 14%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(6),
+    .dash-main > .table-shell .data-table td:nth-child(6) {
+        width: 10%;
+    }
+
+    .dash-main > .table-shell .data-table th:nth-child(7),
+    .dash-main > .table-shell .data-table td:nth-child(7) {
+        width: 12%;
+    }
+
+    .dash-main > .table-shell .data-table td:nth-child(3) strong {
+        display: block;
+        line-height: 1.5;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .dash-head-actions .button,
+    .dash-head-actions .dash-btn,
+    .filter-bar .button,
+    .pagination .button,
+    .empty-state .dash-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+        line-height: 1.2;
     }
 </style>
 <div class="dash">
@@ -376,13 +429,17 @@
             sortHeaders.forEach(function (header) {
                 header.addEventListener('click', function () {
                     var sortKey = header.dataset.sort;
-                    var newSort = sortKey;
-                    
-                    // Three-state toggle: asc -> desc -> reset to default
-                    if (currentSort === sortKey) {
-                        newSort = '-' + sortKey;
-                    } else if (currentSort === '-' + sortKey) {
-                        newSort = defaultSort;
+                    var sortStates = [sortKey, '-' + sortKey];
+
+                    if (sortStates.indexOf(defaultSort) === -1) {
+                        sortStates.push(defaultSort);
+                    }
+
+                    var currentIndex = sortStates.indexOf(currentSort);
+                    var newSort = sortStates[0];
+
+                    if (currentIndex !== -1) {
+                        newSort = sortStates[(currentIndex + 1) % sortStates.length];
                     }
                     
                     // Build new URL with updated sort parameter

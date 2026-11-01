@@ -3,10 +3,10 @@
     class="product-card"
     href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
 >
-    {% if product.primary_images %}
+    {% if product.primary_image_url %}
         <img
             class="product-card-thumb"
-            src="{{ product.primary_images.0.display_url }}"
+            src="{{ product.primary_image_url }}"
             alt="تصویر اصلی {{ product.title }}"
             loading="lazy"
             decoding="async"

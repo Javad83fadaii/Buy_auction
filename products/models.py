@@ -15,6 +15,7 @@ from .choices import (
     ProductSourceTypeChoices,
     ProductStatusChoices,
 )
+from .lot_images import LotImage, get_lot_image_directory, list_lot_images
 from .validators import validate_product_image
 
 
@@ -190,6 +191,13 @@ class Product(models.Model):
         db_index=True,
         help_text='برای جلوگیری از تداخل بین منابع مختلف، یکتایی کد در سطح source_type کنترل می‌شود.',
     )
+    lot_display_number = models.PositiveIntegerField(
+        'شماره لات',
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text='شماره نمایشی لات در کاتالوگ مزایده (برای مرتب‌سازی آثار هر حراجی).',
+    )
     description = models.TextField('توضیحات', blank=True)
     suggested_price = models.DecimalField(
         'قیمت پیشنهادی',
@@ -288,6 +296,7 @@ class Product(models.Model):
         )
         indexes = [
             models.Index(fields=['source_type', 'status'], name='products_src_status_idx'),
+            models.Index(fields=['auction', 'lot_display_number'], name='products_auction_lot_idx'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -311,6 +320,27 @@ class Product(models.Model):
         if self.auction_id and self.auction is not None:
             return self.auction.get_image_directory_name()
         return 'manual'
+
+    def get_lot_images(self) -> list[LotImage]:
+        """تصاویر اثر از روی دیسک (MEDIA_ROOT/lots) با تصویر اصلی در ابتدا."""
+        cached_images = getattr(self, '_lot_images', None)
+        if cached_images is None:
+            cached_images = list_lot_images(self)
+            self._lot_images = cached_images
+        return cached_images
+
+    @property
+    def lot_image_directory(self) -> str:
+        return get_lot_image_directory(self)
+
+    @property
+    def primary_image_url(self) -> str:
+        """آدرس تصویر اصلی: اولویت با تصویر ثبت‌شده در دیتابیس و سپس پوشه اثر."""
+        prefetched_images = self.__dict__.get('primary_images')
+        if prefetched_images:
+            return prefetched_images[0].display_url
+        lot_images = self.get_lot_images()
+        return lot_images[0].url if lot_images else ''
 
     def clean(self) -> None:
         super().clean()
@@ -399,6 +429,10 @@ class ProductImage(models.Model):
         if self.thumbnail:
             return self.image.storage.url(self.thumbnail)
         return self.image.url
+
+    @property
+    def key(self) -> str:
+        return self.image.name if self.image else ''
 
     @property
     def display_url(self) -> str:

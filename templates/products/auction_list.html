@@ -61,7 +61,7 @@
         line-height: 1.5;
     }
 
-    /* یک فیلد ترکیبی: تاریخ، واحد پول، مکان و کمیسیون */
+    /* یک فیلد ترکیبی: تاریخ و کمیسیون */
     .auction-list-info {
         display: flex;
         flex-wrap: wrap;
@@ -263,14 +263,6 @@
                                             <span class="info-value">{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</span>
                                         </span>
                                         <span class="info-item">
-                                            <span class="info-label">واحد پول:</span>
-                                            <span class="info-value">{{ auction.get_currency_display }}</span>
-                                        </span>
-                                        <span class="info-item">
-                                            <span class="info-label">مکان:</span>
-                                            <span class="info-value">{{ auction.location|default:"-" }}</span>
-                                        </span>
-                                        <span class="info-item">
                                             <span class="info-label">کمیسیون:</span>
                                             <span class="info-value">{{ auction.commission_rate }}٪</span>
                                         </span>
@@ -315,19 +307,76 @@
 {% if auctions %}
     <script>
         (function () {
-            var rows = document.querySelectorAll('[data-row-href]');
-            rows.forEach(function (row) {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('[data-row-href]'));
+
+            function isTypingTarget(element) {
+                return !!(element && element.closest('input, textarea, select, [contenteditable="true"]'));
+            }
+
+            function focusRow(index) {
+                if (index < 0 || index >= rows.length) {
+                    return;
+                }
+
+                rows.forEach(function (row, rowIndex) {
+                    row.tabIndex = rowIndex === index ? 0 : -1;
+                });
+
+                rows[index].focus();
+                rows[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+
+            rows.forEach(function (row, index) {
+                row.tabIndex = index === 0 ? 0 : -1;
+
                 function go() {
                     window.location.href = row.dataset.rowHref;
                 }
+
                 row.addEventListener('click', go);
+
+                row.addEventListener('focus', function () {
+                    rows.forEach(function (item, itemIndex) {
+                        item.tabIndex = itemIndex === index ? 0 : -1;
+                    });
+                });
+
                 row.addEventListener('keydown', function (event) {
+                    if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        focusRow(index + 1 < rows.length ? index + 1 : index);
+                        return;
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        focusRow(index - 1 >= 0 ? index - 1 : 0);
+                        return;
+                    }
+
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         go();
                     }
                 });
             });
+
+            if (rows.length) {
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+                        return;
+                    }
+
+                    if (isTypingTarget(event.target)) {
+                        return;
+                    }
+
+                    if (rows.indexOf(document.activeElement) === -1) {
+                        event.preventDefault();
+                        focusRow(0);
+                    }
+                });
+            }
 
             var sortHeaders = document.querySelectorAll('.data-table thead th.sortable');
             var currentSort = '{{ selected_sort|default:"-start_date" }}';

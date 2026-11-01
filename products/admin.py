@@ -81,6 +81,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'title',
         'product_code',
+        'lot_display_number',
         'auction',
         'source_type',
         'status',

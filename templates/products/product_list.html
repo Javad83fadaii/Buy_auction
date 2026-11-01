@@ -99,18 +99,6 @@
     <main class="dash-main">
         <header class="dash-head">
             <div>
-                <h1>{{ page_title }}</h1>
-                <!-- <p class="dash-sub">آثار ثبت‌شده در سیستم را در این صفحه مشاهده می‌کنید.</p> -->
-            </div>
-            <div class="dash-head-actions">
-                <a class="button button-secondary" href="{% url 'products:auction_list' %}">حراجی‌های خارجی</a>
-                {% if perms.accounts.view_dashboard %}
-                    {% comment %} <a class="button button-secondary" href="{% url 'dashboard' %}">بازگشت به داشبورد</a> {% endcomment %}
-                {% endif %}
-                {% if perms.products.add_product %}
-                    {% comment %} <a class="dash-btn dash-btn-solid" href="{% url 'products:create' %}">ثبت اثر جدید</a> {% endcomment %}
-                {% endif %}
-            </div>
         </header>
 
         <form method="get" class="filter-bar filter-bar-flat" role="search">
@@ -270,10 +258,10 @@
                             data-row-href="{% url 'products:detail' product.pk %}{% if request.get_full_path != request.path %}?next={{ request.get_full_path|urlencode }}{% endif %}"
                         >
                             <td>
-                                {% if product.primary_images %}
+                                {% if product.primary_image_url %}
                                     <img
                                         class="product-thumb"
-                                        src="{{ product.primary_images.0.image.url }}"
+                                        src="{{ product.primary_image_url }}"
                                         alt="تصویر {{ product.title }}"
                                     >
                                 {% else %}
@@ -355,19 +343,76 @@
 {% if products %}
     <script>
         (function () {
-            var rows = document.querySelectorAll('[data-row-href]');
-            rows.forEach(function (row) {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('[data-row-href]'));
+
+            function isTypingTarget(element) {
+                return !!(element && element.closest('input, textarea, select, [contenteditable="true"]'));
+            }
+
+            function focusRow(index) {
+                if (index < 0 || index >= rows.length) {
+                    return;
+                }
+
+                rows.forEach(function (row, rowIndex) {
+                    row.tabIndex = rowIndex === index ? 0 : -1;
+                });
+
+                rows[index].focus();
+                rows[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+
+            rows.forEach(function (row, index) {
+                row.tabIndex = index === 0 ? 0 : -1;
+
                 function go() {
                     window.location.href = row.dataset.rowHref;
                 }
+
                 row.addEventListener('click', go);
+
+                row.addEventListener('focus', function () {
+                    rows.forEach(function (item, itemIndex) {
+                        item.tabIndex = itemIndex === index ? 0 : -1;
+                    });
+                });
+
                 row.addEventListener('keydown', function (event) {
+                    if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        focusRow(index + 1 < rows.length ? index + 1 : index);
+                        return;
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        focusRow(index - 1 >= 0 ? index - 1 : 0);
+                        return;
+                    }
+
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         go();
                     }
                 });
             });
+
+            if (rows.length) {
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+                        return;
+                    }
+
+                    if (isTypingTarget(event.target)) {
+                        return;
+                    }
+
+                    if (rows.indexOf(document.activeElement) === -1) {
+                        event.preventDefault();
+                        focusRow(0);
+                    }
+                });
+            }
 
             /* موقتاً غیرفعال — تعویض نمایش لیستی/کارتی
             var STORAGE_KEY = 'products-view-mode';

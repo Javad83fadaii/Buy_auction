@@ -3,7 +3,11 @@
 
     <nav class="dash-nav">
         {% for link in quick_links %}
-            <a class="dash-nav-link{% if link.variant == 'primary' %} is-strong{% endif %}" href="{{ link.url }}">{{ link.label }}</a>
+            <a
+                class="dash-nav-link{% if link.is_active %} is-active{% endif %}"
+                href="{{ link.url }}"
+                {% if link.is_active %}aria-current="page"{% endif %}
+            >{{ link.label }}</a>
         {% endfor %}
     </nav>
 

@@ -117,6 +117,17 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             primary_image = gallery_images[0]
         return primary_image
 
+    def get_gallery_images(self, product: Product):
+        """تصاویر گالری؛ تصاویر آپلودشده در دیتابیس مقدم بر تصاویر پوشه اثر روی دیسک هستند.
+
+        بازگشتی: (تصاویر دیتابیس، تصاویر گالری، تصویر اصلی)
+        """
+        database_images = list(product.images.all())
+        if database_images:
+            return database_images, database_images, self.get_primary_image(database_images)
+        lot_images = product.get_lot_images()
+        return database_images, lot_images, (lot_images[0] if lot_images else None)
+
     def get_image_upload_form(self):
         return ProductImageUploadForm()
 
@@ -140,8 +151,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
 
     def get_detail_context(self, *, product=None, image_upload_form=None, image_sort_forms=None):
         product = product or self.get_product()
-        gallery_images = list(product.images.all())
-        primary_image = self.get_primary_image(gallery_images)
+        database_images, gallery_images, primary_image = self.get_gallery_images(product)
         can_review_product = self.request.user.has_perm('products.review_product')
         can_manage_product = can_user_modify_product(product=product, user=self.request.user)
         available_status_transitions = get_available_status_transitions(product=product)
@@ -152,7 +162,7 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'product': product,
             'primary_image': primary_image,
             'gallery_images': gallery_images,
-            'managed_images': self.build_managed_images(gallery_images, image_sort_forms=image_sort_forms),
+            'managed_images': self.build_managed_images(database_images, image_sort_forms=image_sort_forms),
             'image_upload_form': image_upload_form or self.get_image_upload_form(),
             'can_manage_product': can_manage_product,
             'can_manage_images': can_manage_product,
@@ -296,6 +306,8 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         '-suggested_price': (F('suggested_price').desc(nulls_last=True), '-pk'),
         'product_code': (F('product_code').asc(nulls_last=True), 'pk'),
         '-product_code': (F('product_code').desc(nulls_last=True), '-pk'),
+        'lot': (F('lot_display_number').asc(nulls_last=True), 'pk'),
+        '-lot': (F('lot_display_number').desc(nulls_last=True), '-pk'),
         'suggested_by': ('suggested_by', 'pk'),
         '-suggested_by': ('-suggested_by', '-pk'),
         'auction': (F('auction__name').asc(nulls_last=True), 'pk'),
@@ -470,6 +482,13 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
             return self.request.path
         return f'{self.request.path}?{urlencode({"q": search_query})}'
 
+    def get_page_title(self):
+        if self.get_source_filter() == ProductSourceTypeChoices.MANUAL:
+            return 'محصولات دستی'
+        if self.get_status_filter() == ProductStatusChoices.PENDING_REVIEW:
+            return 'محصولات در انتظار بررسی'
+        return 'لیست محصولات'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         search_query = self.get_search_query()
@@ -479,7 +498,7 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         selected_cancelled = self.get_cancelled_filter()
         filter_form = self.get_filter_form()
         selected_sort = self.get_selected_sort()
-        context['page_title'] = 'لیست محصولات'
+        context['page_title'] = self.get_page_title()
         context['search_query'] = search_query
         context['selected_status'] = selected_status
         context['selected_source'] = selected_source
@@ -988,31 +1007,50 @@ class AuctionDetailView(RolePermissionMixin, DetailView):
     context_object_name = 'auction'
     pk_url_kwarg = 'id'
 
+    lot_sort_default = 'lot'
+    lot_sort_options = {
+        'lot': F('lot_display_number').asc(nulls_last=True),
+        '-lot': F('lot_display_number').desc(nulls_last=True),
+    }
+
+    def get_lot_sort(self) -> str:
+        """نوع مرتب‌سازی درخواستی کاربر بر اساس شماره لات."""
+        sort = str(self.request.GET.get('sort') or '').strip()
+        return sort if sort in self.lot_sort_options else self.lot_sort_default
+
+    def get_lot_ordering(self, sort: str) -> tuple:
+        if sort == '-lot':
+            return (self.lot_sort_options[sort], '-pk')
+        return (self.lot_sort_options[sort], 'pk')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         auction = self.object
+        lot_sort = self.get_lot_sort()
         products = (
             auction.products.all()
             .select_related('created_by')
             .prefetch_related(
                 Prefetch(
                     'images',
-                    queryset=ProductImage.objects.only(
+                    queryset=ProductImage.objects.filter(is_primary=True).only(
                         'id',
                         'product_id',
                         'image',
                         'thumbnail',
                         'is_primary',
-                        'sort_order',
-                    ).order_by('sort_order', 'id'),
+                    ),
+                    to_attr='primary_images',
                 )
             )
-            .order_by('-created_at')
+            .order_by(*self.get_lot_ordering(lot_sort))
         )
         if is_expert_restricted_user(self.request.user):
             products = products.filter(assigned_expert=self.request.user)
         context['page_title'] = auction.name
         context['products'] = products
+        context['lot_sort'] = lot_sort
+        context['lot_sort_toggle'] = '-lot' if lot_sort == 'lot' else 'lot'
         context['can_manage_auctions'] = self.request.user.has_perm('products.change_product')
         context['can_add_product'] = self.request.user.has_perm('products.add_product')
         return context

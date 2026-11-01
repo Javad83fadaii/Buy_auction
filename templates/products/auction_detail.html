@@ -38,19 +38,24 @@
                 <div class="ad-table-wrap">
                     <table class="ad-table">
                         <colgroup>
+                            <col class="ad-col-code">
                             <col class="ad-col-lot">
                             <col class="ad-col-flags">
                             <col class="ad-col-price">
                             <col class="ad-col-status">
-                            <col class="ad-col-act">
                         </colgroup>
                         <thead>
                             <tr>
+                                <th class="ad-cell-code">
+                                    <a class="ad-sort{% if lot_sort == '-lot' %} is-desc{% else %} is-asc{% endif %}" href="?sort={{ lot_sort_toggle }}" rel="nofollow" title="مرتب‌سازی بر اساس شماره لات">
+                                        لات
+                                        <span class="ad-sort-arrow" aria-hidden="true">{% if lot_sort == '-lot' %}▼{% else %}▲{% endif %}</span>
+                                    </a>
+                                </th>
                                 <th>اثر</th>
                                 <th>نشان‌های پیگیری</th>
                                 <th>قیمت‌ها</th>
                                 <th>وضعیت</th>
-                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -61,20 +66,22 @@
                                     role="link"
                                     data-row-href="{% url 'products:detail' product.pk %}"
                                 >
+                                    <td class="ad-cell-code">
+                                        {% if product.lot_display_number %}
+                                            <span class="ad-lot-code">{{ product.lot_display_number }}</span>
+                                        {% else %}
+                                            <span class="ad-muted">—</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <div class="ad-lot">
-                                            {% with first_image=product.images.all|first %}
-                                                {% if first_image %}
-                                                    <img class="ad-lot-thumb" src="{{ first_image.image.url }}" alt="{{ product.title }}" loading="lazy">
-                                                {% else %}
-                                                    <div class="ad-lot-thumb ad-lot-thumb-empty">بدون تصویر</div>
-                                                {% endif %}
-                                            {% endwith %}
+                                            {% if product.primary_image_url %}
+                                                <img class="ad-lot-thumb" src="{{ product.primary_image_url }}" alt="{{ product.title }}" loading="lazy">
+                                            {% else %}
+                                                <div class="ad-lot-thumb ad-lot-thumb-empty">بدون تصویر</div>
+                                            {% endif %}
                                             <div class="ad-lot-text">
                                                 <a class="ad-lot-title" href="{% url 'products:detail' product.pk %}" title="{{ product.title }}">{{ product.title }}</a>
-                                                <span class="ad-lot-meta">
-                                                    {{ product.product_code|default:"بدون کد" }} · {{ product.artist|default:"بدون خالق" }}
-                                                </span>
                                             </div>
                                         </div>
                                     </td>
@@ -108,9 +115,6 @@
                                     <td>
                                         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>
                                     </td>
-                                    <td class="dash-cell-actions">
-                                        <a href="{% url 'products:detail' product.pk %}">مشاهده</a>
-                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -132,18 +136,79 @@
 {% if products %}
 <script>
     (function () {
-        document.querySelectorAll('[data-row-href]').forEach(function (row) {
+        var rows = Array.prototype.slice.call(document.querySelectorAll('[data-row-href]'));
+
+        if (!rows.length) {
+            return;
+        }
+
+        function isTypingTarget(element) {
+            return !!(element && element.closest('input, textarea, select, [contenteditable="true"]'));
+        }
+
+        function focusRow(index) {
+            if (index < 0 || index >= rows.length) {
+                return;
+            }
+
+            rows.forEach(function (row, rowIndex) {
+                row.tabIndex = rowIndex === index ? 0 : -1;
+            });
+
+            rows[index].focus();
+            rows[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+
+        rows.forEach(function (row, index) {
+            row.tabIndex = index === 0 ? 0 : -1;
+
             function go() { window.location.href = row.dataset.rowHref; }
+
             row.addEventListener('click', function (event) {
                 if (event.target.closest('a, button, form')) { return; }
                 go();
             });
+
+            row.addEventListener('focus', function () {
+                rows.forEach(function (item, itemIndex) {
+                    item.tabIndex = itemIndex === index ? 0 : -1;
+                });
+            });
+
             row.addEventListener('keydown', function (event) {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    focusRow(index + 1 < rows.length ? index + 1 : index);
+                    return;
+                }
+
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    focusRow(index - 1 >= 0 ? index - 1 : 0);
+                    return;
+                }
+
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     go();
                 }
             });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+                return;
+            }
+
+            if (isTypingTarget(event.target)) {
+                return;
+            }
+
+            var activeIndex = rows.indexOf(document.activeElement);
+            if (activeIndex === -1) {
+                event.preventDefault();
+                focusRow(0);
+            }
         });
     }());
 </script>

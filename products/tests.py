@@ -1,3 +1,4 @@
+import re
 import shutil
 import tempfile
 from datetime import date, timedelta
@@ -481,6 +482,29 @@ class ProductListViewTests(ProductCreateBaseTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'لیست محصولات')
+
+    def test_product_list_sidebar_includes_manual_products_link(self):
+        response = self.get_list(user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse('products:list') + '?source=MANUAL',
+        )
+        self.assertContains(response, 'محصولات دستی')
+
+    def test_manual_products_sidebar_link_is_highlighted_on_manual_filter(self):
+        response = self.get_list(
+            user=self.operator_user,
+            source=ProductSourceTypeChoices.MANUAL,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'<a class="dash-nav-link is-active" href="{reverse("products:list")}?source=MANUAL" aria-current="page">محصولات دستی</a>',
+            html=True,
+        )
 
     def test_admin_does_not_see_inline_add_product_button(self):
         response = self.get_list(user=self.admin_user)
@@ -3347,6 +3371,18 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertNotContains(response, self.auction.get_currency_display())
         self.assertNotContains(response, 'هدف خرید')
 
+    def test_auction_sidebar_link_is_highlighted_on_auction_pages(self):
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:auction_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'<a class="dash-nav-link is-active" href="{reverse("products:auction_list")}" aria-current="page">لیست حراجیها</a>',
+            html=True,
+        )
+
     def test_auction_list_supports_all_declared_sorts(self):
         self.client.force_login(self.operator_user)
         base_url = reverse('products:auction_list')
@@ -3422,6 +3458,65 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertContains(response, self.auction.name)
         self.assertContains(response, 'نقاشی رنگ روغن کریستیز')
         self.assertContains(response, 'هدف خرید')
+        self.assertNotContains(
+            response,
+            f'href="{reverse("products:detail", args=[self.product_with_auction.pk])}">مشاهده</a>',
+            html=False,
+        )
+
+    def test_auction_detail_sorts_products_by_lot_number(self):
+        self.client.force_login(self.operator_user)
+        Product.objects.create(
+            title='لات شماره هفت',
+            auction=self.auction,
+            lot_display_number=7,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+            created_by=self.operator_user,
+        )
+        Product.objects.create(
+            title='لات شماره سه',
+            auction=self.auction,
+            lot_display_number=3,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+            created_by=self.operator_user,
+        )
+        Product.objects.create(
+            title='بدون شماره لات',
+            auction=self.auction,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+            created_by=self.operator_user,
+        )
+        url = reverse('products:auction_detail', args=[self.auction.pk])
+
+        def rendered_titles(response):
+            return re.findall(r'<a class="ad-lot-title"[^>]*>([^<]+)</a>', response.content.decode())
+
+        ascending = self.client.get(url, {'sort': 'lot'})
+        self.assertEqual(ascending.status_code, 200)
+        self.assertEqual(
+            rendered_titles(ascending),
+            ['لات شماره سه', 'لات شماره هفت', 'نقاشی رنگ روغن کریستیز', 'بدون شماره لات'],
+        )
+        self.assertContains(ascending, 'href="?sort=-lot"', html=False)
+        self.assertContains(ascending, '<span class="ad-lot-code">3</span>', html=False)
+
+        descending = self.client.get(url, {'sort': '-lot'})
+        self.assertEqual(descending.status_code, 200)
+        self.assertEqual(
+            rendered_titles(descending),
+            [
+                'لات شماره هفت',
+                'لات شماره سه',
+                'بدون شماره لات',
+                'نقاشی رنگ روغن کریستیز',
+            ],
+        )
+        self.assertContains(descending, 'href="?sort=lot"', html=False)
+
+        # مقدار پیش‌فرض و مقدار نامعتبر باید همان ترتیب صعودی را بدهند
+        self.assertEqual(rendered_titles(self.client.get(url)), rendered_titles(ascending))
+        invalid = self.client.get(url, {'sort': 'title'})
+        self.assertEqual(rendered_titles(invalid), rendered_titles(ascending))
 
     def test_auction_create_view_get_and_post(self):
         self.client.force_login(self.operator_user)

@@ -85,9 +85,17 @@
     color: var(--d-ink) !important;
 }
 
-.dash-nav-link.is-strong {
-    color: var(--d-ink) !important;
+.dash-nav-link.is-active,
+.dash-nav-link[aria-current="page"] {
+    background: var(--d-ink);
+    color: var(--d-paper) !important;
     font-weight: 600;
+}
+
+.dash-nav-link.is-active:hover,
+.dash-nav-link[aria-current="page"]:hover {
+    background: var(--d-ink);
+    color: var(--d-paper) !important;
 }
 
 .dash-user {

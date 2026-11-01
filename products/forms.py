@@ -26,6 +26,8 @@ PRODUCT_LIST_SORT_CHOICES = (
     ('-title', 'عنوان Z-A'),
     ('product_code', 'کد اثر (صعودی)'),
     ('-product_code', 'کد اثر (نزولی)'),
+    ('lot', 'شماره لات (صعودی)'),
+    ('-lot', 'شماره لات (نزولی)'),
     ('suggested_price', 'قیمت پیشنهادی کم به زیاد'),
     ('-suggested_price', 'قیمت پیشنهادی زیاد به کم'),
     ('suitable_price', 'قیمت مناسب کم به زیاد'),

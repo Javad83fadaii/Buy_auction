@@ -47,7 +47,7 @@
                                     type="button"
                                     class="product-gallery-thumb product-gallery-thumb-more"
                                     data-gallery-lightbox-trigger
-                                    aria-label="نمایش همه تصاویر"
+                                    aria-label="نمایش تصاویر بیشتر"
                                 >
                                     <img src="{{ image.display_url }}" alt="تصویر بندانگشتی {{ forloop.counter }} {{ product.title }}" loading="lazy" decoding="async">
                                     <span class="product-gallery-thumb-more-count">+{{ total_images|add:"-3" }}</span>
@@ -55,7 +55,7 @@
                             {% else %}
                                 <button
                                     type="button"
-                                    class="product-gallery-thumb{% if primary_image and image.pk == primary_image.pk %} is-active{% endif %}"
+                                    class="product-gallery-thumb{% if primary_image and image.key == primary_image.key %} is-active{% endif %}"
                                     data-gallery-trigger
                                     data-image-url="{{ image.original_url }}"
                                     data-image-alt="تصویر {{ forloop.counter }} {{ product.title }}"
@@ -72,7 +72,7 @@
                     <div class="lightbox-overlay" data-lightbox hidden>
                         <div class="lightbox-panel">
                             <div class="lightbox-header">
-                                <h3>همه تصاویر ({{ gallery_images|length }})</h3>
+                                <h3>تصاویر بیشتر ({{ gallery_images|length }})</h3>
                                 <button type="button" class="button button-secondary" data-lightbox-close>بستن</button>
                             </div>
                             <div class="lightbox-grid">
@@ -129,6 +129,12 @@
                     <span class="detail-info-label">کد اثر</span>
                     <span class="detail-info-value">{{ product.product_code|default:"—" }}</span>
                 </div>
+                {% if product.lot_display_number %}
+                    <div class="detail-info-item">
+                        <span class="detail-info-label">شماره لات</span>
+                        <span class="detail-info-value">{{ product.lot_display_number }}</span>
+                    </div>
+                {% endif %}
                 <div class="detail-info-item">
                     <span class="detail-info-label">قیمت مناسب</span>
                     <span class="detail-info-value">

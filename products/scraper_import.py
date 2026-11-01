@@ -21,6 +21,7 @@ from .choices import (
 from .models import Auction, Product
 
 NUMBER_RE = re.compile(r'\d[\d,]*(?:\.\d+)?')
+LOT_DISPLAY_NUMBER_RE = re.compile(r'\d+')
 CURRENCY_RE = re.compile(r'\b([A-Z]{3})\b')
 MAX_PRICE = Decimal('9999999999999999')  # max_digits=18, decimal_places=2
 
@@ -41,6 +42,7 @@ BASE_PRODUCT_UPDATE_FIELDS = (
     'auction',
     'status',
     'is_cancelled',
+    'lot_display_number',
 )
 
 
@@ -95,7 +97,13 @@ class BaseScraperMapper:
 
 
 class ChristiesScraperMapper(BaseScraperMapper):
-    pass
+    """در کریستیز شناسه فروش (source_auction_id) مبنای شماره مزایده و پوشه تصاویر است."""
+
+    def build_auction_number(self, row: dict) -> str:
+        source_auction_id = str(row.get('source_auction_id') or '').strip()
+        if source_auction_id:
+            return source_auction_id[:128]
+        return super().build_auction_number(row)
 
 
 class SothebysScraperMapper(BaseScraperMapper):
@@ -151,6 +159,14 @@ def parse_estimate(text):
     low = values[0] if values else None
     high = values[1] if len(values) > 1 else None
     return low, high
+
+
+def parse_lot_display_number(value) -> int | None:
+    """شماره لات نمایشی (مثل «12» یا «12A») به عدد برای مرتب‌سازی."""
+    match = LOT_DISPLAY_NUMBER_RE.search(str(value or ''))
+    if not match:
+        return None
+    return int(match.group())
 
 
 @dataclass
@@ -315,6 +331,7 @@ class ScraperImportService:
         payload = {
             'title': mapper.build_product_title(row),
             'product_code': self.build_product_code(row, auction_map),
+            'lot_display_number': parse_lot_display_number(row.get('lot_display_number')),
             'description': mapper.build_product_description(row),
             'suggested_price': low,
             'suitable_price': high,
@@ -405,7 +422,7 @@ class ScraperImportService:
 
     def import_lots(self, conn, auction_map, result: ScraperImportResult):
         sql = (
-            "SELECT source_name, lot_number, url, auction_id, lot_status, title, "
+            "SELECT source_name, lot_number, lot_display_number, url, auction_id, lot_status, title, "
             "estimate_text, description, lot_essay, first_seen_at "
             "FROM lots WHERE page_status = 'ok'"
         )

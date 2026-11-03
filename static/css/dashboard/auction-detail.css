@@ -33,28 +33,101 @@
 /* ---------- Stats strip ---------- */
 .ad-stats {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(9, minmax(0, 1fr));
     border: 1px solid var(--d-line);
-    border-radius: 10px;
+    border-radius: 8px;
     background: var(--d-paper);
-    overflow: hidden;
+    overflow: visible;
 }
 .ad-stat {
+    position: relative;
+    min-width: 0;
+    padding: 4px 6px;
+    font-size: 10px;
+    color: var(--d-text-3);
+    white-space: nowrap;
+    outline: none;
+    cursor: help;
+}
+.ad-stat-main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: 11px;
-    color: var(--d-text-3);
-    white-space: nowrap;
+    gap: 4px;
+    min-width: 0;
+}
+.ad-stat-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .ad-stat + .ad-stat { border-inline-start: 1px solid var(--d-line); }
 .ad-stat strong {
-    font-size: 14px;
+    flex: 0 0 auto;
+    font-size: 12px;
     font-weight: 700;
     color: var(--d-ink);
     font-variant-numeric: tabular-nums;
+}
+.ad-stat:hover,
+.ad-stat:focus-visible {
+    z-index: 5;
+    background: rgba(15, 23, 42, 0.03);
+}
+.ad-stat:focus-visible {
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.16);
+}
+.ad-stat-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 10;
+    width: 280px;
+    max-width: min(280px, calc(100vw - 24px));
+    padding: 10px 12px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+    white-space: normal;
+    line-height: 1.7;
+    color: var(--d-text-2);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+.ad-stat:hover .ad-stat-tooltip,
+.ad-stat:focus-visible .ad-stat-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.ad-stat-tooltip p {
+    margin: 0;
+    font-size: 11px;
+}
+.ad-stat-tooltip p + p { margin-top: 4px; }
+.ad-stat-tooltip strong {
+    font-size: inherit;
+    color: var(--d-ink);
+}
+.ad-stat-tooltip code {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.06);
+    font-size: 10px;
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    direction: ltr;
+    unicode-bidi: embed;
+}
+.ad-stat-tooltip-note {
+    color: var(--d-text-3);
+}
+.ad-stat:last-child .ad-stat-tooltip {
+    left: 0;
+    right: auto;
 }
 
 /* ---------- Lots panel (the only scrollable area) ---------- */
@@ -188,8 +261,20 @@
 /* ---------- Responsive ---------- */
 @media (max-width: 1100px) {
     .ad-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .ad-stat:nth-child(5) { border-inline-start: 0; }
+    .ad-stat:nth-child(4n + 1) { border-inline-start: 0; }
     .ad-stat:nth-child(n + 5) { border-top: 1px solid var(--d-line); }
+    .ad-stat-tooltip {
+        width: 260px;
+        max-width: min(260px, calc(100vw - 24px));
+    }
+    .ad-stat:nth-child(4n + 1) .ad-stat-tooltip {
+        right: 0;
+        left: auto;
+    }
+    .ad-stat:nth-child(4n) .ad-stat-tooltip {
+        left: 0;
+        right: auto;
+    }
 }
 @media (max-width: 800px) {
     .ad-table-wrap { overflow-x: auto; }
@@ -199,4 +284,16 @@
     .ad-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ad-stat:nth-child(odd) { border-inline-start: 0; }
     .ad-stat:nth-child(n + 3) { border-top: 1px solid var(--d-line); }
+    .ad-stat-tooltip {
+        width: 220px;
+        max-width: min(220px, calc(100vw - 20px));
+    }
+    .ad-stat:nth-child(odd) .ad-stat-tooltip {
+        right: 0;
+        left: auto;
+    }
+    .ad-stat:nth-child(even) .ad-stat-tooltip {
+        left: 0;
+        right: auto;
+    }
 }

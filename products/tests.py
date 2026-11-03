@@ -3457,7 +3457,7 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertTemplateUsed(response, 'products/auction_detail.html')
         self.assertContains(response, self.auction.name)
         self.assertContains(response, 'نقاشی رنگ روغن کریستیز')
-        self.assertContains(response, 'هدف خرید')
+        self.assertContains(response, '🎯 خرید')
         self.assertNotContains(
             response,
             f'href="{reverse("products:detail", args=[self.product_with_auction.pk])}">مشاهده</a>',

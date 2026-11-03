@@ -20,14 +20,87 @@
 
         {# آمار حراجی #}
         <section class="ad-stats" aria-label="آمار و وضعیت آثار حراجی">
-            <div class="ad-stat" title="تعداد کل آثار کاتالوگ"><span>کل آثار</span><strong>{{ auction.total_lots }}</strong></div>
-            <div class="ad-stat" title="آثار وارد شده به سامانه"><span>وارد شده</span><strong>{{ auction.entered_lots_count }}</strong></div>
-            <div class="ad-stat" title="موارد هدف خرید"><span>🎯 خرید</span><strong>{{ auction.to_buy_count }}</strong></div>
-            <div class="ad-stat" title="بازدید نهایی شده"><span>🔍 بازدید</span><strong>{{ auction.final_inspection_count }}</strong></div>
-            <div class="ad-stat" title="تمام قیمت‌ها وارد شده"><span>💰 قیمت</span><strong>{{ auction.all_prices_count }}</strong></div>
-            <div class="ad-stat" title="اطلاعات اولیه وارد شده"><span>📋 اطلاعات</span><strong>{{ auction.initial_info_count }}</strong></div>
-            <div class="ad-stat" title="نیازمند کارشناسی"><span>🔬 کارشناسی</span><strong>{{ auction.expert_lots_count }}</strong></div>
-            <div class="ad-stat" title="آثار انصرافی"><span>🚫 انصرافی</span><strong>{{ auction.cancelled_lots_count }}</strong></div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-commission">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">کمیسیون</span>
+                    <strong>{{ auction.commission_rate }}٪</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-commission">
+                    <p>درصد کمیسیون خریدار در این حراج.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-total-lots">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">کل آثار</span>
+                    <strong>{{ auction.total_lots }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-total-lots">
+                    <p>تعداد کل لات‌های کاتالوگ این حراج.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-entered">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">وارد شده</span>
+                    <strong>{{ auction.entered_lots_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-entered">
+                    <p>تعداد آثاری که برای این حراج در سیستم ثبت شده‌اند.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-buy">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">🎯 خرید</span>
+                    <strong>{{ auction.to_buy_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-buy">
+                    <p>تعداد آثاری که به عنوان هدف خرید علامت خورده‌اند.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-inspection">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">🔍 بازدید</span>
+                    <strong>{{ auction.final_inspection_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-inspection">
+                    <p>تعداد آثاری که بازدید نهایی آن‌ها انجام شده است.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-prices">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">💰 قیمت</span>
+                    <strong>{{ auction.all_prices_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-prices">
+                    <p>تعداد آثاری که اطلاعات قیمت آن‌ها کامل ثبت شده است.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-info">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">📋 اطلاعات</span>
+                    <strong>{{ auction.initial_info_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-info">
+                    <p>تعداد آثاری که اطلاعات اولیه آن‌ها ثبت شده است.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-expert">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">🔬 کارشناسی</span>
+                    <strong>{{ auction.expert_lots_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-expert">
+                    <p>تعداد آثاری که نیاز به بررسی کارشناسی دارند.</p>
+                </div>
+            </div>
+            <div class="ad-stat" tabindex="0" aria-describedby="auction-stat-cancelled">
+                <div class="ad-stat-main">
+                    <span class="ad-stat-label">🚫 انصرافی</span>
+                    <strong>{{ auction.cancelled_lots_count }}</strong>
+                </div>
+                <div class="ad-stat-tooltip" role="tooltip" id="auction-stat-cancelled">
+                    <p>تعداد آثاری که از حراج خارج یا لغو شده‌اند.</p>
+                </div>
+            </div>
         </section>
 
         {# لیست آثار (تنها بخش اسکرول‌شونده) #}

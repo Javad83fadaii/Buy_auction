@@ -61,7 +61,7 @@
         line-height: 1.5;
     }
 
-    /* یک فیلد ترکیبی: تاریخ و کمیسیون */
+    /* فیلد اطلاعات تاریخ */
     .auction-list-info {
         display: flex;
         flex-wrap: wrap;
@@ -235,7 +235,7 @@
                                 <span class="sort-indicator"></span>
                             </th>
                             <th class="sortable" data-sort="start_date">
-                                تاریخ و مشخصات
+                                تاریخ
                                 <span class="sort-indicator"></span>
                             </th>
                             <th class="sortable" data-sort="status">
@@ -261,10 +261,6 @@
                                         <span class="info-item">
                                             <span class="info-label">تاریخ:</span>
                                             <span class="info-value">{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</span>
-                                        </span>
-                                        <span class="info-item">
-                                            <span class="info-label">کمیسیون:</span>
-                                            <span class="info-value">{{ auction.commission_rate }}٪</span>
                                         </span>
                                     </div>
                                 </td>

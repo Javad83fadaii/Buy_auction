@@ -19,7 +19,6 @@
 
     {# Core product metadata shown in the compact card layout. #}
     <div class="product-card-meta">
-        <span>کد اثر: {{ product.product_code|default:"-" }}</span>
         <span>خالق: {{ product.artist|default:"-" }}</span>
         <span>نوع هنر: {{ product.art_type|default:"-" }}</span>
         {% if product.auction %}

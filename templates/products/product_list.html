@@ -47,35 +47,30 @@
 
     .dash-main > .table-shell .data-table th:nth-child(2),
     .dash-main > .table-shell .data-table td:nth-child(2) {
-        width: 10%;
+        width: 34%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(3),
     .dash-main > .table-shell .data-table td:nth-child(3) {
-        width: 28%;
+        width: 18%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(4),
     .dash-main > .table-shell .data-table td:nth-child(4) {
-        width: 18%;
+        width: 14%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(5),
     .dash-main > .table-shell .data-table td:nth-child(5) {
-        width: 14%;
+        width: 12%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(6),
     .dash-main > .table-shell .data-table td:nth-child(6) {
-        width: 10%;
+        width: 14%;
     }
 
-    .dash-main > .table-shell .data-table th:nth-child(7),
-    .dash-main > .table-shell .data-table td:nth-child(7) {
-        width: 12%;
-    }
-
-    .dash-main > .table-shell .data-table td:nth-child(3) strong {
+    .dash-main > .table-shell .data-table td:nth-child(2) strong {
         display: block;
         line-height: 1.5;
         white-space: normal;
@@ -110,7 +105,7 @@
             name="q"
             class="filter-bar-search"
             value="{{ search_query }}"
-            placeholder="جستجوی عنوان، کد اثر، خالق یا پیشنهاددهنده..."
+            placeholder="جستجوی عنوان، خالق یا پیشنهاددهنده..."
         >
 
             <select id="id_status" name="status" aria-label="وضعیت">
@@ -223,10 +218,6 @@
                 <thead>
                     <tr>
                         <th>تصویر</th>
-                        <th class="sortable" data-sort="product_code">
-                            کد اثر
-                            <span class="sort-indicator"></span>
-                        </th>
                         <th class="sortable" data-sort="title">
                             عنوان
                             <span class="sort-indicator"></span>
@@ -268,7 +259,6 @@
                                     <div class="product-thumb product-thumb-placeholder">بدون تصویر</div>
                                 {% endif %}
                             </td>
-                            <td>{{ product.product_code|default:"-" }}</td>
                             <td>
                                 <strong>{{ product.title }}</strong>
                             </td>

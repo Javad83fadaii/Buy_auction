@@ -38,6 +38,7 @@ from .services import (
     can_user_modify_product,
     create_manual_product,
     create_product,
+    mark_product_as_viewed,
     delete_product_image,
     get_available_status_transitions,
     is_expert_restricted_user,
@@ -542,6 +543,10 @@ class ProductDetailView(ProductDetailContextMixin, RolePermissionMixin, DetailVi
 
     def get_queryset(self):
         return self.get_product_queryset()
+
+    def get_object(self, queryset=None):
+        product = super().get_object(queryset)
+        return mark_product_as_viewed(product=product)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -570,3 +570,12 @@ def _normalize_integrity_error(exc: IntegrityError, *, product: Product) -> Vali
 def sync_auction_statistics(*, auction: Auction) -> dict[str, int]:
     """همگام‌سازی و بازشماری آمارهای حراجی بر اساس آثار ثبت‌شده در سیستم"""
     return auction.sync_statistics()
+
+
+def mark_product_as_viewed(*, product: Product) -> Product:
+    """اولین باز شدن صفحه جزئیات اثر را به‌عنوان بازدید ثبت می‌کند."""
+    if product.final_inspection_done:
+        return product
+    product.final_inspection_done = True
+    product.save(update_fields=['final_inspection_done'])
+    return product

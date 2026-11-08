@@ -3620,6 +3620,41 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
         self.assertContains(response, 'هدف خرید')
         self.assertContains(response, 'بازدید نهایی شده')
 
+    def test_opening_product_marks_auction_visit(self):
+        self.client.force_login(self.operator_user)
+        product = Product.objects.create(
+            title='اثر بازدیدنشده',
+            product_code='CHR-LOT-VIEW-1',
+            auction=self.auction,
+            source_type=ProductSourceTypeChoices.CHRISTIES,
+            created_by=self.operator_user,
+        )
+        self.auction.refresh_from_db()
+        self.assertEqual(self.auction.final_inspection_count, 1)
+        self.assertFalse(product.final_inspection_done)
+
+        detail_url = reverse('products:auction_detail', args=[self.auction.pk])
+        listing = self.client.get(detail_url)
+        self.assertEqual(listing.context['auction'].final_inspection_count, 1)
+        self.assertContains(listing, product.title)
+        self.assertEqual(listing.content.decode().count('flag-badge-inspect'), 1)
+
+        response = self.client.get(reverse('products:detail', args=[product.pk]))
+        self.assertEqual(response.status_code, 200)
+        product.refresh_from_db()
+        self.auction.refresh_from_db()
+        self.assertTrue(product.final_inspection_done)
+        self.assertEqual(self.auction.final_inspection_count, 2)
+
+        second_open = self.client.get(reverse('products:detail', args=[product.pk]))
+        self.assertEqual(second_open.status_code, 200)
+        self.auction.refresh_from_db()
+        self.assertEqual(self.auction.final_inspection_count, 2)
+
+        visited_listing = self.client.get(detail_url)
+        self.assertEqual(visited_listing.context['auction'].final_inspection_count, 2)
+        self.assertEqual(visited_listing.content.decode().count('flag-badge-inspect'), 2)
+
     def test_product_list_filter_by_auction_and_to_buy(self):
         self.client.force_login(self.operator_user)
         # Filter by auction

@@ -34,8 +34,9 @@ AUCTION_STATUS_MAP = {
 BASE_PRODUCT_UPDATE_FIELDS = (
     'title',
     'description',
-    'suggested_price',
-    'suitable_price',
+    'auction_price',
+    'estimate_text',
+    'sold_price',
     'suggestion_date',
     'source_name',
     'source_url',
@@ -159,6 +160,18 @@ def parse_estimate(text):
     low = values[0] if values else None
     high = values[1] if len(values) > 1 else None
     return low, high
+
+
+def parse_sold_price(text):
+    """اولین عدد موجود در متن قیمت فروش لات (مثل «$12,500») به Decimal."""
+    for raw in NUMBER_RE.findall(text or ''):
+        try:
+            value = Decimal(raw.replace(',', ''))
+        except InvalidOperation:
+            continue
+        if 0 < value <= MAX_PRICE:
+            return value
+    return None
 
 
 def parse_lot_display_number(value) -> int | None:
@@ -333,8 +346,9 @@ class ScraperImportService:
             'product_code': self.build_product_code(row, auction_map),
             'lot_display_number': parse_lot_display_number(row.get('lot_display_number')),
             'description': mapper.build_product_description(row),
-            'suggested_price': low,
-            'suitable_price': high,
+            'auction_price': low,
+            'estimate_text': (row.get('estimate_text') or '').strip()[:255],
+            'sold_price': parse_sold_price(row.get('price_text')),
             'suggestion_date': suggestion_at.date(),
             'source_type': mapper.product_source_type,
             'source_name': source_name[:255],
@@ -423,7 +437,7 @@ class ScraperImportService:
     def import_lots(self, conn, auction_map, result: ScraperImportResult):
         sql = (
             "SELECT source_name, lot_number, lot_display_number, url, auction_id, lot_status, title, "
-            "estimate_text, description, lot_essay, first_seen_at "
+            "estimate_text, price_text, description, lot_essay, first_seen_at "
             "FROM lots WHERE page_status = 'ok'"
         )
         params = []

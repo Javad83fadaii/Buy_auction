@@ -11,29 +11,42 @@
 
     <div class="form-grid form-grid-2">
         <div class="form-field">
-            <label for="{{ form.suggested_price.id_for_label }}">
-                {{ form.suggested_price.label }}
-                {% if show_required_markers and form.suggested_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            <label for="{{ form.auction_price.id_for_label }}">
+                {{ form.auction_price.label }}
+                {% if show_required_markers and form.auction_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
             </label>
-            {{ form.suggested_price }}
-            {% if form.suggested_price.help_text %}<small class="field-help">{{ form.suggested_price.help_text }}</small>{% endif %}
+            {{ form.auction_price }}
+            {% if form.auction_price.help_text %}<small class="field-help">{{ form.auction_price.help_text }}</small>{% endif %}
             {% if show_price_preview %}
-                <small id="price-preview-suggested_price" class="field-help price-preview" data-price-preview></small>
+                <small id="price-preview-auction_price" class="field-help price-preview" data-price-preview></small>
             {% endif %}
-            {% if form.suggested_price.errors %}<small class="field-error">{{ form.suggested_price.errors|join:", " }}</small>{% endif %}
+            {% if form.auction_price.errors %}<small class="field-error">{{ form.auction_price.errors|join:", " }}</small>{% endif %}
         </div>
 
         <div class="form-field">
-            <label for="{{ form.suitable_price.id_for_label }}">
-                {{ form.suitable_price.label }}
-                {% if show_required_markers and form.suitable_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            <label for="{{ form.our_price.id_for_label }}">
+                {{ form.our_price.label }}
+                {% if show_required_markers and form.our_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
             </label>
-            {{ form.suitable_price }}
-            {% if form.suitable_price.help_text %}<small class="field-help">{{ form.suitable_price.help_text }}</small>{% endif %}
+            {{ form.our_price }}
+            {% if form.our_price.help_text %}<small class="field-help">{{ form.our_price.help_text }}</small>{% endif %}
             {% if show_price_preview %}
-                <small id="price-preview-suitable_price" class="field-help price-preview" data-price-preview></small>
+                <small id="price-preview-our_price" class="field-help price-preview" data-price-preview></small>
             {% endif %}
-            {% if form.suitable_price.errors %}<small class="field-error">{{ form.suitable_price.errors|join:", " }}</small>{% endif %}
+            {% if form.our_price.errors %}<small class="field-error">{{ form.our_price.errors|join:", " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.sold_price.id_for_label }}">
+                {{ form.sold_price.label }}
+                {% if show_required_markers and form.sold_price.field.required %}<span class="required-marker" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {{ form.sold_price }}
+            {% if form.sold_price.help_text %}<small class="field-help">{{ form.sold_price.help_text }}</small>{% endif %}
+            {% if show_price_preview %}
+                <small id="price-preview-sold_price" class="field-help price-preview" data-price-preview></small>
+            {% endif %}
+            {% if form.sold_price.errors %}<small class="field-error">{{ form.sold_price.errors|join:", " }}</small>{% endif %}
         </div>
     </div>
 </section>

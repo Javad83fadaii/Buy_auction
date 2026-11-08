@@ -230,8 +230,8 @@
                             راه ارتباطی / خانه حراجی
                             <span class="sort-indicator"></span>
                         </th>
-                        <th class="sortable" data-sort="suggested_price">
-                            قیمت پیشنهادی
+                        <th class="sortable" data-sort="auction_price">
+                            قیمت حراجی
                             <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="created_at">
@@ -277,8 +277,8 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if product.suggested_price %}
-                                    {{ product.suggested_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                                {% if product.auction_price %}
+                                    {{ product.auction_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
                                 {% else %}
                                     -
                                 {% endif %}

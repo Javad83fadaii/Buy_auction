@@ -95,8 +95,8 @@ class ProductCreateBaseTestCase(TestCase):
             'subject': 'منظره',
             'usage': 'تزئینی',
             'art_type': 'نقاشی',
-            'suggested_price': '2500000.50',
-            'suitable_price': '2200000',
+            'auction_price': '2500000.50',
+            'our_price': '2200000',
             'is_cancelled': '',
             'is_notable': 'on',
             'needs_expert_review': 'on',
@@ -114,7 +114,7 @@ class ProductCreateBaseTestCase(TestCase):
             'product_code': 'ART-DEFAULT',
             'artist': 'هنرمند تستی',
             'art_type': 'نقاشی',
-            'suitable_price': '1500000',
+            'our_price': '1500000',
             'source_type': ProductSourceTypeChoices.MANUAL,
             'status': ProductStatusChoices.DRAFT,
         }
@@ -180,8 +180,9 @@ class ProductCreatePermissionTests(ProductCreateBaseTestCase):
             'عنوان اثر',
             'کد اثر',
             'توضیحات',
-            'قیمت پیشنهادی',
-            'قیمت مناسب',
+            'قیمت حراجی',
+            'قیمت ما',
+            'قیمت فروش',
             'تاریخ پیشنهاد',
             'تاریخ تولید',
             'مکان تولید',
@@ -224,16 +225,16 @@ class ProductCreateFormTests(ProductCreateBaseTestCase):
         self.assertIn('title', form.errors)
 
     def test_invalid_price(self):
-        form = self.build_form(data=self.get_valid_payload(suggested_price='invalid-price'))
+        form = self.build_form(data=self.get_valid_payload(auction_price='invalid-price'))
 
         self.assertFalse(form.is_valid())
-        self.assertIn('suggested_price', form.errors)
+        self.assertIn('auction_price', form.errors)
 
     def test_negative_price(self):
-        form = self.build_form(data=self.get_valid_payload(suggested_price='-1'))
+        form = self.build_form(data=self.get_valid_payload(auction_price='-1'))
 
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors['suggested_price'][0], 'قیمت نمی‌تواند منفی باشد.')
+        self.assertEqual(form.errors['auction_price'][0], 'قیمت نمی‌تواند منفی باشد.')
 
     def test_invalid_contact_method(self):
         form = self.build_form(data=self.get_valid_payload(contact_method='INVALID'))
@@ -374,7 +375,7 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
 
     def test_invalid_product_shows_form_errors(self):
         response = self.post_create(
-            data=self.get_valid_payload(title='', suggested_price='-1'),
+            data=self.get_valid_payload(title='', auction_price='-1'),
             images=[self.create_test_image()],
         )
 
@@ -1010,48 +1011,48 @@ class ProductListViewTests(ProductCreateBaseTestCase):
 
         self.assertEqual(list(response.context['products']), [third_product, second_product, first_product])
 
-    def test_sort_by_suitable_price_ascending_puts_nulls_last(self):
+    def test_sort_by_our_price_ascending_puts_nulls_last(self):
         low_price_product = self.create_product(
             title='اثر ارزان',
             product_code='ART-SORT-PRICE-ASC-1',
-            suitable_price='100',
+            our_price='100',
         )
         high_price_product = self.create_product(
             title='اثر گران',
             product_code='ART-SORT-PRICE-ASC-2',
-            suitable_price='300',
+            our_price='300',
         )
         null_price_product = self.create_product(
             title='اثر بدون قیمت',
             product_code='ART-SORT-PRICE-ASC-3',
-            suitable_price=None,
+            our_price=None,
         )
 
-        response = self.get_list(user=self.authorized_user, sort='suitable_price')
+        response = self.get_list(user=self.authorized_user, sort='our_price')
 
         self.assertEqual(
             list(response.context['products']),
             [low_price_product, high_price_product, null_price_product],
         )
 
-    def test_sort_by_suitable_price_descending_puts_nulls_last(self):
+    def test_sort_by_our_price_descending_puts_nulls_last(self):
         low_price_product = self.create_product(
             title='اثر ارزان',
             product_code='ART-SORT-PRICE-DESC-1',
-            suitable_price='100',
+            our_price='100',
         )
         high_price_product = self.create_product(
             title='اثر گران',
             product_code='ART-SORT-PRICE-DESC-2',
-            suitable_price='300',
+            our_price='300',
         )
         null_price_product = self.create_product(
             title='اثر بدون قیمت',
             product_code='ART-SORT-PRICE-DESC-3',
-            suitable_price=None,
+            our_price=None,
         )
 
-        response = self.get_list(user=self.authorized_user, sort='-suitable_price')
+        response = self.get_list(user=self.authorized_user, sort='-our_price')
 
         self.assertEqual(
             list(response.context['products']),
@@ -1112,24 +1113,24 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             product_code='P-100',
             auction=auction_alpha,
             suggested_by='Alpha Contact',
-            suggested_price='100',
-            suitable_price='150',
+            auction_price='100',
+            our_price='150',
         )
         product_bravo = self.create_product(
             title='Bravo',
             product_code='P-200',
             auction=auction_bravo,
             suggested_by='Bravo Contact',
-            suggested_price='200',
-            suitable_price='250',
+            auction_price='200',
+            our_price='250',
         )
         product_charlie = self.create_product(
             title='Charlie',
             product_code='P-300',
             auction=auction_charlie,
             suggested_by='Charlie Contact',
-            suggested_price='300',
-            suitable_price='350',
+            auction_price='300',
+            our_price='350',
         )
         now = timezone.now()
         self.set_created_at(product_alpha, now - timedelta(days=3))
@@ -1143,10 +1144,10 @@ class ProductListViewTests(ProductCreateBaseTestCase):
             '-title': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
             'product_code': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
             '-product_code': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
-            'suggested_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
-            '-suggested_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
-            'suitable_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
-            '-suitable_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'auction_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-auction_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
+            'our_price': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
+            '-our_price': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
             'suggested_by': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
             '-suggested_by': [product_charlie.pk, product_bravo.pk, product_alpha.pk],
             'auction': [product_alpha.pk, product_bravo.pk, product_charlie.pk],
@@ -1396,8 +1397,8 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
             'suggested_by': 'سارا احمدی',
             'contact_method': ContactMethodChoices.WHATSAPP,
             'suggestion_date': date(2026, 8, 20),
-            'suggested_price': '3500000',
-            'suitable_price': '3200000',
+            'auction_price': '3500000',
+            'our_price': '3200000',
             'status': ProductStatusChoices.PENDING_REVIEW,
             'source_type': ProductSourceTypeChoices.MANUAL,
             'source_name': 'ثبت داخلی',
@@ -1774,8 +1775,8 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
             'suggested_by': 'مهدی وکیلی',
             'contact_method': ContactMethodChoices.TELEGRAM,
             'suggestion_date': date(2026, 8, 20),
-            'suggested_price': '1200000',
-            'suitable_price': '1000000',
+            'auction_price': '1200000',
+            'our_price': '1000000',
             'status': ProductStatusChoices.PENDING_REVIEW,
             'source_type': ProductSourceTypeChoices.MANUAL,
             'source_name': 'منبع داخلی',
@@ -1804,8 +1805,8 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
             'subject': 'طبیعت',
             'usage': 'دکوراتیو',
             'art_type': 'تابلو',
-            'suggested_price': '2500000',
-            'suitable_price': '2300000',
+            'auction_price': '2500000',
+            'our_price': '2300000',
         }
         payload.update(overrides)
         return payload
@@ -1936,13 +1937,13 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
 
         response = self.post_edit(
             product.pk,
-            data=self.get_edit_payload(suggested_price='-10'),
+            data=self.get_edit_payload(auction_price='-10'),
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'قیمت نمی‌تواند منفی باشد.')
         product.refresh_from_db()
-        self.assertEqual(str(product.suggested_price), '1200000.00')
+        self.assertEqual(str(product.auction_price), '1200000.00')
 
     def test_invalid_product_code_rejected(self):
         self.create_edit_product(product_code='ART-DUPLICATE')
@@ -3356,7 +3357,7 @@ class AuctionViewsFrontendTestCase(ProductCreateBaseTestCase):
             has_all_prices=True,
             has_initial_info=True,
             is_notable=True,
-            suitable_price='45000',
+            our_price='45000',
             created_by=self.operator_user,
         )
 

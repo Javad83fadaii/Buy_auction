@@ -136,10 +136,10 @@
                     </div>
                 {% endif %}
                 <div class="detail-info-item">
-                    <span class="detail-info-label">قیمت مناسب</span>
+                    <span class="detail-info-label">قیمت ما</span>
                     <span class="detail-info-value">
-                        {% if product.suitable_price %}
-                            {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% if product.our_price %}
+                            {{ product.our_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
                         {% else %}
                             —
                         {% endif %}
@@ -298,20 +298,20 @@
                     <div class="detail-info-item"><span class="detail-info-label">تاریخ پیشنهاد</span><span class="detail-info-value">{{ product.suggestion_date|date:"Y/m/d"|default:"—" }}</span></div>
                 {% endif %}
                 <div class="detail-info-item">
-                    <span class="detail-info-label">قیمت پیشنهادی</span>
+                    <span class="detail-info-label">قیمت حراجی</span>
                     <span class="detail-info-value">
-                        {% if product.suggested_price %}
-                            {{ product.suggested_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% if product.auction_price %}
+                            {{ product.auction_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
                         {% else %}
                             —
                         {% endif %}
                     </span>
                 </div>
                 <div class="detail-info-item">
-                    <span class="detail-info-label">قیمت مناسب</span>
+                    <span class="detail-info-label">قیمت ما</span>
                     <span class="detail-info-value">
-                        {% if product.suitable_price %}
-                            {{ product.suitable_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
+                        {% if product.our_price %}
+                            {{ product.our_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
                         {% else %}
                             —
                         {% endif %}

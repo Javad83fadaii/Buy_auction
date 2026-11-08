@@ -47,8 +47,8 @@ MANUAL_PRODUCT_FORM_FIELDS = (
     'subject',
     'usage',
     'art_type',
-    'suggested_price',
-    'suitable_price',
+    'auction_price',
+    'sold_price',
     'assigned_expert',
 )
 
@@ -144,8 +144,8 @@ PRODUCT_CREATE_FIELDS = (
     'subject',
     'usage',
     'art_type',
-    'suggested_price',
-    'suitable_price',
+    'auction_price',
+    'sold_price',
     'assigned_expert',
     'auction',
     'to_buy',

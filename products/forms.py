@@ -28,10 +28,10 @@ PRODUCT_LIST_SORT_CHOICES = (
     ('-product_code', 'کد اثر (نزولی)'),
     ('lot', 'شماره لات (صعودی)'),
     ('-lot', 'شماره لات (نزولی)'),
-    ('suggested_price', 'قیمت پیشنهادی کم به زیاد'),
-    ('-suggested_price', 'قیمت پیشنهادی زیاد به کم'),
-    ('suitable_price', 'قیمت مناسب کم به زیاد'),
-    ('-suitable_price', 'قیمت مناسب زیاد به کم'),
+    ('auction_price', 'قیمت حراجی کم به زیاد'),
+    ('-auction_price', 'قیمت حراجی زیاد به کم'),
+    ('our_price', 'قیمت ما کم به زیاد'),
+    ('-our_price', 'قیمت ما زیاد به کم'),
     ('suggested_by', 'پیشنهاددهنده (الفبا)'),
     ('-suggested_by', 'پیشنهاددهنده (معکوس)'),
     ('auction', 'نام حراجی'),
@@ -79,8 +79,9 @@ PRODUCT_EDIT_FIELDS = (
     'subject',
     'usage',
     'art_type',
-    'suggested_price',
-    'suitable_price',
+    'auction_price',
+    'our_price',
+    'sold_price',
     'assigned_expert',
     'to_buy',
     'has_initial_info',
@@ -125,8 +126,9 @@ class ProductBaseForm(forms.ModelForm):
             'subject': forms.TextInput(attrs={'placeholder': 'موضوع'}),
             'usage': forms.TextInput(attrs={'placeholder': 'کاربرد'}),
             'art_type': forms.TextInput(attrs={'placeholder': 'نوع هنر'}),
-            'suggested_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
-            'suitable_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
+            'auction_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
+            'our_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
+            'sold_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'inputmode': 'decimal'}),
             'assigned_expert': forms.Select(),
         }
 
@@ -166,10 +168,9 @@ class ProductBaseForm(forms.ModelForm):
             if contact_method_choices and contact_method_choices[0][0] == '':
                 contact_method_choices[0] = ('', 'انتخاب کنید')
                 self.fields['contact_method'].choices = contact_method_choices
-        if 'suggested_price' in self.fields:
-            self.fields['suggested_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
-        if 'suitable_price' in self.fields:
-            self.fields['suitable_price'].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
+        for price_field in ('auction_price', 'our_price', 'sold_price'):
+            if price_field in self.fields:
+                self.fields[price_field].error_messages['invalid'] = 'مقدار قیمت معتبر نیست.'
         if 'assigned_expert' in self.fields:
             self.fields['assigned_expert'].queryset = get_expert_queryset()
             self.fields['assigned_expert'].empty_label = 'انتخاب کنید'
@@ -189,8 +190,9 @@ class ProductBaseForm(forms.ModelForm):
             'title': ('عنوان اثر', 'نام اثر را همان‌طور که باید ثبت شود وارد کنید.'),
             'product_code': ('کد اثر', 'در صورت وجود، کد داخلی یا شناسایی اثر را وارد کنید.'),
             'description': ('توضیحات', 'توضیحات تکمیلی درباره اثر را در صورت نیاز ثبت کنید.'),
-            'suggested_price': ('قیمت پیشنهادی', 'مبلغ را بدون جداکننده وارد کنید. پیش‌نمایش عددی در زیر فیلد نمایش داده می‌شود.'),
-            'suitable_price': ('قیمت مناسب', 'مبلغ برآوردشده مناسب برای اثر را وارد کنید.'),
+            'auction_price': ('قیمت حراجی', 'مبلغ را بدون جداکننده وارد کنید. پیش‌نمایش عددی در زیر فیلد نمایش داده می‌شود.'),
+            'our_price': ('قیمت ما', 'مبلغ برآوردشده مناسب برای اثر را وارد کنید.'),
+            'sold_price': ('قیمت فروش', 'قیمت نهایی فروش اثر را وارد کنید.'),
             'suggestion_date': ('تاریخ پیشنهاد', 'تاریخ دریافت پیشنهاد را ثبت کنید.'),
             'production_date': ('تاریخ تولید', 'در صورت مشخص بودن، تاریخ تولید اثر را وارد کنید.'),
             'production_location': ('مکان تولید', 'شهر، کشور یا محل تولید اثر را وارد کنید.'),
@@ -221,11 +223,14 @@ class ProductBaseForm(forms.ModelForm):
     def get_initial_values(self):
         return {}
 
-    def clean_suggested_price(self):
-        return self._clean_non_negative_price('suggested_price')
+    def clean_auction_price(self):
+        return self._clean_non_negative_price('auction_price')
 
-    def clean_suitable_price(self):
-        return self._clean_non_negative_price('suitable_price')
+    def clean_our_price(self):
+        return self._clean_non_negative_price('our_price')
+
+    def clean_sold_price(self):
+        return self._clean_non_negative_price('sold_price')
 
     def clean_artist(self):
         val = self.cleaned_data.get('artist') or ''

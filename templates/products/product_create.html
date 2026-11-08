@@ -173,14 +173,14 @@
         // Price formatting and commission calculator
         const priceInputs = [
             {
-                input: document.getElementById('{{ form.suggested_price.id_for_label }}'),
-                preview: document.getElementById('price-preview-suggested_price'),
-                label: 'قیمت پیشنهادی'
+                input: document.getElementById('{{ form.auction_price.id_for_label }}'),
+                preview: document.getElementById('price-preview-auction_price'),
+                label: 'قیمت حراجی'
             },
             {
-                input: document.getElementById('{{ form.suitable_price.id_for_label }}'),
-                preview: document.getElementById('price-preview-suitable_price'),
-                label: 'قیمت مناسب'
+                input: document.getElementById('{{ form.our_price.id_for_label }}'),
+                preview: document.getElementById('price-preview-our_price'),
+                label: 'قیمت ما'
             }
         ];
         const formatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });

@@ -69,9 +69,9 @@ class Auction(models.Model):
         'درصد کمیسیون',
         max_digits=5,
         decimal_places=2,
-        default=0,
+        default=3,
         validators=[MinValueValidator(0)],
-        help_text='درصد کمیسیون یا Buyer Premium حراجی (مثلاً 25 برای 25%)',
+        help_text='درصد کمیسیون یا Buyer Premium حراجی (مثلاً 3 برای 3%)',
     )
     status = models.CharField(
         'وضعیت برگزاری',
@@ -199,16 +199,30 @@ class Product(models.Model):
         help_text='شماره نمایشی لات در کاتالوگ مزایده (برای مرتب‌سازی آثار هر حراجی).',
     )
     description = models.TextField('توضیحات', blank=True)
-    suggested_price = models.DecimalField(
-        'قیمت پیشنهادی',
+    auction_price = models.DecimalField(
+        'قیمت حراجی',
         max_digits=18,
         decimal_places=2,
         blank=True,
         null=True,
         validators=[MinValueValidator(0)],
     )
-    suitable_price = models.DecimalField(
-        'قیمت مناسب',
+    estimate_text = models.CharField(
+        'بازه تخمین حراجی',
+        max_length=255,
+        blank=True,
+        help_text='متن کامل تخمین حراج‌خانه (مثلاً «10,000 - 15,000 USD»).',
+    )
+    our_price = models.DecimalField(
+        'قیمت ما',
+        max_digits=18,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+    )
+    sold_price = models.DecimalField(
+        'قیمت فروش',
         max_digits=18,
         decimal_places=2,
         blank=True,
@@ -299,14 +313,6 @@ class Product(models.Model):
             models.Index(fields=['auction', 'lot_display_number'], name='products_auction_lot_idx'),
         ]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(suggested_price__gte=0) | models.Q(suggested_price__isnull=True),
-                name='products_product_suggested_price_gte_0',
-            ),
-            models.CheckConstraint(
-                condition=models.Q(suitable_price__gte=0) | models.Q(suitable_price__isnull=True),
-                name='products_product_suitable_price_gte_0',
-            ),
             models.UniqueConstraint(
                 fields=['source_type', 'product_code'],
                 name='products_product_source_type_product_code_key',

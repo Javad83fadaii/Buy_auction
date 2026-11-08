@@ -172,18 +172,11 @@
                                         </div>
                                     </td>
                                     <td>
-                                        {% if product.suggested_price or product.suitable_price %}
-                                            <div class="ad-price">
-                                                {% if product.suggested_price %}
-                                                    <span><small>پیشنهادی:</small> <b>{{ product.suggested_price|floatformat:"-2" }}</b></span>
-                                                {% endif %}
-                                                {% if product.suitable_price %}
-                                                    <span><small>مناسب:</small> <b>{{ product.suitable_price|floatformat:"-2" }}</b></span>
-                                                {% endif %}
-                                            </div>
-                                        {% else %}
-                                            <span class="ad-muted">—</span>
-                                        {% endif %}
+                                        <div class="ad-price">
+                                            <span><small>حراجی:</small> {% if product.estimate_text %}<b title="{{ product.estimate_text }}">{{ product.estimate_text }}</b>{% elif product.auction_price %}<b>{{ product.auction_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
+                                            <span><small>ما:</small> {% if product.our_price %}<b>{{ product.our_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
+                                            <span><small>فروش:</small> {% if product.sold_price %}<b>{{ product.sold_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>

@@ -136,14 +136,16 @@
                     </div>
                 {% endif %}
                 <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت حراجی</span>
+                    <span class="detail-info-value">{{ product.get_auction_price_display|default:"—" }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت فروش</span>
+                    <span class="detail-info-value">{{ product.get_sold_price_display|default:"—" }}</span>
+                </div>
+                <div class="detail-info-item">
                     <span class="detail-info-label">قیمت ما</span>
-                    <span class="detail-info-value">
-                        {% if product.our_price %}
-                            {{ product.our_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </span>
+                    <span class="detail-info-value">{{ product.get_our_price_display|default:"—" }}</span>
                 </div>
                 <div class="detail-info-item">
                     <span class="detail-info-label">کارشناس ارجاعی</span>
@@ -299,23 +301,15 @@
                 {% endif %}
                 <div class="detail-info-item">
                     <span class="detail-info-label">قیمت حراجی</span>
-                    <span class="detail-info-value">
-                        {% if product.auction_price %}
-                            {{ product.auction_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </span>
+                    <span class="detail-info-value">{{ product.get_auction_price_display|default:"—" }}</span>
+                </div>
+                <div class="detail-info-item">
+                    <span class="detail-info-label">قیمت فروش</span>
+                    <span class="detail-info-value">{{ product.get_sold_price_display|default:"—" }}</span>
                 </div>
                 <div class="detail-info-item">
                     <span class="detail-info-label">قیمت ما</span>
-                    <span class="detail-info-value">
-                        {% if product.our_price %}
-                            {{ product.our_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </span>
+                    <span class="detail-info-value">{{ product.get_our_price_display|default:"—" }}</span>
                 </div>
                 <div class="detail-info-item"><span class="detail-info-label">نوع منبع</span><span class="detail-info-value">{{ source_label }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">نام منبع</span><span class="detail-info-value">{{ product.source_name|default:"—" }}</span></div>

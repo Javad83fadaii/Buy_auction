@@ -47,7 +47,7 @@
 
     .dash-main > .table-shell .data-table th:nth-child(2),
     .dash-main > .table-shell .data-table td:nth-child(2) {
-        width: 34%;
+        width: 28%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(3),
@@ -62,7 +62,7 @@
 
     .dash-main > .table-shell .data-table th:nth-child(5),
     .dash-main > .table-shell .data-table td:nth-child(5) {
-        width: 12%;
+        width: 18%;
     }
 
     .dash-main > .table-shell .data-table th:nth-child(6),
@@ -231,7 +231,7 @@
                             <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="auction_price">
-                            قیمت حراجی
+                            قیمت‌ها
                             <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="created_at">
@@ -277,11 +277,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if product.auction_price %}
-                                    {{ product.auction_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-                                {% else %}
-                                    -
-                                {% endif %}
+                                {% include "products/partials/_product_prices.html" with product=product %}
                             </td>
                             <td>{{ product.created_at|date:"Y/m/d H:i" }}</td>
                         </tr>

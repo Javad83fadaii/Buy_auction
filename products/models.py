@@ -229,6 +229,12 @@ class Product(models.Model):
         null=True,
         validators=[MinValueValidator(0)],
     )
+    price_text = models.CharField(
+        'متن قیمت فروش',
+        max_length=255,
+        blank=True,
+        help_text='متن کامل قیمت فروش حراج‌خانه (مثلاً «$12,500»).',
+    )
     suggestion_date = models.DateField('تاریخ پیشنهاد', default=timezone.localdate, db_index=True)
     production_date = models.DateField('تاریخ تولید', blank=True, null=True)
     production_location = models.CharField('محل تولید', max_length=255, blank=True)
@@ -321,6 +327,30 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    @staticmethod
+    def _format_price_number(value) -> str:
+        if value is None:
+            return ''
+        text = format(value, 'f')
+        if '.' in text:
+            text = text.rstrip('0').rstrip('.')
+        return text
+
+    def get_auction_price_display(self) -> str:
+        text = (self.estimate_text or '').strip()
+        if text:
+            return text
+        return self._format_price_number(self.auction_price)
+
+    def get_sold_price_display(self) -> str:
+        text = (self.price_text or '').strip()
+        if text:
+            return text
+        return self._format_price_number(self.sold_price)
+
+    def get_our_price_display(self) -> str:
+        return self._format_price_number(self.our_price)
 
     def get_image_directory_name(self) -> str:
         if self.auction_id and self.auction is not None:

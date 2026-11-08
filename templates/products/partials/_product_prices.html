@@ -1,0 +1,27 @@
+{# Three public price fields: auction estimate, our price, sold price. #}
+<div class="ad-price">
+    <span>
+        <small>حراجی:</small>
+        {% if product.get_auction_price_display %}
+            <b title="{{ product.get_auction_price_display }}">{{ product.get_auction_price_display }}</b>
+        {% else %}
+            <span class="ad-muted">—</span>
+        {% endif %}
+    </span>
+    <span>
+        <small>فروش:</small>
+        {% if product.get_sold_price_display %}
+            <b title="{{ product.get_sold_price_display }}">{{ product.get_sold_price_display }}</b>
+        {% else %}
+            <span class="ad-muted">—</span>
+        {% endif %}
+    </span>
+    <span>
+        <small>ما:</small>
+        {% if product.get_our_price_display %}
+            <b>{{ product.get_our_price_display }}</b>
+        {% else %}
+            <span class="ad-muted">—</span>
+        {% endif %}
+    </span>
+</div>

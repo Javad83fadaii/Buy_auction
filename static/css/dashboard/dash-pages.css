@@ -510,6 +510,11 @@
     color: var(--d-text);
 }
 
+.dash .product-card .ad-price,
+.dash .data-table .ad-price {
+    white-space: normal;
+}
+
 .dash .product-card-auction-meta {
     color: var(--d-text-2);
     font-weight: 600;

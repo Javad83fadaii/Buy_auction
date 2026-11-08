@@ -172,11 +172,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="ad-price">
-                                            <span><small>حراجی:</small> {% if product.estimate_text %}<b title="{{ product.estimate_text }}">{{ product.estimate_text }}</b>{% elif product.auction_price %}<b>{{ product.auction_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
-                                            <span><small>ما:</small> {% if product.our_price %}<b>{{ product.our_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
-                                            <span><small>فروش:</small> {% if product.sold_price %}<b>{{ product.sold_price|floatformat:"-2" }}</b>{% else %}<span class="ad-muted">—</span>{% endif %}</span>
-                                        </div>
+                                        {% include "products/partials/_product_prices.html" with product=product %}
                                     </td>
                                     <td>
                                         <span class="status-badge status-badge-{{ product.status|lower }}">{{ product.get_status_display }}</span>

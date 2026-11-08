@@ -1489,6 +1489,22 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
         self.assertContains(response, str(self.operator_user))
         self.assertContains(response, str(self.admin_user))
 
+    def test_christies_text_prices_are_displayed(self):
+        product = self.create_detail_product(
+            estimate_text='10,000 - 15,000 USD',
+            price_text='Sold for $18,000',
+            our_price=None,
+            sold_price='18000',
+        )
+
+        response = self.get_detail(product, user=self.operator_user)
+
+        self.assertContains(response, '10,000 - 15,000 USD')
+        self.assertContains(response, 'Sold for $18,000')
+        self.assertContains(response, 'قیمت ما')
+        self.assertContains(response, '—')
+        self.assertNotContains(response, '3200000')
+
     def test_primary_image_displayed(self):
         product = self.create_detail_product()
         primary_image = ProductImage.objects.create(

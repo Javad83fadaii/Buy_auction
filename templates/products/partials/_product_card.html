@@ -47,9 +47,5 @@
         {% endif %}
     </div>
 
-    {% if product.our_price %}
-        <span class="product-card-price">
-            {{ product.our_price }} {% if product.auction %}{{ product.auction.get_currency_display }}{% endif %}
-        </span>
-    {% endif %}
+    {% include "products/partials/_product_prices.html" with product=product %}
 </a>

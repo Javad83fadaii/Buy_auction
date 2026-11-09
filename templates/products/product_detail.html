@@ -24,12 +24,6 @@
                 <h1>{{ product.title }}</h1>
                 <p class="dash-sub">جزئیات کامل اثر ثبت‌شده در سیستم.</p>
             </div>
-            <div class="dash-head-actions">
-                <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>
-                {% if can_manage_product %}
-                    <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
-                {% endif %}
-            </div>
         </header>
 
     <div class="product-detail-hero">
@@ -128,14 +122,7 @@
             {% endif %}
 
             <div class="detail-info-list">
-                <div class="detail-info-item">
-                    <span class="detail-info-label">وضعیت</span>
-                    <span class="status-badge status-badge-{{ product.status|lower }}">{{ status_label }}</span>
-                </div>
-                <div class="detail-info-item">
-                    <span class="detail-info-label">منبع</span>
-                    <span class="detail-info-value">{{ source_label }}</span>
-                </div>
+
                 <div class="detail-info-item">
                     <span class="detail-info-label">کد اثر</span>
                     <span class="detail-info-value">{{ product.product_code|default:"—" }}</span>
@@ -169,7 +156,6 @@
                     <span class="flag-badge flag-badge-buy">هدف خرید</span>
                 {% endif %}
                 {% if product.final_inspection_done %}
-                    <span class="flag-badge flag-badge-inspect">🔍 </span>
                 {% endif %}
                 {% if product.has_all_prices %}
                     <span class="flag-badge flag-badge-prices">تمام قیمت‌ها ثبت شده</span>
@@ -197,30 +183,8 @@
         {# Auction Card Section (if linked to an external auction) #}
         {% if product.auction %}
             <details class="detail-section detail-drawer accent-amethyst auction-product-highlight">
-                <summary class="detail-drawer-heading"><span>اطلاعات حراجی خارجی و چک‌لیست خرید</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+                <summary class="detail-drawer-heading"><span>اطلاعات حراجی خارجی و چک‌لیست خرید</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
                 <div class="detail-drawer-content">
-                <div class="section-header-inline">
-                    <h2>اطلاعات حراجی خارجی و چک‌لیست خرید</h2>
-                    <a class="button button-secondary button-sm" href="{% url 'products:auction_detail' product.auction.pk %}">
-                        مشاهده کامل حراجی
-                    </a>
-                </div>
-                <div class="detail-info-list detail-info-list-2">
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">نام حراجی</span>
-                        <span class="detail-info-value">
-                            <a class="detail-link" href="{% url 'products:auction_detail' product.auction.pk %}">{{ product.auction.name }}</a>
-                        </span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">واحد پول</span>
-                        <span class="detail-info-value">{{ product.auction.get_currency_display }}</span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">درصد کمیسیون خریدار</span>
-                        <span class="detail-info-value">{{ product.auction.commission_rate }}٪</span>
-                    </div>
-                </div>
 
                 <div class="auction-lot-checklist">
                     <h3 class="checklist-title">وضعیت‌های نظارتی اثر در این حراجی:</h3>
@@ -263,11 +227,8 @@
         {% endif %}
 
         <details class="detail-section detail-drawer accent-sapphire">
-            <summary class="detail-drawer-heading"><span>عنوان و شناسه</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <summary class="detail-drawer-heading"><span>توضیحات</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
             <div class="detail-drawer-content">
-            <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">عنوان</span><span class="detail-info-value">{{ product.title|default:"—" }}</span></div>
-            </div>
             <div class="detail-description-block">
                 <span class="detail-info-label">توضیحات</span>
                 <p class="detail-info-value detail-description">{{ product.description|default:"—" }}</p>
@@ -276,10 +237,10 @@
         </details>
 
         <details class="detail-section detail-drawer accent-sapphire">
-            <summary class="detail-drawer-heading"><span>مشخصات ظاهری</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <summary class="detail-drawer-heading"><span>مشخصات ظاهری</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
             <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{product.material|default:"—"  }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">نوع هنر</span><span class="detail-info-value">{{ product.art_type|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">موضوع</span><span class="detail-info-value">{{ product.subject|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">کاربرد</span><span class="detail-info-value">{{ product.usage|default:"—" }}</span></div>
@@ -288,10 +249,10 @@
         </details>
 
         <details class="detail-section detail-drawer accent-emerald">
-            <summary class="detail-drawer-heading"><span>جنس و تولید</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <summary class="detail-drawer-heading"><span>جنس و تولید</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
             <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{product.artist|default:"—"  }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">تاریخ تولید</span><span class="detail-info-value">{{ product.production_date|date:"Y/m/d"|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">مکان تولید</span><span class="detail-info-value">{{ product.production_location|default:"—" }}</span></div>
             </div>
@@ -299,7 +260,7 @@
         </details>
 
         <details class="detail-section detail-drawer accent-copper">
-            <summary class="detail-drawer-heading"><span>پیشنهاد، قیمت و منبع</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <summary class="detail-drawer-heading"><span>پیشنهاد، قیمت و منبع</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
             <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
                 {% if not product.auction %}
@@ -325,7 +286,7 @@
 
         {% if can_manage_images %}
             <details class="detail-section detail-drawer detail-images-drawer">
-                <summary class="detail-drawer-heading"><span>مدیریت تصاویر</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+                <summary class="detail-drawer-heading"><span>مدیریت تصاویر</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
                 <div class="detail-drawer-content">
                     {% include "products/partials/_product_images.html" with image_mode="manage" %}
                 </div>
@@ -333,7 +294,7 @@
         {% endif %}
 
         <details class="detail-section detail-drawer accent-copper">
-            <summary class="detail-drawer-heading"><span>اطلاعات ثبت و تاریخچه</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <summary class="detail-drawer-heading"><span>اطلاعات ثبت و تاریخچه</span><span class="detail-drawer-icon" aria-hidden="true"></span></summary>
             <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">ایجادکننده</span><span class="detail-info-value">{{ product.created_by|default:"—" }}</span></div>

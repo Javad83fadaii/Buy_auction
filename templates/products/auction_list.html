@@ -40,20 +40,19 @@
     }
 
     .auction-list-table col.auction-col {
-        width: 30%;
+        width: 35%;
     }
 
     .auction-list-table col.house-col {
-        width: 13%;
+        width: 15%;
     }
 
     .auction-list-table col.info-col {
-        width: 28%;
+        width: 35%;
     }
 
-    .auction-list-table col.status-col,
     .auction-list-table col.entered-col {
-        width: 14.5%;
+        width: 15%;
     }
 
     .auction-list-title {
@@ -96,6 +95,49 @@
         padding: 6px 12px;
         font-size: 11px;
         line-height: 1.2;
+    }
+
+    /* رنگ‌بندی ردیف‌ها بر اساس وضعیت حراج */
+    .dash .auction-list-table tbody tr.auction-status-ongoing {
+        background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 2%, #ffffff 98%, #f0fdf4 100%) !important;
+        border-left: 4px solid #22c55e !important;
+    }
+    
+    .dash .auction-list-table tbody tr.auction-status-ended {
+        background: linear-gradient(90deg, #f8fafc 0%, #ffffff 2%, #ffffff 98%, #f8fafc 100%) !important;
+        border-left: 4px solid #94a3b8 !important;
+        opacity: 0.85;
+        box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .dash .auction-list-table tbody tr.auction-status-upcoming {
+        background: linear-gradient(90deg, #fef3c7 0%, #ffffff 2%, #ffffff 98%, #fef3c7 100%) !important;
+        border-left: 4px solid #f59e0b !important;
+    }
+    
+    /* هاور بر روی ردیف‌ها */
+    .dash .auction-list-table tbody tr.auction-status-ongoing:hover,
+    .dash .auction-list-table tbody tr.auction-status-ended:hover,
+    .dash .auction-list-table tbody tr.auction-status-upcoming:hover {
+        background: #f8fafc !important;
+    }
+
+    /* رنگ‌بندی کارت‌ها بر اساس وضعیت حراج */
+    .dash .auction-card-status-ongoing {
+        border-top: 4px solid #22c55e !important;
+        background: linear-gradient(to bottom, #f0fdf4 0%, #ffffff 20px) !important;
+    }
+    
+    .dash .auction-card-status-ended {
+        border-top: 4px solid #94a3b8 !important;
+        background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 20px) !important;
+        opacity: 0.9;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .dash .auction-card-status-upcoming {
+        border-top: 4px solid #f59e0b !important;
+        background: linear-gradient(to bottom, #fef3c7 0%, #ffffff 20px) !important;
     }
 </style>
 <div class="dash">
@@ -147,14 +189,11 @@
             {# Card View #}
             <div class="auction-grid" data-view-panel="card" hidden>
                 {% for auction in auctions %}
-                    <article class="auction-card">
+                    <article class="auction-card auction-card-status-{{ auction.status|lower }}">
                         <header class="auction-card-header">
                             <div class="auction-badge-stack">
                                 <span class="badge badge-house badge-house-{{ auction.source_house|lower }}">
                                     {{ auction.get_source_house_display }}
-                                </span>
-                                <span class="status-badge status-badge-{{ auction.status|lower }}">
-                                    {{ auction.get_status_display }}
                                 </span>
                             </div>
                             <h2 class="auction-card-title">
@@ -221,7 +260,6 @@
                         <col class="auction-col">
                         <col class="house-col">
                         <col class="info-col">
-                        <col class="status-col">
                         <col class="entered-col">
                     </colgroup>
                     <thead>
@@ -238,16 +276,12 @@
                                 تاریخ
                                 <span class="sort-indicator"></span>
                             </th>
-                            <th class="sortable" data-sort="status">
-                                وضعیت
-                                <span class="sort-indicator"></span>
-                            </th>
                             <th>آثار وارد شده</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for auction in auctions %}
-                            <tr class="row-clickable" tabindex="0" role="link" data-row-href="{% url 'products:auction_detail' auction.pk %}">
+                            <tr class="row-clickable auction-status-{{ auction.status|lower }}" tabindex="0" role="link" data-row-href="{% url 'products:auction_detail' auction.pk %}">
                                 <td>
                                     <strong class="auction-list-title">{{ auction.name }}</strong>
                                 </td>
@@ -263,11 +297,6 @@
                                             <span class="info-value">{{ auction.start_date|date:"Y/m/d" }}{% if auction.end_date %} تا {{ auction.end_date|date:"Y/m/d" }}{% endif %}</span>
                                         </span>
                                     </div>
-                                </td>
-                                <td>
-                                    <span class="status-badge status-badge-{{ auction.status|lower }}">
-                                        {{ auction.get_status_display }}
-                                    </span>
                                 </td>
                                 <td>{{ auction.entered_lots_count }} / {{ auction.total_lots }}</td>
                             </tr>

@@ -110,17 +110,6 @@
                 {% endif %}
             {% endif %}
 
-            {% if product.auction %}
-                <div class="auction-summary-chip">
-                    <span class="badge badge-house badge-house-{{ product.auction.source_house|lower }}">
-                        {{ product.auction.get_source_house_display }}
-                    </span>
-                    <a class="auction-link" href="{% url 'products:auction_detail' product.auction.pk %}">
-                        {{ product.auction.name }}
-                    </a>
-                </div>
-            {% endif %}
-
             <div class="detail-info-list">
 
                 <div class="detail-info-item">

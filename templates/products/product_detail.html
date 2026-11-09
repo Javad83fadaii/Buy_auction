@@ -158,7 +158,7 @@
                     <span class="flag-badge flag-badge-buy">هدف خرید</span>
                 {% endif %}
                 {% if product.final_inspection_done %}
-                    <span class="flag-badge flag-badge-inspect">بازدید نهایی شده</span>
+                    <span class="flag-badge flag-badge-inspect">🔍 </span>
                 {% endif %}
                 {% if product.has_all_prices %}
                     <span class="flag-badge flag-badge-prices">تمام قیمت‌ها ثبت شده</span>
@@ -243,8 +243,8 @@
                         <div class="checklist-item {% if product.final_inspection_done %}is-checked{% endif %}">
                             <span class="checklist-icon">{% if product.final_inspection_done %}●{% else %}○{% endif %}</span>
                             <div class="checklist-text">
-                                <strong>بازدید نهایی فیزیکی</strong>
-                                <span>{% if product.final_inspection_done %}تأیید و انجام شده{% else %}انجام نشده{% endif %}</span>
+                                <strong>بازدید صفحه جزئیات</strong>
+                                <span>{% if product.final_inspection_done %}بازدید شده{% else %}انجام نشده{% endif %}</span>
                             </div>
                         </div>
 

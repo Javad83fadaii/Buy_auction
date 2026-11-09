@@ -1256,3 +1256,76 @@
         align-items: stretch;
     }
 }
+
+
+/* ==========================================================================
+   Compact product detail page — added without changing shared components
+   ========================================================================== */
+.product-detail-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(340px, 1fr);
+    gap: 14px;
+    align-items: stretch;
+}
+.product-gallery { padding: 12px; gap: 9px; }
+.product-detail-main-image, .product-detail-placeholder { height: clamp(150px, 24vh, 230px); }
+.product-gallery-thumbnails { grid-template-columns: repeat(4, 54px); gap: 7px; }
+.product-gallery-thumb { width: 54px; height: 54px; }
+.product-summary-panel { padding: 14px; display: flex; flex-direction: column; justify-content: center; }
+.product-summary-panel .detail-info-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 14px; row-gap: 5px;
+}
+.product-summary-panel .detail-info-item { padding: 5px 0; gap: 2px; }
+.product-summary-panel .detail-info-label { font-size: 11px; }
+.product-summary-panel .detail-info-value { font-size: 13px; }
+.product-summary-panel .flag-list { margin-top: 8px; }
+.detail-sections-compact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.detail-sections-compact > .detail-drawer { min-width: 0; padding: 0; overflow: hidden; }
+.detail-drawer-heading {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 48px; padding: 11px 15px; cursor: pointer; list-style: none;
+    font-size: 13px; font-weight: 700; color: var(--text-primary);
+}
+.detail-drawer-heading::-webkit-details-marker { display: none; }
+.detail-drawer-heading::marker { content: ''; }
+.detail-drawer-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 25px; height: 25px; flex: 0 0 25px; border-radius: 50%;
+    background: var(--surface-muted); color: var(--primary); font-size: 17px;
+}
+.detail-drawer-content { padding: 0 15px 14px; border-top: 1px solid var(--border); }
+.detail-drawer-content > .detail-info-list { padding-top: 12px; }
+.detail-drawer-content h2 { display: none; }
+.detail-drawer[open] { grid-column: 1 / -1; }
+.detail-drawer[open] .detail-drawer-heading { color: var(--primary); }
+.detail-drawer-content .detail-info-list-2 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; }
+.detail-drawer-content .detail-info-item { padding-bottom: 7px; gap: 3px; }
+.detail-drawer-content .detail-info-label { font-size: 11px; }
+.detail-drawer-content .detail-info-value { font-size: 13px; }
+.detail-drawer-content .detail-description-block { margin-top: 10px; padding: 10px 12px; }
+.detail-drawer-content .checklist-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.detail-drawer-content .checklist-item { padding: 8px; gap: 7px; }
+.detail-drawer-content .checklist-text strong { font-size: 11px; }
+.detail-drawer-content .checklist-text span { font-size: 10px; }
+.detail-drawer-content .auction-lot-checklist { margin-top: 10px; }
+.detail-drawer-content .checklist-title { margin: 10px 0 8px; font-size: 13px; }
+.detail-images-drawer .detail-drawer-content { padding-top: 12px; }
+@media (min-width: 901px) and (min-height: 700px) {
+    .detail-sections-compact:not(:has(.detail-drawer[open])) { margin-bottom: 8px; }
+    .dash-main:has(.detail-sections-compact) { gap: 10px; }
+}
+@media (max-width: 1100px) {
+    .detail-drawer-content .detail-info-list-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .detail-drawer-content .checklist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+    .product-detail-hero { grid-template-columns: minmax(0, 1fr); }
+    .product-detail-main-image, .product-detail-placeholder { height: 260px; }
+    .detail-sections-compact { grid-template-columns: minmax(0, 1fr); }
+    .detail-drawer[open] { grid-column: auto; }
+}
+@media (max-width: 640px) {
+    .product-summary-panel .detail-info-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .detail-drawer-content .detail-info-list-2 { grid-template-columns: minmax(0, 1fr); }
+    .detail-drawer-content .checklist-grid { grid-template-columns: minmax(0, 1fr); }
+}

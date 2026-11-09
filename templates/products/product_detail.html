@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}جزئیات محصول{% endblock %}
+{% block title %}جزئیات محصول
+<script>
+(function () {
+    document.querySelectorAll('.detail-drawer').forEach(function (drawer) {
+        drawer.addEventListener('toggle', function () {
+            var icon = drawer.querySelector('.detail-drawer-icon');
+            if (icon) icon.textContent = drawer.open ? '−' : '＋';
+        });
+    });
+}());
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="dash">
@@ -182,10 +193,12 @@
         </section>
     </div>
 
-    <div class="detail-sections">
+    <div class="detail-sections detail-sections-compact">
         {# Auction Card Section (if linked to an external auction) #}
         {% if product.auction %}
-            <section class="detail-section accent-amethyst auction-product-highlight">
+            <details class="detail-section detail-drawer accent-amethyst auction-product-highlight">
+                <summary class="detail-drawer-heading"><span>اطلاعات حراجی خارجی و چک‌لیست خرید</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+                <div class="detail-drawer-content">
                 <div class="section-header-inline">
                     <h2>اطلاعات حراجی خارجی و چک‌لیست خرید</h2>
                     <a class="button button-secondary button-sm" href="{% url 'products:auction_detail' product.auction.pk %}">
@@ -198,18 +211,6 @@
                         <span class="detail-info-value">
                             <a class="detail-link" href="{% url 'products:auction_detail' product.auction.pk %}">{{ product.auction.name }}</a>
                         </span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">خانه حراجی</span>
-                        <span class="detail-info-value">{{ product.auction.get_source_house_display }}</span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">تاریخ برگزاری</span>
-                        <span class="detail-info-value">{{ product.auction.start_date|date:"Y/m/d" }}{% if product.auction.end_date %} تا {{ product.auction.end_date|date:"Y/m/d" }}{% endif %}</span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="detail-info-label">مکان برگزاری</span>
-                        <span class="detail-info-value">{{ product.auction.location|default:"—" }}</span>
                     </div>
                     <div class="detail-info-item">
                         <span class="detail-info-label">واحد پول</span>
@@ -257,42 +258,49 @@
                         </div>
                     </div>
                 </div>
-            </section>
+                </div>
+            </details>
         {% endif %}
 
-        <section class="detail-section accent-sapphire">
-            <h2>عنوان و شناسه</h2>
+        <details class="detail-section detail-drawer accent-sapphire">
+            <summary class="detail-drawer-heading"><span>عنوان و شناسه</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">عنوان</span><span class="detail-info-value">{{ product.title|default:"—" }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">کد اثر</span><span class="detail-info-value">{{ product.product_code|default:"—" }}</span></div>
             </div>
             <div class="detail-description-block">
                 <span class="detail-info-label">توضیحات</span>
                 <p class="detail-info-value detail-description">{{ product.description|default:"—" }}</p>
             </div>
-        </section>
+            </div>
+        </details>
 
-        <section class="detail-section accent-sapphire">
-            <h2>مشخصات ظاهری</h2>
+        <details class="detail-section detail-drawer accent-sapphire">
+            <summary class="detail-drawer-heading"><span>مشخصات ظاهری</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.artist|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">نوع هنر</span><span class="detail-info-value">{{ product.art_type|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">موضوع</span><span class="detail-info-value">{{ product.subject|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">کاربرد</span><span class="detail-info-value">{{ product.usage|default:"—" }}</span></div>
             </div>
-        </section>
+            </div>
+        </details>
 
-        <section class="detail-section accent-emerald">
-            <h2>جنس و تولید</h2>
+        <details class="detail-section detail-drawer accent-emerald">
+            <summary class="detail-drawer-heading"><span>جنس و تولید</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
-                <div class="detail-info-item"><span class="detail-info-label">متریال</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
+                <div class="detail-info-item"><span class="detail-info-label">خالق</span><span class="detail-info-value">{{ product.material|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">تاریخ تولید</span><span class="detail-info-value">{{ product.production_date|date:"Y/m/d"|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">مکان تولید</span><span class="detail-info-value">{{ product.production_location|default:"—" }}</span></div>
             </div>
-        </section>
+            </div>
+        </details>
 
-        <section class="detail-section accent-copper">
-            <h2>پیشنهاد، قیمت و منبع</h2>
+        <details class="detail-section detail-drawer accent-copper">
+            <summary class="detail-drawer-heading"><span>پیشنهاد، قیمت و منبع</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
                 {% if not product.auction %}
                     <div class="detail-info-item"><span class="detail-info-label">نام پیشنهاددهنده</span><span class="detail-info-value">{{ product.suggested_by|default:"—" }}</span></div>
@@ -311,32 +319,30 @@
                     <span class="detail-info-label">قیمت ما</span>
                     <span class="detail-info-value">{{ product.get_our_price_display|default:"—" }}</span>
                 </div>
-                <div class="detail-info-item"><span class="detail-info-label">نوع منبع</span><span class="detail-info-value">{{ source_label }}</span></div>
-                <div class="detail-info-item"><span class="detail-info-label">نام منبع</span><span class="detail-info-value">{{ product.source_name|default:"—" }}</span></div>
-                {% if product.source_url %}
-                    <div class="detail-info-item detail-info-item-wide">
-                        <span class="detail-info-label">آدرس منبع</span>
-                        <span class="detail-info-value">
-                            <a class="detail-link" href="{{ product.source_url }}" target="_blank" rel="noopener noreferrer">{{ product.source_url }}</a>
-                        </span>
-                    </div>
-                {% endif %}
             </div>
-        </section>
+            </div>
+        </details>
 
         {% if can_manage_images %}
-            {% include "products/partials/_product_images.html" with image_mode="manage" %}
+            <details class="detail-section detail-drawer detail-images-drawer">
+                <summary class="detail-drawer-heading"><span>مدیریت تصاویر</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+                <div class="detail-drawer-content">
+                    {% include "products/partials/_product_images.html" with image_mode="manage" %}
+                </div>
+            </details>
         {% endif %}
 
-        <section class="detail-section accent-copper">
-            <h2>اطلاعات ثبت</h2>
+        <details class="detail-section detail-drawer accent-copper">
+            <summary class="detail-drawer-heading"><span>اطلاعات ثبت و تاریخچه</span><span class="detail-drawer-icon" aria-hidden="true">＋</span></summary>
+            <div class="detail-drawer-content">
             <div class="detail-info-list detail-info-list-2">
                 <div class="detail-info-item"><span class="detail-info-label">ایجادکننده</span><span class="detail-info-value">{{ product.created_by|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">تاریخ ایجاد</span><span class="detail-info-value">{{ product.created_at|date:"Y/m/d H:i" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">آخرین ویرایش‌کننده</span><span class="detail-info-value">{{ product.updated_by|default:"—" }}</span></div>
                 <div class="detail-info-item"><span class="detail-info-label">تاریخ آخرین ویرایش</span><span class="detail-info-value">{{ product.updated_at|date:"Y/m/d H:i" }}</span></div>
             </div>
-        </section>
+            </div>
+        </details>
     </div>
 
     {% include "products/partials/_status_actions.html" %}

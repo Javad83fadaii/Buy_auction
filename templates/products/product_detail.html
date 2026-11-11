@@ -351,15 +351,51 @@
             const lightboxTrigger = document.querySelector('[data-gallery-lightbox-trigger]');
             const lightboxClose = document.querySelector('[data-lightbox-close]');
 
-            // Make main image clickable to open lightbox
+            // Create a simple image viewer modal for main image
+            const imageViewer = document.createElement('div');
+            imageViewer.className = 'image-viewer-modal';
+            
+            const viewerImage = document.createElement('img');
+            
+            const viewerClose = document.createElement('button');
+            viewerClose.textContent = '×';
+            viewerClose.className = 'close-button';
+            
+            imageViewer.appendChild(viewerImage);
+            imageViewer.appendChild(viewerClose);
+            document.body.appendChild(imageViewer);
+            
+            // Make main image clickable to open image viewer
             if (mainImage) {
-                mainImage.style.cursor = 'pointer';
+                // Cursor style is now handled by CSS
                 mainImage.addEventListener('click', function () {
-                    if (lightbox) {
-                        lightbox.hidden = false;
-                    }
+                    viewerImage.src = this.src;
+                    viewerImage.alt = this.alt;
+                    imageViewer.style.opacity = '1';
+                    imageViewer.style.visibility = 'visible';
+                    document.body.style.overflow = 'hidden';
                 });
             }
+            
+            // Close image viewer
+            function closeImageViewer() {
+                imageViewer.style.opacity = '0';
+                imageViewer.style.visibility = 'hidden';
+                document.body.style.overflow = '';
+            }
+            
+            imageViewer.addEventListener('click', function (event) {
+                if (event.target === imageViewer || event.target === viewerClose) {
+                    closeImageViewer();
+                }
+            });
+            
+            // Close with Escape key
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && imageViewer.style.visibility === 'visible') {
+                    closeImageViewer();
+                }
+            });
 
             if (lightbox && lightboxTrigger) {
                 lightboxTrigger.addEventListener('click', function () {

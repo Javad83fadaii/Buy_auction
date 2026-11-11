@@ -21,7 +21,7 @@
     <main class="dash-main">
         <header class="dash-head">
             <div>
-                <h1>{{ product.title }}</h1>
+                <h1 class="product-detail-title">{{ product.title }}</h1>
             </div>
         </header>
 
@@ -295,6 +295,30 @@
     </div>
 
     {% include "products/partials/_status_actions.html" %}
+    
+    <div class="product-navigation-actions">
+        <div class="navigation-buttons-row">
+            {% if previous_product %}
+                <a href="{% url 'products:detail' previous_product.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="button button-secondary" title="لات قبلی: {{ previous_product.title }}">
+                    ← لات قبلی
+                </a>
+            {% else %}
+                <span class="button button-secondary button-disabled" title="لات قبلی وجود ندارد">
+                    ← لات قبلی
+                </span>
+            {% endif %}
+            
+            {% if next_product %}
+                <a href="{% url 'products:detail' next_product.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="button button-secondary" title="لات بعدی: {{ next_product.title }}">
+                    لات بعدی →
+                </a>
+            {% else %}
+                <span class="button button-secondary button-disabled" title="لات بعدی وجود ندارد">
+                    لات بعدی →
+                </span>
+            {% endif %}
+        </div>
+    </div>
     </main>
 </div>
 
@@ -326,6 +350,16 @@
             const lightbox = document.querySelector('[data-lightbox]');
             const lightboxTrigger = document.querySelector('[data-gallery-lightbox-trigger]');
             const lightboxClose = document.querySelector('[data-lightbox-close]');
+
+            // Make main image clickable to open lightbox
+            if (mainImage) {
+                mainImage.style.cursor = 'pointer';
+                mainImage.addEventListener('click', function () {
+                    if (lightbox) {
+                        lightbox.hidden = false;
+                    }
+                });
+            }
 
             if (lightbox && lightboxTrigger) {
                 lightboxTrigger.addEventListener('click', function () {

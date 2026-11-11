@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -550,8 +551,177 @@ class ProductDetailView(ProductDetailContextMixin, RolePermissionMixin, DetailVi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(self.get_detail_context(product=context['product']))
+        product = context['product']
+        context.update(self.get_detail_context(product=product))
+        
+        # Get previous and next products based on the same filters as product list
+        previous_product, next_product = self.get_adjacent_products(product)
+        context['previous_product'] = previous_product
+        context['next_product'] = next_product
+        
         return context
+    
+    def get_adjacent_products(self, current_product):
+        """Get previous and next products based on current list filters and sorting."""
+        # Get the filtered queryset
+        filtered_queryset = self.get_filtered_queryset()
+        
+        # Get all IDs in order (limited to reasonable number for performance)
+        # In a real application with many products, you might want to use a more
+        # sophisticated approach with window functions or cursor-based pagination
+        product_ids = list(filtered_queryset.values_list('id', flat=True)[:500])
+        
+        try:
+            current_index = product_ids.index(current_product.id)
+        except ValueError:
+            # Product not in the first 500 filtered results
+            # Fall back to simple created_at order
+            return self.get_fallback_adjacent_products(current_product)
+        
+        previous_product = None
+        next_product = None
+        
+        if current_index > 0:
+            previous_id = product_ids[current_index - 1]
+            previous_product = Product.objects.filter(id=previous_id).first()
+        
+        if current_index < len(product_ids) - 1:
+            next_id = product_ids[current_index + 1]
+            next_product = Product.objects.filter(id=next_id).first()
+        
+        return previous_product, next_product
+    
+    def get_fallback_adjacent_products(self, current_product):
+        """Fallback method to get adjacent products when not in filtered list."""
+        # Simple fallback: get adjacent products by creation date
+        previous_product = Product.objects.filter(
+            created_at__lt=current_product.created_at
+        ).order_by('-created_at').first()
+        
+        next_product = Product.objects.filter(
+            created_at__gt=current_product.created_at
+        ).order_by('created_at').first()
+        
+        return previous_product, next_product
+    
+    def get_filtered_queryset(self):
+        """Get queryset with same filters as ProductListView."""
+        # Get base queryset
+        primary_image_queryset = ProductImage.objects.filter(is_primary=True).only(
+            'id',
+            'product_id',
+            'image',
+            'thumbnail',
+            'is_primary',
+        )
+        queryset = (
+            Product.objects.all()
+            .select_related('auction')
+            .prefetch_related(
+                Prefetch(
+                    'images',
+                    queryset=primary_image_queryset,
+                    to_attr='primary_images',
+                )
+            )
+        )
+        
+        # Apply expert restriction if needed
+        if is_expert_restricted_user(getattr(getattr(self, 'request', None), 'user', None)):
+            queryset = queryset.filter(assigned_expert=self.request.user)
+        
+        # Apply filters from request
+        search_query = self.request.GET.get('q', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query)
+                | Q(product_code__icontains=search_query)
+                | Q(artist__icontains=search_query)
+                | Q(suggested_by__icontains=search_query)
+            )
+        
+        status_filter = self.request.GET.get('status', '').strip()
+        if status_filter in ProductStatusChoices.values:
+            queryset = queryset.filter(status=status_filter)
+        
+        source_filter = self.request.GET.get('source', '').strip()
+        if source_filter in ProductSourceTypeChoices.values:
+            queryset = queryset.filter(source_type=source_filter)
+        
+        cancelled_filter = self.request.GET.get('cancelled', 'all').strip()
+        if cancelled_filter == '1':
+            queryset = queryset.filter(is_cancelled=True)
+        elif cancelled_filter == '0':
+            queryset = queryset.filter(is_cancelled=False)
+        
+        art_type_filter = self.request.GET.get('art_type', '').strip()
+        if art_type_filter:
+            queryset = queryset.annotate(normalized_art_type=Trim('art_type')).filter(
+                normalized_art_type=art_type_filter
+            )
+        
+        date_from_filter = self.request.GET.get('date_from', '').strip()
+        if date_from_filter:
+            try:
+                date_from = datetime.strptime(date_from_filter, '%Y-%m-%d').date()
+                queryset = queryset.filter(suggestion_date__gte=date_from)
+            except ValueError:
+                pass
+        
+        date_to_filter = self.request.GET.get('date_to', '').strip()
+        if date_to_filter:
+            try:
+                date_to = datetime.strptime(date_to_filter, '%Y-%m-%d').date()
+                queryset = queryset.filter(suggestion_date__lte=date_to)
+            except ValueError:
+                pass
+        
+        auction_filter = self.request.GET.get('auction', '').strip()
+        if auction_filter.isdigit():
+            queryset = queryset.filter(auction_id=int(auction_filter))
+        
+        to_buy_filter = self.request.GET.get('to_buy', '').strip()
+        if to_buy_filter == '1':
+            queryset = queryset.filter(to_buy=True)
+        elif to_buy_filter == '0':
+            queryset = queryset.filter(to_buy=False)
+        
+        final_inspection_filter = self.request.GET.get('final_inspection', '').strip()
+        if final_inspection_filter == '1':
+            queryset = queryset.filter(final_inspection_done=True)
+        elif final_inspection_filter == '0':
+            queryset = queryset.filter(final_inspection_done=False)
+        
+        # Apply sorting
+        allowed_sorts = {
+            '-created_at': ('-created_at', '-pk'),
+            'created_at': ('created_at', 'pk'),
+            'title': ('title', 'pk'),
+            '-title': ('-title', '-pk'),
+            'our_price': (F('our_price').asc(nulls_last=True), 'pk'),
+            '-our_price': (F('our_price').desc(nulls_last=True), '-pk'),
+            'auction_price': (F('auction_price').asc(nulls_last=True), 'pk'),
+            '-auction_price': (F('auction_price').desc(nulls_last=True), '-pk'),
+            'product_code': (F('product_code').asc(nulls_last=True), 'pk'),
+            '-product_code': (F('product_code').desc(nulls_last=True), '-pk'),
+            'lot': (F('lot_display_number').asc(nulls_last=True), 'pk'),
+            '-lot': (F('lot_display_number').desc(nulls_last=True), '-pk'),
+            'suggested_by': ('suggested_by', 'pk'),
+            '-suggested_by': ('-suggested_by', '-pk'),
+            'auction': (F('auction__name').asc(nulls_last=True), 'pk'),
+            '-auction': (F('auction__name').desc(nulls_last=True), '-pk'),
+            'house': (F('auction__source_house').asc(nulls_last=True), 'pk'),
+            '-house': (F('auction__source_house').desc(nulls_last=True), '-pk'),
+        }
+        
+        default_sort = PRODUCT_LIST_DEFAULT_SORT
+        sort = (self.request.GET.get('sort') or '').strip()
+        if sort not in allowed_sorts:
+            sort = default_sort
+        
+        queryset = queryset.order_by(*allowed_sorts[sort])
+        
+        return queryset
 
 
 class ProductEditView(RolePermissionMixin, UpdateView):

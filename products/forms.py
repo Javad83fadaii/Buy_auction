@@ -581,3 +581,27 @@ class ScraperImportForm(forms.Form):
 
     def clean_limit(self):
         return self.cleaned_data.get('limit') or 0
+
+class ProductOurPriceForm(forms.Form):
+    our_price = forms.DecimalField(
+        label='قیمت ما',
+        required=False,
+        min_value=0,
+        max_digits=18,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'step': '0.01',
+            'min': '0',
+            'inputmode': 'decimal',
+            'placeholder': 'قیمت ما',
+            'dir': 'ltr',
+            'class': 'text-input',
+        }),
+        error_messages={
+            'invalid': 'مقدار قیمت معتبر نیست.',
+            'min_value': 'قیمت نمی‌تواند منفی باشد.',
+            'max_digits': 'مقدار قیمت بیش از حد بزرگ است.',
+            'max_decimal_places': 'حداکثر دو رقم اعشار مجاز است.',
+        },
+    )
+    

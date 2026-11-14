@@ -42,7 +42,7 @@ BASE_PRODUCT_UPDATE_FIELDS = (
     'source_name',
     'source_url',
     'auction',
-    'status',
+    # وضعیت (تأیید/رد) توسط کاربر تعیین می‌شود و ایمپورت مجدد نباید آن را بازنویسی کند.
     'is_cancelled',
     'lot_display_number',
 )
@@ -356,7 +356,7 @@ class ScraperImportService:
             'source_name': source_name[:255],
             'source_url': row.get('url') or '',
             'auction_id': (auction_map.get(row['auction_id']) or {}).get('pk'),
-            'status': ProductStatusChoices.PENDING_REVIEW,
+            'status': ProductStatusChoices.APPROVED,
             'is_cancelled': mapper.build_is_cancelled(row),
         }
         if self.user is not None:

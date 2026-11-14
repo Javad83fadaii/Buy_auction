@@ -107,10 +107,9 @@ def get_available_status_transitions(*, product: Product) -> set[str]:
 def can_user_modify_product(*, product: Product, user) -> bool:
     """
     بررسی دسترسی کاربر برای تغییر، ویرایش یا لغو محصول.
-    اگر محصول در وضعیت PUBLISHED یا لغوشده (is_cancelled) باشد، اپراتورها
-    (کاربرانی که فاقد پرمیشن review_product هستند) امکان ویرایش، لغو،
-    فعال‌سازی مجدد یا مدیریت تصاویر را ندارند تا زمانی که مدیر محصول را
-    برای بررسی ارسال یا فعال‌سازی مجدد کند.
+    اگر محصول لغوشده (is_cancelled) باشد یا وضعیت قدیمی PUBLISHED داشته باشد،
+    اپراتورها (کاربرانی که فاقد پرمیشن review_product هستند) امکان ویرایش، لغو،
+    فعال‌سازی مجدد یا مدیریت تصاویر را ندارند تا زمانی که مدیر آن را فعال کند.
     """
     if not user or not user.is_authenticated or not user.is_active:
         return False
@@ -188,7 +187,7 @@ def create_product(*, cleaned_data: dict, images: list, user) -> Product:
         **field_data,
         source_type=source_type,
         source_name=source_name,
-        status=ProductStatusChoices.PENDING_REVIEW,
+        status=ProductStatusChoices.APPROVED,
         created_by=user,
         updated_by=user,
     )

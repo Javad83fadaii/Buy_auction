@@ -291,17 +291,17 @@ class ProductCreateFlowTests(ProductCreateBaseTestCase):
         product = Product.objects.get()
         self.assertEqual(product.source_type, ProductSourceTypeChoices.MANUAL)
 
-    def test_operator_create_sets_status_to_pending_review(self):
+    def test_operator_create_sets_status_to_approved(self):
         self.post_create(data=self.get_valid_payload())
 
         product = Product.objects.get()
-        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+        self.assertEqual(product.status, ProductStatusChoices.APPROVED)
 
     def test_status_is_not_editable_through_form_submission(self):
         self.post_create(data=self.get_valid_payload(status=ProductStatusChoices.PUBLISHED))
 
         product = Product.objects.get()
-        self.assertEqual(product.status, ProductStatusChoices.PENDING_REVIEW)
+        self.assertEqual(product.status, ProductStatusChoices.APPROVED)
 
     def test_source_fields_are_not_editable_through_form_submission(self):
         self.post_create(
@@ -1665,47 +1665,53 @@ class ProductDetailViewTests(ProductCreateBaseTestCase):
         self.assertContains(response, 'تصویر اصلی')
         self.assertContains(response, 'حذف')
 
-    def test_admin_review_action_visible(self):
-        product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=False)
+    def test_admin_can_only_see_reject_action(self):
+        product = self.create_detail_product(status=ProductStatusChoices.APPROVED, is_cancelled=False)
 
         response = self.get_detail(product, user=self.admin_user)
 
-        self.assertContains(response, 'تأیید محصول')
         self.assertContains(response, 'رد محصول')
-        self.assertContains(
-            response,
-            f'action="{reverse("products:approve", args=[product.pk])}"',
-            html=False,
-        )
+        self.assertNotContains(response, 'تأیید محصول')
+        self.assertNotContains(response, 'انتشار محصول')
+        self.assertNotContains(response, 'ارسال برای بررسی')
         self.assertContains(
             response,
             f'action="{reverse("products:reject", args=[product.pk])}"',
             html=False,
         )
 
-    def test_admin_submit_review_action_visible_for_draft(self):
-        product = self.create_detail_product(status=ProductStatusChoices.DRAFT, is_cancelled=False)
+    def test_admin_sees_restore_action_for_rejected_product(self):
+        product = self.create_detail_product(status=ProductStatusChoices.REJECTED, is_cancelled=False)
 
         response = self.get_detail(product, user=self.admin_user)
 
-        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertContains(response, 'بازگردانی به تأیید')
+        self.assertNotContains(response, 'رد محصول')
         self.assertContains(
             response,
-            f'action="{reverse("products:submit_review", args=[product.pk])}"',
+            f'action="{reverse("products:approve", args=[product.pk])}"',
             html=False,
         )
 
-    def test_admin_publish_action_visible_for_approved_product(self):
-        product = self.create_detail_product(status=ProductStatusChoices.APPROVED, is_cancelled=False)
+    def test_admin_never_sees_submit_review_or_publish_actions(self):
+        for status in (
+            ProductStatusChoices.DRAFT,
+            ProductStatusChoices.PENDING_REVIEW,
+            ProductStatusChoices.APPROVED,
+            ProductStatusChoices.PUBLISHED,
+            ProductStatusChoices.REJECTED,
+        ):
+            product = self.create_detail_product(
+                product_code=f'ART-REVIEW-ACTION-{status}',
+                status=status,
+                is_cancelled=False,
+            )
 
-        response = self.get_detail(product, user=self.admin_user)
+            response = self.get_detail(product, user=self.admin_user)
 
-        self.assertContains(response, 'انتشار محصول')
-        self.assertContains(
-            response,
-            f'action="{reverse("products:publish", args=[product.pk])}"',
-            html=False,
-        )
+            self.assertNotContains(response, 'ارسال برای بررسی')
+            self.assertNotContains(response, 'انتشار محصول')
+            self.assertNotContains(response, 'تأیید محصول')
 
     def test_admin_expert_referral_action_visible_for_products_needing_review(self):
         product = self.create_detail_product(status=ProductStatusChoices.PENDING_REVIEW, is_cancelled=False)
@@ -2996,7 +3002,7 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         self.assertEqual(response.status_code, 405)
 
-    def test_admin_can_see_submit_review_action_for_rejected_product(self):
+    def test_submit_review_action_is_not_rendered_for_rejected_product(self):
         product = self.create_review_product(
             product_code='ART-REVIEW-10',
             status=ProductStatusChoices.REJECTED,
@@ -3005,15 +3011,10 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         response = self.client.get(self.detail_url(product))
 
-        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'ارسال برای بررسی')
         self.assertNotContains(response, 'ارسال مجدد برای بررسی')
-        self.assertContains(
-            response,
-            f'action="{self.submit_review_url(product)}"',
-            html=False,
-        )
 
-    def test_admin_can_see_submit_review_action_for_published_product(self):
+    def test_submit_review_action_is_not_rendered_for_published_product(self):
         product = self.create_review_product(
             product_code='ART-REVIEW-PUB-1',
             status=ProductStatusChoices.PUBLISHED,
@@ -3022,13 +3023,8 @@ class ProductReviewWorkflowTests(ProductCreateBaseTestCase):
 
         response = self.client.get(self.detail_url(product))
 
-        self.assertContains(response, 'ارسال برای بررسی')
+        self.assertNotContains(response, 'ارسال برای بررسی')
         self.assertNotContains(response, 'ارسال مجدد برای بررسی')
-        self.assertContains(
-            response,
-            f'action="{self.submit_review_url(product)}"',
-            html=False,
-        )
 
     def test_admin_does_not_see_submit_review_action_when_already_in_pending_review(self):
         product = self.create_review_product(
@@ -3100,32 +3096,32 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
     def test_product_stats_are_calculated_from_database(self):
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-1',
-            title='پیش‌نویس فعال',
-            status=ProductStatusChoices.DRAFT,
+            title='تأیید شده فعال',
+            status=ProductStatusChoices.APPROVED,
             is_cancelled=False,
         )
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-2',
-            title='در انتظار بررسی',
-            status=ProductStatusChoices.PENDING_REVIEW,
+            title='رد شده',
+            status=ProductStatusChoices.REJECTED,
             is_cancelled=False,
         )
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-3',
-            title='تأیید شده',
+            title='تأیید شده دیگر',
             status=ProductStatusChoices.APPROVED,
             is_cancelled=False,
         )
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-4',
-            title='منتشر شده',
-            status=ProductStatusChoices.PUBLISHED,
+            title='رد شده دوم',
+            status=ProductStatusChoices.REJECTED,
             is_cancelled=False,
         )
         self.create_dashboard_product(
             product_code='ART-DASHBOARD-STATS-5',
-            title='لغوشده منتشر شده',
-            status=ProductStatusChoices.PUBLISHED,
+            title='لغوشده رد شده',
+            status=ProductStatusChoices.REJECTED,
             is_cancelled=True,
         )
         self.create_dashboard_product(
@@ -3141,7 +3137,7 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
         self.assertEqual(product_stats['total_products'], 6)
         self.assertEqual(product_stats['manual_products'], 6)
         self.assertEqual(product_stats['auction_products'], 0)
-        self.assertEqual(product_stats['pending_review_products'], 1)
+        self.assertEqual(product_stats['rejected_products'], 3)
         self.assertEqual(product_stats['cancelled_products'], 2)
         self.assertEqual(product_stats['to_buy_products'], 0)
 
@@ -3247,23 +3243,22 @@ class ProductDashboardViewTests(ProductCreateBaseTestCase):
             html=False,
         )
 
-    def test_admin_sees_pending_review_quick_action(self):
+    def test_admin_sees_rejected_quick_action(self):
         response = self.get_dashboard(user=self.admin_user)
 
-        self.assertContains(response, 'در انتظار بررسی')
+        self.assertContains(response, 'رد شده')
         self.assertContains(
             response,
-            f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
+            f'href="{reverse("products:list")}?status={ProductStatusChoices.REJECTED}"',
             html=False,
         )
 
-    def test_operator_does_not_see_pending_review_quick_action(self):
+    def test_operator_does_not_see_rejected_quick_action(self):
         response = self.get_dashboard(user=self.operator_user)
 
-        self.assertNotContains(response, 'محصولات در انتظار بررسی')
         self.assertNotContains(
             response,
-            f'href="{reverse("products:list")}?status={ProductStatusChoices.PENDING_REVIEW}"',
+            f'href="{reverse("products:list")}?status={ProductStatusChoices.REJECTED}"',
             html=False,
         )
 
@@ -3862,11 +3857,11 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.assertNotContains(response, 'رد محصول')
         self.assertContains(response, 'ویرایش محصول')
 
-    def test_manager_detail_page_shows_approve_and_reject_buttons(self):
+    def test_manager_detail_page_shows_reject_button(self):
         self.client.force_login(self.manager_user)
         response = self.client.get(reverse('products:detail', args=[self.product.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'تأیید محصول')
+        self.assertNotContains(response, 'تأیید محصول')
         self.assertContains(response, 'رد محصول')
         self.assertContains(response, 'ویرایش محصول')
 
@@ -3920,7 +3915,8 @@ class ProductRoleAccessTestCase(ProductCreateBaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'ویرایش محصول')
         self.assertNotContains(response, 'لغو محصول')
-        self.assertContains(response, 'قفل انتشار')
+        # گردش‌کار انتشار حذف شده و برچسب «قفل انتشار» دیگر نمایش داده نمی‌شود.
+        self.assertNotContains(response, 'قفل انتشار')
 
     def test_manager_can_edit_and_cancel_published_product(self):
         self.product.status = ProductStatusChoices.PUBLISHED

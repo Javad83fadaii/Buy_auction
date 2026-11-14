@@ -1,4 +1,4 @@
-from django.db.models import Avg, Sum
+from django.db.models import Sum
 from django.views.generic import TemplateView
 
 from accounts.permissions import RolePermissionMixin
@@ -49,10 +49,12 @@ class StatisticsView(RolePermissionMixin, TemplateView):
             'has_all_prices': all_products.filter(has_all_prices=True).count(),
         }
         
-        # Products by status
-        status_counts = {}
-        for status_value, status_label in ProductStatusChoices.choices:
-            status_counts[status_label] = all_products.filter(status=status_value).count()
+        # Products by status (تنها دو وضعیت کاربردی: تأیید شده / رد شده)
+        status_counts = {
+            status_label: all_products.filter(status=status_value).count()
+            for status_value, status_label in ProductStatusChoices.choices
+            if status_value in {ProductStatusChoices.APPROVED, ProductStatusChoices.REJECTED}
+        }
         context['product_stats']['by_status'] = status_counts
         
         # Products by source type
@@ -60,15 +62,6 @@ class StatisticsView(RolePermissionMixin, TemplateView):
         for source_value, source_label in ProductSourceTypeChoices.choices:
             source_counts[source_label] = all_products.filter(source_type=source_value).count()
         context['product_stats']['by_source'] = source_counts
-        
-        # Price statistics
-        price_stats = all_products.aggregate(
-            total_suggested_price=Sum('suggested_price'),
-            total_suitable_price=Sum('suitable_price'),
-            avg_suggested_price=Avg('suggested_price'),
-            avg_suitable_price=Avg('suitable_price'),
-        )
-        context['product_stats']['price'] = price_stats
         
         # Auction statistics
         all_auctions = Auction.objects.all()

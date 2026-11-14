@@ -46,10 +46,10 @@ def _is_active_link(request, *, key: str) -> bool:
         return view_name == 'products:create'
     if key == 'scraper_import':
         return view_name == 'products:scraper_import'
-    if key == 'pending_review':
+    if key == 'rejected_products':
         return _is_filtered_product_list(
             request,
-            status=ProductStatusChoices.PENDING_REVIEW,
+            status=ProductStatusChoices.REJECTED,
         )
     if key == 'manual_products':
         return _is_filtered_product_list(
@@ -61,7 +61,7 @@ def _is_active_link(request, *, key: str) -> bool:
             return True
         return _is_filtered_product_list(request) and not any(
             (
-                request.GET.get('status', '').strip() == ProductStatusChoices.PENDING_REVIEW,
+                request.GET.get('status', '').strip() == ProductStatusChoices.REJECTED,
                 request.GET.get('source', '').strip() == ProductSourceTypeChoices.MANUAL,
             )
         )
@@ -179,11 +179,11 @@ def build_quick_links(request) -> list[dict[str, object]]:
                 2,
                 _build_link(
                     request,
-                    key='pending_review',
-                    label='در انتظار بررسی',
+                    key='rejected_products',
+                    label='رد شده',
                     url=build_url(
                         'products:list',
-                        status=ProductStatusChoices.PENDING_REVIEW,
+                        status=ProductStatusChoices.REJECTED,
                     ),
                 ),
             )

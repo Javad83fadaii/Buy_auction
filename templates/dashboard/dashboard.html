@@ -29,10 +29,10 @@
             {% if can_review_products %}
                 <section class="dash-attention" aria-label="نیازمند رسیدگی">
                     <div>
-                        <p class="dash-attention-label">در انتظار بررسی</p>
-                        <p class="dash-attention-value">{{ product_stats.pending_review_products }}</p>
+                        <p class="dash-attention-label">رد شده</p>
+                        <p class="dash-attention-value">{{ product_stats.rejected_products }}</p>
                     </div>
-                    <a class="dash-btn dash-btn-invert" href="{{ pending_review_url }}">بررسی محصولات</a>
+                    <a class="dash-btn dash-btn-invert" href="{{ rejected_products_url }}">مشاهده محصولات رد شده</a>
                 </section>
             {% endif %}
 

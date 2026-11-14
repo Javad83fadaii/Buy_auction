@@ -285,7 +285,7 @@ class Product(models.Model):
         'وضعیت',
         max_length=32,
         choices=ProductStatusChoices.choices,
-        default=ProductStatusChoices.DRAFT,
+        default=ProductStatusChoices.APPROVED,
         db_index=True,
     )
     created_by = models.ForeignKey(

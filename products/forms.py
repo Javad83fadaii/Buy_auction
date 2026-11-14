@@ -320,7 +320,7 @@ class ProductCreateForm(ProductBaseForm):
         else:
             self.instance.source_type = ProductSourceTypeChoices.MANUAL
 
-        self.instance.status = ProductStatusChoices.PENDING_REVIEW
+        self.instance.status = ProductStatusChoices.APPROVED
         super()._post_clean()
 
 

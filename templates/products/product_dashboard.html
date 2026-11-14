@@ -22,13 +22,13 @@
         </header>
 
         {# Attention block (reviewers only) #}
-        {% if can_review_products and pending_review_count %}
+        {% if can_review_products and rejected_count %}
             <section class="dash-attention" aria-label="نیازمند رسیدگی">
                 <div>
-                    <p class="dash-attention-label">در انتظار بررسی</p>
-                    <p class="dash-attention-value">{{ pending_review_count }}</p>
+                    <p class="dash-attention-label">رد شده</p>
+                    <p class="dash-attention-value">{{ rejected_count }}</p>
                 </div>
-                <a class="button button-invert" href="{{ pending_review_url }}">بررسی محصولات</a>
+                <a class="button button-invert" href="{{ rejected_products_url }}">مشاهده محصولات رد شده</a>
             </section>
         {% endif %}
 
@@ -86,10 +86,10 @@
                     {% if can_review_products %}
                         <div class="dash-quick-row">
                             <div>
-                                <strong>محصولات در انتظار بررسی</strong>
-                                <span>آثار منتظر تصمیم نهایی کارشناسی.</span>
+                                <strong>محصولات رد شده</strong>
+                                <span>آثاری که رد شده‌اند و در صورت نیاز باید بازگردانی شوند.</span>
                             </div>
-                            <a class="button button-secondary" href="{{ pending_review_url }}">بررسی</a>
+                            <a class="button button-secondary" href="{{ rejected_products_url }}">مشاهده</a>
                         </div>
                     {% endif %}
                 </div>

@@ -8,31 +8,17 @@
         </form>
     {% endif %}
 
-    {% if show_approve_action %}
-        <form method="post" action="{% url 'products:approve' product.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="button button-primary">تأیید محصول</button>
-        </form>
-    {% endif %}
-
-    {% if show_publish_action %}
-        <form method="post" action="{% url 'products:publish' product.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="button button-primary">انتشار محصول</button>
-        </form>
-    {% endif %}
-
-    {% if show_submit_review_action %}
-        <form method="post" action="{% url 'products:submit_review' product.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="button {% if show_publish_action %}button-secondary{% else %}button-primary{% endif %}">ارسال برای بررسی</button>
-        </form>
-    {% endif %}
-
     {% if show_reject_action %}
         <form method="post" action="{% url 'products:reject' product.pk %}">
             {% csrf_token %}
             <button type="submit" class="button button-secondary">رد محصول</button>
+        </form>
+    {% endif %}
+
+    {% if show_restore_action %}
+        <form method="post" action="{% url 'products:approve' product.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-primary">بازگردانی به تأیید</button>
         </form>
     {% endif %}
 
@@ -80,15 +66,9 @@
 
         <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
     {% elif is_locked_for_operator %}
-        {% if product.is_cancelled %}
-            <span class="flag-badge" title="محصول لغو شده و ویرایش یا فعال‌سازی مجدد آن فقط توسط مدیر امکان‌پذیر است.">
-                قفل لغو (ویرایش و فعال‌سازی مجدد تنها توسط مدیر امکان‌پذیر است)
-            </span>
-        {% else %}
-            <span class="flag-badge" title="محصول منتشر شده و ویرایش یا لغو آن فقط پس از ارسال برای بررسی توسط مدیر امکان‌پذیر است.">
-                قفل انتشار (ویرایش و لغو تنها پس از ارسال برای بررسی امکان‌پذیر است)
-            </span>
-        {% endif %}
+        <span class="flag-badge" title="محصول لغو شده و ویرایش یا فعال‌سازی مجدد آن فقط توسط مدیر امکان‌پذیر است.">
+            قفل لغو (ویرایش و فعال‌سازی مجدد تنها توسط مدیر امکان‌پذیر است)
+        </span>
     {% endif %}
 
     <a class="button button-secondary" href="{{ back_url }}">بازگشت به محصولات</a>

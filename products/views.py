@@ -170,22 +170,18 @@ class ProductDetailContextMixin(ProductDisplayLabelsMixin):
             'can_manage_product': can_manage_product,
             'can_manage_images': can_manage_product,
             'is_locked_for_operator': (
-                (product.status == ProductStatusChoices.PUBLISHED or product.is_cancelled)
+                product.is_cancelled
                 and not can_review_product
                 and self.request.user.has_perm('products.change_product')
             ),
             'can_review_product': can_review_product,
-            'show_submit_review_action': (
-                can_review_product and ProductStatusChoices.PENDING_REVIEW in available_status_transitions
-            ),
-            'show_approve_action': (
-                can_review_product and ProductStatusChoices.APPROVED in available_status_transitions
-            ),
             'show_reject_action': (
                 can_review_product and ProductStatusChoices.REJECTED in available_status_transitions
             ),
-            'show_publish_action': (
-                can_review_product and ProductStatusChoices.PUBLISHED in available_status_transitions
+            'show_restore_action': (
+                can_review_product
+                and product.status == ProductStatusChoices.REJECTED
+                and not product.is_cancelled
             ),
             'can_refer_to_expert': can_review_product and product.needs_expert_review and not product.is_cancelled,
             'expert_referral_form': expert_referral_form,
@@ -444,9 +440,11 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
         return self.get_filter_form().cleaned_data.get('sort', self.default_sort)
 
     def get_status_options(self):
+        # فقط دو وضعیت کاربردی در فیلتر لیست نمایش داده می‌شود.
+        selectable_statuses = (ProductStatusChoices.APPROVED, ProductStatusChoices.REJECTED)
         return [
             {'value': value, 'label': self.status_filter_labels[value]}
-            for value in ProductStatusChoices.values
+            for value in selectable_statuses
         ]
 
     def get_source_options(self):
@@ -488,8 +486,6 @@ class ProductListView(ProductDisplayLabelsMixin, RolePermissionMixin, ListView):
     def get_page_title(self):
         if self.get_source_filter() == ProductSourceTypeChoices.MANUAL:
             return 'محصولات دستی'
-        if self.get_status_filter() == ProductStatusChoices.PENDING_REVIEW:
-            return 'محصولات در انتظار بررسی'
         return 'لیست محصولات'
 
     def get_context_data(self, **kwargs):
@@ -952,7 +948,7 @@ class ProductToBuyToggleView(ProductFlagToggleBaseView):
     disable_message = 'خریداری این اثر لغو شد.'
 
     def post(self, request, *args, **kwargs):
-        # اپراتور روی محصولات منتشرشده یا لغوشده اجازه تغییر این پرچم را ندارد.
+        # اپراتور روی محصولات لغوشده (یا دارای وضعیت قدیمی منتشرشده) اجازه تغییر این پرچم را ندارد.
         if not can_user_modify_product(product=self.get_product(), user=request.user):
             return self.handle_no_permission()
         return super().post(request, *args, **kwargs)
@@ -1035,7 +1031,7 @@ class ProductExpertReferralView(RolePermissionMixin, FormView):
 
 class ProductApproveView(ProductReviewActionView):
     target_status = ProductStatusChoices.APPROVED
-    success_message = 'محصول با موفقیت تأیید شد.'
+    success_message = 'وضعیت محصول به «تأیید شده» بازگردانده شد.'
 
 
 class ProductSubmitReviewView(ProductReviewActionView):

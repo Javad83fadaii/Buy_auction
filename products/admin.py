@@ -118,8 +118,6 @@ class ProductAdmin(admin.ModelAdmin):
     actions = (
         'approve_products_action',
         'reject_products_action',
-        'publish_products_action',
-        'submit_review_products_action',
     )
 
     @admin.action(description='تأیید محصولات انتخاب‌شده')
@@ -131,16 +129,6 @@ class ProductAdmin(admin.ModelAdmin):
     def reject_products_action(self, request, queryset):
         count = queryset.update(status=ProductStatusChoices.REJECTED)
         self.message_user(request, f'{count} اثر رد شد.')
-
-    @admin.action(description='انتشار محصولات انتخاب‌شده')
-    def publish_products_action(self, request, queryset):
-        count = queryset.update(status=ProductStatusChoices.PUBLISHED)
-        self.message_user(request, f'{count} اثر منتشر شد.')
-
-    @admin.action(description='ارسال محصولات انتخاب‌شده برای بررسی')
-    def submit_review_products_action(self, request, queryset):
-        count = queryset.update(status=ProductStatusChoices.PENDING_REVIEW)
-        self.message_user(request, f'{count} اثر برای بررسی ارسال شد.')
 
 
 @admin.register(ProductImage)

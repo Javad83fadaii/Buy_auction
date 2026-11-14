@@ -102,11 +102,7 @@
                 <div class="detail-alert detail-alert-warning">این محصول لغو شده است.</div>
             {% endif %}
             {% if is_locked_for_operator %}
-                {% if product.is_cancelled %}
-                    <div class="detail-alert detail-alert-warning">این اثر لغو شده است؛ ویرایش یا فعال‌سازی مجدد آن برای اپراتور قفل است و تنها توسط مدیر امکان‌پذیر خواهد بود.</div>
-                {% else %}
-                    <div class="detail-alert detail-alert-warning">این اثر منتشر شده است؛ ویرایش یا لغو آن برای اپراتور قفل است و تنها پس از ارسال برای بررسی توسط مدیر امکان‌پذیر خواهد بود.</div>
-                {% endif %}
+                <div class="detail-alert detail-alert-warning">ویرایش یا فعال‌سازی مجدد این اثر برای اپراتور قفل است و تنها توسط مدیر امکان‌پذیر است.</div>
             {% endif %}
 
             <div class="detail-info-list">
@@ -140,6 +136,9 @@
             </div>
 
             <div class="flag-list" aria-label="پرچم‌های محصول">
+                {% if product.status == 'REJECTED' %}
+                    <span class="flag-badge flag-badge-warning">رد شده</span>
+                {% endif %}
                 {% if product.to_buy %}
                     <span class="flag-badge flag-badge-buy">هدف خرید</span>
                 {% endif %}
@@ -160,7 +159,7 @@
                 {% if product.needs_expert_review %}
                     <span class="flag-badge flag-badge-info">نیازمند کارشناسی</span>
                 {% endif %}
-                {% if not product.is_cancelled and not product.is_notable and not product.needs_expert_review and not product.to_buy and not product.final_inspection_done and not product.has_all_prices and not product.has_initial_info %}
+                {% if not product.is_cancelled and not product.is_notable and not product.needs_expert_review and not product.to_buy and not product.final_inspection_done and not product.has_all_prices and not product.has_initial_info and product.status != 'REJECTED' %}
                     <span class="detail-info-value">—</span>
                 {% endif %}
             </div>

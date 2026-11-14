@@ -93,9 +93,9 @@ class DashboardView(RolePermissionMixin, TemplateView):
                 'id',
                 filter=~Q(source_type=ProductSourceTypeChoices.MANUAL),
             ),
-            pending_review_products=Count(
+            rejected_products=Count(
                 'id',
-                filter=Q(status=ProductStatusChoices.PENDING_REVIEW),
+                filter=Q(status=ProductStatusChoices.REJECTED),
             ),
             to_buy_products=Count(
                 'id',
@@ -163,9 +163,9 @@ class DashboardView(RolePermissionMixin, TemplateView):
         )
         context['auction_products_url'] = reverse('products:auction_list')
         context['all_products_url'] = reverse('products:list')
-        context['pending_review_url'] = build_url(
+        context['rejected_products_url'] = build_url(
             'products:list',
-            status=ProductStatusChoices.PENDING_REVIEW,
+            status=ProductStatusChoices.REJECTED,
         )
         return context
 

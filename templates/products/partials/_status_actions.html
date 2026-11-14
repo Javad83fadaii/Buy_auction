@@ -70,6 +70,14 @@
     {% endif %}
 
     {% if can_manage_product %}
+        <form method="post" action="{% url 'products:toggle_to_buy' product.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{% if product.to_buy %}off{% else %}on{% endif %}">
+            <button type="submit" class="button button-secondary">
+                {% if product.to_buy %}لغو خریداری{% else %}خریداری شود{% endif %}
+            </button>
+        </form>
+
         <a class="button button-primary" href="{% url 'products:edit' product.pk %}">ویرایش محصول</a>
     {% elif is_locked_for_operator %}
         {% if product.is_cancelled %}

@@ -1896,12 +1896,18 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
         self.assertFalse(product.needs_expert_review)
 
     def test_edit_ignores_flag_fields_tampering(self):
-        product = self.create_edit_product(is_cancelled=False, is_notable=False, needs_expert_review=False)
+        product = self.create_edit_product(
+            is_cancelled=False,
+            is_notable=False,
+            needs_expert_review=False,
+            to_buy=False,
+        )
 
         data = self.get_edit_payload(
             is_cancelled='on',
             is_notable='on',
             needs_expert_review='on',
+            to_buy='on',
         )
         self.post_edit(product.pk, user=self.operator_user, data=data, follow=True)
 
@@ -1909,6 +1915,15 @@ class ProductEditViewTests(ProductCreateBaseTestCase):
         self.assertFalse(product.is_cancelled)
         self.assertFalse(product.is_notable)
         self.assertFalse(product.needs_expert_review)
+        self.assertFalse(product.to_buy)
+
+    def test_edit_form_excludes_to_buy_field(self):
+        product = self.create_edit_product()
+
+        response = self.get_edit(product.pk, user=self.operator_user)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('to_buy', response.context['form'].fields)
 
     def test_updated_by_updated_correctly(self):
         product = self.create_edit_product(updated_by=self.admin_user)
@@ -2610,6 +2625,85 @@ class ProductCancelArchiveTests(ProductCreateBaseTestCase):
         product.refresh_from_db()
         self.assertEqual(response.status_code, 403)
         self.assertFalse(product.needs_expert_review)
+
+    def test_operator_can_toggle_to_buy_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BUY-1', to_buy=False)
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(
+            reverse('products:toggle_to_buy', args=[product.pk]),
+            data={'action': 'on'},
+            follow=True,
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(product.to_buy)
+        self.assertEqual(product.updated_by, self.operator_user)
+
+        response = self.client.post(
+            reverse('products:toggle_to_buy', args=[product.pk]),
+            data={'action': 'off'},
+            follow=True,
+        )
+
+        product.refresh_from_db()
+        self.assertFalse(product.to_buy)
+
+    def test_manager_can_toggle_to_buy_flag_without_action(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BUY-2', to_buy=False)
+        self.client.force_login(self.manager_user)
+
+        self.client.post(reverse('products:toggle_to_buy', args=[product.pk]))
+
+        product.refresh_from_db()
+        self.assertTrue(product.to_buy)
+
+    def test_expert_cannot_toggle_to_buy_flag(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BUY-3', to_buy=False)
+        self.client.force_login(self.expert_user)
+
+        response = self.client.post(
+            reverse('products:toggle_to_buy', args=[product.pk]),
+            data={'action': 'on'},
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.to_buy)
+
+    def test_operator_cannot_toggle_to_buy_flag_for_published_product(self):
+        product = self.create_cancel_product(
+            product_code='ART-FLAG-BUY-4',
+            to_buy=False,
+            status=ProductStatusChoices.PUBLISHED,
+        )
+        self.client.force_login(self.operator_user)
+
+        response = self.client.post(
+            reverse('products:toggle_to_buy', args=[product.pk]),
+            data={'action': 'on'},
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(product.to_buy)
+
+    def test_detail_shows_to_buy_toggle_button_in_both_states(self):
+        product = self.create_cancel_product(product_code='ART-FLAG-BUY-5', to_buy=False)
+        self.client.force_login(self.operator_user)
+
+        response = self.client.get(reverse('products:detail', args=[product.pk]))
+
+        self.assertContains(response, 'خریداری شود')
+        self.assertNotContains(response, 'لغو خریداری')
+
+        product.to_buy = True
+        product.save(update_fields=['to_buy'])
+
+        response = self.client.get(reverse('products:detail', args=[product.pk]))
+
+        self.assertContains(response, 'لغو خریداری')
 
     def test_manager_detail_shows_flag_toggle_buttons(self):
         product = self.create_cancel_product(product_code='ART-FLAG-BTN-1')

@@ -51,6 +51,7 @@ from .services import (
     update_product_image_sort_order,
     update_product_notable_state,
     update_product_review_status,
+    update_product_to_buy_state,
 )
 
 logger = logging.getLogger(__name__)
@@ -942,6 +943,22 @@ class ProductExpertFlagToggleView(ProductFlagToggleBaseView):
         return update_product_expert_flag_state(
             product=product, needs_expert_review=state, user=self.request.user
         )
+
+
+class ProductToBuyToggleView(ProductFlagToggleBaseView):
+    permission_required = 'products.change_product'
+    flag_name = 'to_buy'
+    enable_message = 'وضعیت اثر به «خریداری شود» تغییر کرد.'
+    disable_message = 'خریداری این اثر لغو شد.'
+
+    def post(self, request, *args, **kwargs):
+        # اپراتور روی محصولات منتشرشده یا لغوشده اجازه تغییر این پرچم را ندارد.
+        if not can_user_modify_product(product=self.get_product(), user=request.user):
+            return self.handle_no_permission()
+        return super().post(request, *args, **kwargs)
+
+    def apply_state(self, *, product, state: bool):
+        return update_product_to_buy_state(product=product, to_buy=state, user=self.request.user)
 
 
 class ProductReviewActionView(RolePermissionMixin, View):

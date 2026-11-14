@@ -485,6 +485,22 @@ def update_product_expert_flag_state(*, product: Product, needs_expert_review: b
     return managed_product
 
 
+def update_product_to_buy_state(*, product: Product, to_buy: bool, user=None) -> Product:
+    """تغییر وضعیت «خریداری شود»؛ کنترل دسترسی در view انجام می‌شود."""
+    with transaction.atomic():
+        managed_product = Product.objects.select_for_update().get(pk=product.pk)
+        managed_product.to_buy = to_buy
+
+        update_fields = ['to_buy', 'updated_at']
+        if user is not None:
+            managed_product.updated_by = user
+            update_fields.append('updated_by')
+
+        managed_product.save(update_fields=update_fields)
+
+    return managed_product
+
+
 def update_product_review_status(*, product: Product, status: str, user) -> Product:
     if product.is_cancelled:
         raise ValidationError('محصول لغوشده قابل تغییر وضعیت نیست. ابتدا آن را فعال‌سازی مجدد کنید.')

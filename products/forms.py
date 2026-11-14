@@ -326,7 +326,8 @@ class ProductCreateForm(ProductBaseForm):
 
 class ProductEditForm(ProductBaseForm):
     class Meta(ProductBaseForm.Meta):
-        fields = PRODUCT_EDIT_FIELDS
+        # پرچم «خریداری شود» از فرم ویرایش حذف شده و از صفحه جزئیات محصول تغییر می‌کند.
+        fields = tuple(field_name for field_name in PRODUCT_EDIT_FIELDS if field_name != 'to_buy')
 
     ordered_fields = ('registration_mode',) + Meta.fields
 

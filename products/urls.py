@@ -24,6 +24,7 @@ from .views import (
     ProductRejectView,
     ProductReReviewView,
     ProductSubmitReviewView,
+    ProductToBuyToggleView,
 )
 
 app_name = 'products'
@@ -51,6 +52,7 @@ urlpatterns = [
     path('<int:id>/cancel-toggle/', ProductCancelToggleView.as_view(), name='cancel_toggle'),
     path('<int:id>/toggle-notable/', ProductNotableToggleView.as_view(), name='toggle_notable'),
     path('<int:id>/toggle-expert-flag/', ProductExpertFlagToggleView.as_view(), name='toggle_expert_flag'),
+    path('<int:id>/toggle-to-buy/', ProductToBuyToggleView.as_view(), name='toggle_to_buy'),
     path('<int:id>/images/upload/', ProductImageUploadView.as_view(), name='image_upload'),
     path(
         '<int:id>/images/<int:image_id>/primary/',

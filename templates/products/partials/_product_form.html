@@ -62,14 +62,16 @@
     </div>
 
     <div class="checkbox-group auction-status-grid">
-        <div class="form-field form-field-checkbox">
-            <label class="checkbox-card highlight-target-card" for="{{ form.to_buy.id_for_label }}">
-                {{ form.to_buy }}
-                <span>{{ form.to_buy.label }}</span>
-            </label>
-            {% if form.to_buy.help_text %}<small class="field-help">{{ form.to_buy.help_text }}</small>{% endif %}
-            {% if form.to_buy.errors %}<small class="field-error">{{ form.to_buy.errors|join:", " }}</small>{% endif %}
-        </div>
+        {% if form.to_buy %}
+            <div class="form-field form-field-checkbox">
+                <label class="checkbox-card highlight-target-card" for="{{ form.to_buy.id_for_label }}">
+                    {{ form.to_buy }}
+                    <span>{{ form.to_buy.label }}</span>
+                </label>
+                {% if form.to_buy.help_text %}<small class="field-help">{{ form.to_buy.help_text }}</small>{% endif %}
+                {% if form.to_buy.errors %}<small class="field-error">{{ form.to_buy.errors|join:", " }}</small>{% endif %}
+            </div>
+        {% endif %}
 
         <div class="form-field form-field-checkbox">
             <label class="checkbox-card" for="{{ form.final_inspection_done.id_for_label }}">
